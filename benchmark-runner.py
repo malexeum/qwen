@@ -147,12 +147,15 @@ def robust_zscore(rows: List[Dict[str, Any]], feature_names: List[str]) -> List[
 
 
 def write_feature_csv(path: Path, rows: List[Dict[str, Any]], feature_names: List[str]):
-    with open(path, 'a', newline='', encoding='utf-8') as f:
+    """Write features in wide format (one row per run) instead of long format to save space."""
+    with open(path, 'w', newline='', encoding='utf-8') as f:
         w = csv.writer(f)
+        header = ['run_id', 'generator', 'experiment', 'class_name', 'instance_id', 'seed'] + feature_names
+        w.writerow(header)
         for r in rows:
-            for feat in feature_names:
-                if feat in r:
-                    w.writerow([r['run_id'], r['generator'], r['experiment'], r['class_name'], r['instance_id'], r['seed'], feat, r[feat]])
+            row = [r['run_id'], r['generator'], r['experiment'], r['class_name'], r['instance_id'], r['seed']]
+            row.extend([r.get(feat, '') for feat in feature_names])
+            w.writerow(row)
 
 
 def append_run_table(path: Path, rows: List[Dict[str, Any]]):
@@ -243,9 +246,9 @@ def compute_separability(rows: List[Dict[str, Any]], feature_names: List[str]) -
     }
 
 
-def compute_retrieval_metrics(rows: List[Dict[str, Any]], feature_names: List[str]) -> Dict[str, Any]:
+def compute_retrieval_metrics(rows: List[Dict[str, Any]], feature_names: List[str], sample_size: int = 500) -> Dict[str, Any]:
     """
-    Compute retrieval accuracy metrics:
+    Compute retrieval accuracy metrics on a sample for memory efficiency:
     - For each query, find nearest neighbor and check if same class
     - Top-1 and Top-3 retrieval accuracy
     """
@@ -263,6 +266,12 @@ def compute_retrieval_metrics(rows: List[Dict[str, Any]], feature_names: List[st
     
     if len(data) < 2:
         return {'top1_accuracy': 0.0, 'top3_accuracy': 0.0, 'n_queries': 0}
+    
+    # Sample for memory efficiency
+    if len(data) > sample_size:
+        rng = np.random.default_rng(42)
+        indices = rng.choice(len(data), sample_size, replace=False)
+        data = [data[i] for i in sorted(indices)]
     
     # Build feature matrix
     X = np.vstack([d['features'] for d in data])
@@ -606,13 +615,93 @@ def main():
     with open(manifest['summary_json_path'], 'w', encoding='utf-8') as f:
         json.dump(summary, f, ensure_ascii=False, indent=2)
 
-    with open(manifest['research_report_md_path'], 'w', encoding='utf-8') as f:
-        f.write('# Benchmark runner report\n\n')
-        f.write('This is an auto-generated placeholder report from the factorized benchmark orchestrator.\n')
+    # Compute all research-grade analytics
+    separability_results = compute_separability(norm_rows, feature_names)
+    retrieval_results = compute_retrieval_metrics(norm_rows, feature_names)
+    bootstrap_results = compute_bootstrap_ci(norm_rows, feature_names)
+    bifurcations = detect_bifurcation_events(raw_feature_rows, feature_names)
 
-    for extra in [manifest['aggregate_by_class_path'], manifest['aggregate_by_generator_path'], manifest['aggregate_by_experiment_path'], manifest['pairwise_distance_matrix_path'], manifest['retrieval_accuracy_path'], manifest['bifurcation_events_path']]:
-        with open(extra, 'w', newline='', encoding='utf-8') as f:
+    # Generate comprehensive research report
+    report_md = generate_research_report(
+        manifest=manifest,
+        rows=norm_rows,
+        feature_names=feature_names,
+        summary=summary,
+        separability_results=separability_results,
+        retrieval_results=retrieval_results,
+        bootstrap_results=bootstrap_results,
+        bifurcations=bifurcations,
+    )
+    with open(manifest['research_report_md_path'], 'w', encoding='utf-8') as f:
+        f.write(report_md)
+
+    # Write aggregate files
+    by_class_data = defaultdict(list)
+    for r in norm_rows:
+        by_class_data[r['class_name']].append(r)
+    with open(manifest['aggregate_by_class_path'], 'w', newline='', encoding='utf-8') as f:
+        w = csv.writer(f)
+        w.writerow(['class_name', 'n_runs'] + feature_names)
+        for cls, cls_rows in sorted(by_class_data.items()):
+            means = [f"{np.mean([r[feat] for r in cls_rows if feat in r]):.6f}" for feat in feature_names]
+            w.writerow([cls, len(cls_rows)] + means)
+
+    by_gen_data = defaultdict(list)
+    for r in norm_rows:
+        by_gen_data[r['generator']].append(r)
+    with open(manifest['aggregate_by_generator_path'], 'w', newline='', encoding='utf-8') as f:
+        w = csv.writer(f)
+        w.writerow(['generator', 'n_runs'] + feature_names)
+        for gen, gen_rows in sorted(by_gen_data.items()):
+            means = [f"{np.mean([r[feat] for r in gen_rows if feat in r]):.6f}" for feat in feature_names]
+            w.writerow([gen, len(gen_rows)] + means)
+
+    by_exp_data = defaultdict(list)
+    for r in norm_rows:
+        by_exp_data[r['experiment']].append(r)
+    with open(manifest['aggregate_by_experiment_path'], 'w', newline='', encoding='utf-8') as f:
+        w = csv.writer(f)
+        w.writerow(['experiment', 'n_runs'] + feature_names)
+        for exp, exp_rows in sorted(by_exp_data.items()):
+            means = [f"{np.mean([r[feat] for r in exp_rows if feat in r]):.6f}" for feat in feature_names]
+            w.writerow([exp, len(exp_rows)] + means)
+
+    sample_size = min(500, len(norm_rows))
+    sample_data = []
+    for r in norm_rows[:sample_size]:
+        feat_vec = [r[f] for f in feature_names if f in r]
+        if len(feat_vec) == len(feature_names):
+            sample_data.append({'run_id': r['run_id'], 'class_name': r['class_name'], 'features': np.array(feat_vec)})
+    
+    if len(sample_data) >= 2:
+        X = np.vstack([d['features'] for d in sample_data])
+        dist_matrix = pairwise_distances(X, metric='euclidean')
+        with open(manifest['pairwise_distance_matrix_path'], 'w', newline='', encoding='utf-8') as f:
+            w = csv.writer(f)
+            header = ['run_id'] + [d['run_id'] for d in sample_data]
+            w.writerow(header)
+            for i, d in enumerate(sample_data):
+                w.writerow([d['run_id']] + [f"{dist_matrix[i,j]:.6f}" for j in range(len(sample_data))])
+    else:
+        with open(manifest['pairwise_distance_matrix_path'], 'w', newline='', encoding='utf-8') as f:
             csv.writer(f).writerow(['placeholder'])
+
+    with open(manifest['retrieval_accuracy_path'], 'w', newline='', encoding='utf-8') as f:
+        w = csv.writer(f)
+        w.writerow(['metric', 'value'])
+        w.writerow(['top1_accuracy', f"{retrieval_results['top1_accuracy']:.6f}"])
+        w.writerow(['top3_accuracy', f"{retrieval_results['top3_accuracy']:.6f}"])
+        w.writerow(['n_queries', retrieval_results['n_queries']])
+
+    with open(manifest['bifurcation_events_path'], 'w', newline='', encoding='utf-8') as f:
+        w = csv.writer(f)
+        if bifurcations:
+            header = list(bifurcations[0].keys())
+            w.writerow(header)
+            for b in bifurcations:
+                w.writerow([b[k] for k in header])
+        else:
+            w.writerow(['no_bifurcations_detected'])
 
     print(json.dumps({'n_runs': len(all_run_rows), 'n_feature_rows': len(raw_feature_rows), 'n_feature_names': len(feature_names)}, ensure_ascii=False, indent=2))
 

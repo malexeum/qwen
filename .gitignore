@@ -1,14 +1,35 @@
-# Examples
-Input:
-### Added files:
-['configs/experiment_protocol.yaml', 'configs/input_registry.yaml']
+```
+# Build artifacts and outputs
+output/
 
-### Deleted files:
-[]
+# Dependencies and virtual environments
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
-### Modified files:
-['benchmark-runner.py']
+# Logs
+*.log
 
-###current .gitignore Content
+# Environment files
+.env
+.env.local
+*.env.*
 
-Expected Output:
+# Coverage reports
+.coverage
+htmlcov/
+coverage/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+```
