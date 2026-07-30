@@ -1,0 +1,241 @@
+protocol_version: 2.0
+project: fractal_harmony_engine
+objective: factorized_benchmark_runner
+stage: stage2_benchmark
+
+scope:
+  description: >-
+    Comparative benchmark of nonlinear generator classes for preservation of
+    input harmony identity under fractal transformation.
+  ui_enabled: false
+  web_enabled: false
+  training_enabled: false
+  benchmark_only: true
+  notes: >-
+    This stage evaluates generators and observation pipelines, not adaptive
+    training of encoder components.
+
+mapping:
+  mapping_mode: rule_based_mapping
+  mapping_version: v1.0
+  default_mapping_mode: rule_based_mapping
+  allowed_mapping_modes:
+    - rule_based_mapping
+    - learned_mapping
+  encoder_enabled: false
+  encoder_version: null
+  frozen_encoder_allowed: true
+  frozen_encoder_default_disabled: true
+
+versioning:
+  feature_schema_version: v1.0
+  observer_version: v1.0
+  distance_metric_version: v1.0
+  bifurcation_detector_version: v2.0
+  benchmark_runner_version: v1.0
+
+modes:
+  research-fast:
+    resolution_default: [96, 96]
+    resolution_duffing: [96, 96]
+    resolution_scattering: [96, 96]
+    repeats_per_class: 3
+    sensitivity_steps: 15
+    deformation_steps: 6
+    duffing_steps: 220
+    ifs_points: 20000
+    skip_completed: true
+    resume: true
+  research-final:
+    resolution_default: [128, 128]
+    resolution_duffing: [128, 128]
+    resolution_scattering: [128, 128]
+    repeats_per_class: 7
+    sensitivity_steps: 31
+    deformation_steps: 12
+    duffing_steps: 400
+    ifs_points: 40000
+    skip_completed: true
+    resume: true
+  publication:
+    resolution_default: [192, 192]
+    resolution_duffing: [192, 192]
+    resolution_scattering: [192, 192]
+    repeats_per_class: 11
+    sensitivity_steps: 41
+    deformation_steps: 16
+    duffing_steps: 700
+    ifs_points: 80000
+    skip_completed: true
+    resume: true
+  validation-hires:
+    resolution_default: [384, 384]
+    resolution_duffing: [384, 384]
+    resolution_scattering: [384, 384]
+    repeats_per_class: 5
+    sensitivity_steps: 31
+    deformation_steps: 12
+    duffing_steps: 600
+    ifs_points: 100000
+    skip_completed: true
+    resume: true
+
+randomness:
+  encoder_seed: 12345
+  seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  numpy_rng: PCG64
+
+noise:
+  seed_noise:
+    julia_orbit_trap: 0.01
+    orbit_ifs_multi_trap: 0.0
+    duffing_lyapunov: 0.002
+    chaotic_scattering: 0.0005
+    random_baseline: 0.0
+    smooth_geometric_baseline: 0.0
+    single_parameter_map_baseline: 0.0
+  parameter_noise:
+    enabled: true
+    default_scale: 0.01
+    levels: [0.0, 0.01, 0.03, 0.05]
+  observer_noise:
+    enabled: false
+    scale: 0.0
+
+generators:
+  nonlinear:
+    - julia_orbit_trap
+    - orbit_ifs_multi_trap
+    - duffing_lyapunov
+    - chaotic_scattering
+  baselines:
+    - random_baseline
+    - smooth_geometric_baseline
+    - single_parameter_map_baseline
+
+experiments:
+  - stability
+  - sensitivity
+  - bifurcation_detection
+  - separability
+  - family_deformation
+
+factorial_axes:
+  - generator
+  - experiment
+  - class_name
+  - instance_id
+  - seed
+  - noise_level
+  - deformation_step
+  - mapping_mode
+
+feature_processing:
+  feature_normalization: robust_zscore_per_feature
+  store_raw_features: true
+  store_normalized_features: true
+  common_features:
+    - symmetry_score
+    - fractal_dim_proxy
+    - basin_entropy
+    - density_variation
+  generator_specific_features:
+    duffing_lyapunov:
+      - lyapunov_mean
+      - lyapunov_std
+      - stability_gradient
+    chaotic_scattering:
+      - escape_time_mean
+      - escape_time_std
+      - basin_count
+    orbit_ifs_multi_trap:
+      - orbit_occupancy
+      - trap_interaction_score
+      - support_area
+    julia_orbit_trap:
+      - escape_ratio
+      - trap_response_mean
+      - connected_component_proxy
+
+metrics:
+  required:
+    - mean_cv
+    - max_cv
+    - within_mean
+    - between_mean
+    - separability
+    - cohesion_ratio
+    - basin_entropy
+    - symmetry_score
+    - fractal_dim_proxy
+    - n_bifurcations
+  additional:
+    - seed_sensitivity
+    - input_perturbation_sensitivity
+    - observer_variance
+    - silhouette_like_score
+    - top1_class_retrieval
+    - top3_class_retrieval
+    - stability_diversity_ratio
+    - family_continuity_score
+  aggregation:
+    - mean
+    - std
+    - median
+    - iqr
+    - min
+    - max
+    - n
+    - bootstrap_ci95
+  ranking:
+    primary_sort: median
+    secondary_sort: lower_ci_bound
+    instability_flag:
+      enabled: true
+      cv_threshold: 0.25
+      iqr_threshold: 1.0
+
+bifurcation_detection:
+  smoothing_window: 3
+  z_threshold: 2.5
+  persistence_points: 2
+  min_jump_norm: 0.15
+
+outputs:
+  images: true
+  json_report: true
+  csv_metrics: true
+  parquet_features: true
+  save_config_copy: true
+  save_observations_png: true
+  save_observations_npy: true
+  save_failed_runs: true
+  save_timing_profile: true
+  save_manifest_full: true
+  required_files:
+    - run_table.csv
+    - features_raw.parquet
+    - features_normalized.parquet
+    - aggregate_by_class.csv
+    - aggregate_by_generator.csv
+    - aggregate_by_experiment.csv
+    - pairwise_distance_matrix.csv
+    - retrieval_accuracy.csv
+    - bifurcation_events.csv
+    - summary.json
+    - research_report.md
+  optional_files:
+    - failed_runs.csv
+    - timing_profile.csv
+    - manifest_full.json
+    - top_examples/
+
+stage2_decision:
+  enabled: true
+  criteria:
+    separability_above_baseline: true
+    within_mean_below_threshold: true
+    family_continuity_min: 0.5
+    validation_hires_required: true
+    no_single_seed_dependency: true
+  output_block: stage2_decision
