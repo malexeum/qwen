@@ -1,1 +1,31 @@
-(содержимое выше) 
+# Виртуальные окружения
+venv/
+.env/
+.venv/
+env/
+
+# Кэш и служебные файлы Python
+__pycache__/
+*.py[cod]
+*.log
+*.tmp
+*.bak
+
+# Результаты бенчмарков и временные каталоги
+output_v4/
+sanity_check_outputs/
+results/
+logs/
+tmp/
+
+# Бэкапы
+backup_qwen_local/
+
+# IDE / редакторы
+.vscode/
+.idea/
+*.swp
+
+# Jupyter / временные ноутбуки
+*.ipynb_checkpoints
+.ipynb_checkpoints/

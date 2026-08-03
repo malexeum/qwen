@@ -1,0 +1,220 @@
+schema_name: identity_schema_v2
+schema_version: "2.0.0"
+observer_version: "3.2.0"
+feature_schema_version: "2.0.0"
+distance_metric: "euclidean"
+
+description: >
+  Схема identity-слоя для benchmark v4.2. Описывает классы переходов
+  (preserved / transformed / broken / emergent / unresolved),
+  используемые пороги и числовые показатели уверенности и стабильности.
+
+design_goals:
+  - generator_specific_identity
+  - threshold_profile_from_taxonomy
+  - explicit_transition_states
+  - continuous_confidence_scores
+  - backward_compatible_with_v4_1
+
+transition_types:
+  preserved:
+    description: >
+      Класс идентичности сохранён. Морфология близка к исходному
+      классу, расстояние до собственного centroids <= preserved_thr,
+      семейная аффинность >= affinity_min.
+    conditions:
+      centroid_distance_max: "thr.centroid_distance_preserved"
+      family_affinity_min: "thr.family_affinity_min"
+      breakage_score_max: "thr.breakage_score_min"
+    output_class_pattern: "preserved_{input_class}"
+    severity_order: 0
+
+  transformed:
+    description: >
+      Идентичность сохранена, но морфология существенно трансформирована.
+      Расстояние лежит между preserved_thr и transformed_thr,
+      семейная аффинность всё ещё выше порога.
+    conditions:
+      centroid_distance_min: "thr.centroid_distance_preserved"
+      centroid_distance_max: "thr.centroid_distance_transformed"
+      family_affinity_min: "thr.family_affinity_min"
+    output_class_pattern: "transformed_{input_class}"
+    severity_order: 1
+
+  broken:
+    description: >
+      Идентичность исходного класса считается сломанной. Либо
+      breakage_score >= breakage_min, либо расстояние > transformed_thr
+      при низкой семейной аффинности.
+    conditions:
+      breakage_score_min: "thr.breakage_score_min"
+      or_condition:
+        - "centroid_distance > thr.centroid_distance_transformed"
+        - "family_affinity < thr.family_affinity_min"
+    output_class_pattern: "broken_{input_class}"
+    severity_order: 2
+
+  emergent:
+    description: >
+      Новая морфология, отдалённая от всех известных centroids, но
+      обладающая собственной локальной когезией. Может иметь
+      weak-family связь к ближайшему классу.
+    conditions:
+      min_distance_to_any_centroid_min: "thr.emergent_min_distance_to_any_centroid"
+      local_cohesion_min: "thr.emergent_min_internal_cohesion"
+    output_class_pattern:
+      unknown: "emergent_unknown"
+      with_nearest: "emergent_{nearest_centroid_class}"
+    severity_order: 3
+
+  unresolved:
+    description: >
+      Строки, для которых identity classifier не может работать
+      (ошибка, NaN, отсутствующие признаки, status != success).
+    conditions:
+      status_not_success: true
+      features_missing_or_nan: true
+    output_class_pattern: "unresolved_{input_class}"
+    severity_order: -1
+
+fields:
+  # Основные метаданные, уже присутствующие в RUN_TABLE_HEADER
+  - name: output_class
+    dtype: string
+    description: "Итоговый класс identity-слоя, включая префиксы preserved_/transformed_/broken_/emergent_/unresolved_."
+
+  - name: transition_type
+    dtype: string
+    description: "Тип перехода идентичности: preserved/transformed/broken/emergent/unresolved."
+
+  - name: family_relation
+    dtype: string
+    description: "Класс семейства, к которому относится переход (обычно исходный или ближайший centroid)."
+
+  - name: nearest_centroid_class
+    dtype: string
+    description: "Класс ближайшего centroid по выбранной метрике."
+
+  - name: identity_confidence
+    dtype: float
+    range: [0.0, 1.0]
+    description: >
+      Скалярная уверенность в присвоенной категории идентичности.
+      Функция расстояния до порогов preserved/transformed и семейной аффинности.
+
+  - name: identity_breakage_score
+    dtype: float
+    range: [0.0, 1.0]
+    description: >
+      Непрерывная оценка степени нарушенности идентичности. Основана
+      на превышении transformed_thr и падении семейной аффинности.
+
+  - name: centroid_distance
+    dtype: float
+    description: "Расстояние (euclidean) от текущего вектора morphology до собственного centroid."
+
+  - name: approx_morphology_score
+    dtype: float
+    description: "Синоним centroid_distance для совместимости с v4.1 отчётами."
+
+  - name: threshold_profile_used
+    dtype: string
+    description: "Имя порогового профиля, использованного для этого генератора (global_default или специфический)."
+
+  # Новые скоры v4.2
+  - name: family_continuity_score
+    dtype: float
+    range: [0.0, 1.0]
+    description: >
+      Интегральная оценка сохранности принадлежности исходному классу,
+      учитывающая семейную аффинность и расстояние до собственного centroid.
+
+  - name: breakage_confidence
+    dtype: float
+    range: [0.0, 1.0]
+    description: >
+      Уверенность в категории broken: растёт с breakage_score и
+      удалением от transformed_thr.
+
+  - name: transition_confidence
+    dtype: float
+    range: [0.0, 1.0]
+    description: >
+      Уверенность в категории transformed: учитывает аффинность к
+      ближайшему классу и относительное положение между preserved_thr
+      и transformed_thr.
+
+  - name: class_stability_index
+    dtype: float
+    range: [0.0, 1.0]
+    description: >
+      Показатель того, насколько окружение класса компактно и стабильно
+      (функция минимального расстояния до любого centroid).
+
+  - name: observer_stability_score
+    dtype: float
+    range: [0.0, 1.0]
+    description: >
+      Перенос proxy наблюдателя (observer_stability_proxy) в identity-слой,
+      для мониторинга устойчивости observer по генераторам.
+
+thresholds_source:
+  taxonomy_key: "generator_specific_thresholds"
+  global_block_key: "thresholds"
+  description: >
+    Пороговые значения (preserved_thr, transformed_thr, family_affinity_min,
+    breakage_min, emergent_min_distance_to_any_centroid,
+    emergent_min_internal_cohesion) берутся из output taxonomy. В случае
+    отсутствия generator-specific профиля используется fallback-профиль и
+    далее global thresholds.
+
+generator_specific_behavior:
+  description: >
+    Identity classifier работает по генератору: centroids и пороги
+    определяются на уровне (generator x input_class). Это отражено
+    в build_frozen_centroids(...) и _get_identity_threshold_profile(...).
+  centroids_scope: "per_generator_per_input_class"
+  threshold_profiles:
+    global_default:
+      source: "taxonomy.thresholds"
+      description: "Базовый профиль порогов, применимый ко всем генераторам."
+    generator_specific:
+      source: "taxonomy.generator_specific_thresholds.profiles"
+      description: "Профили порогов, специфичные для отдельных генераторов."
+
+recommended_aggregates:
+  - name: class_preservation_rate
+    description: "Доля runs с transition_type == preserved."
+  - name: class_transition_rate
+    description: "Доля runs с transition_type == transformed."
+  - name: class_breakage_rate
+    description: "Доля runs с transition_type == broken."
+  - name: emergent_rate
+    description: "Доля runs с transition_type == emergent."
+  - name: mean_family_continuity_score
+    description: "Среднее family_continuity_score по всем runs."
+  - name: mean_class_stability_index
+    description: "Средний class_stability_index."
+  - name: mean_morphology_persistence_score
+    description: "Средний morphology_persistence_score (из feature schema)."
+  - name: mean_observer_stability_score
+    description: "Средний observer_stability_score по генераторам."
+
+compatibility:
+  replaces_identity_schema_version: "1.0.0"
+  keeps_legacy_fields: true
+  expected_run_table_fields:
+    - output_class
+    - transition_type
+    - family_relation
+    - nearest_centroid_class
+    - identity_confidence
+    - identity_breakage_score
+    - centroid_distance
+    - approx_morphology_score
+    - threshold_profile_used
+    - family_continuity_score
+    - breakage_confidence
+    - transition_confidence
+    - class_stability_index
+    - observer_stability_score

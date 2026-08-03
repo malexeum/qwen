@@ -1,0 +1,7 @@
+C:\Users\malexeum>d:
+D:\>cd d:\IFZ\qwen_coder\
+
+d:\IFZ\qwen_coder>pip install pyyaml
+d:\IFZ\qwen_coder>python -m pip install scikit-learn
+d:\IFZ\qwen_coder>python benchmark-runner.py
+d:\IFZ\qwen_coder>python benchmark-runner_v3.py
