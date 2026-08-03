@@ -1,160 +1,242 @@
-registry_version: 1.0
-project: fractal_harmony_engine
-feature_schema_version: v1.0
-vector_definition:
-  dimensions:
-    - spectral_balance
-    - frequency_regularity
-    - rhythmic_periodicity
-    - repetition_coeff
-    - tension
-    - symmetry
-    - density
-    - contrast
-  bounds: [0.0, 1.0]
-  note: >-
-    All input vectors are normalized to [0,1]. Values are abstract structural
-    descriptors of harmony state, not raw audio features.
+registry_version: 2.0
+registry_name: fractal_harmony_input_registry
+linked_protocol_version: 2.0
+linked_protocol_file: configs/experiment_protocol.yaml
+description: >-
+  Fixed input class registry for stage-2 benchmark experiments on harmony-to-fractal
+  mappings. The registry defines canonical class prototypes, deterministic instance
+  generation, perturbation constraints, hierarchy labels, and benchmark splits.
+
+class_hierarchy:
+  harmonic:
+    description: Stable symmetric consonant regime with low structural tension.
+  irregular:
+    description: Dense non-periodic and contrast-rich regime with weak regularity.
+  periodic:
+    description: Repetitive regime with strong recurrence and simple temporal order.
+  tense:
+    description: High-tension or dissonant regime with elevated instability potential.
+  transitional:
+    description: Intermediate regime between stable and unstable structural states.
+  asymmetry:
+    description: Regime with intentionally broken bilateral or cyclic balance.
+
+dimensions:
+  - name: spectral_profile
+    description: Global spectral distribution compactness versus spread.
+    unit: normalized
+    range: [0.0, 1.0]
+  - name: frequency_ratio_simplicity
+    description: Simplicity of internal frequency ratios.
+    unit: normalized
+    range: [0.0, 1.0]
+  - name: rhythmic_periodicity
+    description: Degree of temporal repetition and periodic order.
+    unit: normalized
+    range: [0.0, 1.0]
+  - name: density
+    description: Event density and occupation in time-frequency space.
+    unit: normalized
+    range: [0.0, 1.0]
+  - name: tension
+    description: Perceived structural tension or harmonic stress.
+    unit: normalized
+    range: [0.0, 1.0]
+  - name: symmetry
+    description: Structural symmetry of the harmonic object.
+    unit: normalized
+    range: [0.0, 1.0]
+  - name: repetition
+    description: Internal motif recurrence and persistence.
+    unit: normalized
+    range: [0.0, 1.0]
+  - name: contrast
+    description: Contrast between local elements or substructures.
+    unit: normalized
+    range: [0.0, 1.0]
+
+normalization_rules:
+  value_domain: [0.0, 1.0]
+  clipping_policy: clip_to_unit_interval
+  dimension_order_source: dimensions
+  required_vector_length_equals_dimension_count: true
+
+instance_generation_spec:
+  method: deterministic_offsets
+  formula: clipped_instance_vector = clip01(base_vector + offset)
+  clipping_range: [0.0, 1.0]
+  strict_checks:
+    require_offset_length_equals_base_vector_length: true
+    require_base_vector_length_equals_dimension_count: true
+    require_numeric_offsets: true
+  notes:
+    - Offsets are deterministic and version-controlled to preserve reproducibility.
+    - Any runner implementation must validate vector lengths before generation.
+
+perturbation_policy:
+  default_scales: [0.01, 0.03, 0.05]
+  distribution: gaussian
+  clipping_policy: clip_to_unit_interval
+  semantics: >-
+    These scales define controlled within-class perturbations applied around class
+    instances during family_deformation and sensitivity experiments unless a class
+    overrides them explicitly.
 
 benchmark_sets:
   separability:
     include_classes:
       - harmonic_symmetric
-      - dense_irregular
-      - ostinato_sparse
-      - tense_clustered
-      - transitional_balanced
-      - asymmetric_contrastive
+      - harmonic_dense_irregular
+      - periodic_ostinato
+      - sparse_free_texture
+      - tense_cluster
+      - asymmetry_transition
   family_deformation:
     include_classes:
       - harmonic_symmetric
-      - tense_clustered
-      - transitional_balanced
-
-perturbation_policy:
-  perturbation_scales: [0.01, 0.03, 0.05]
-  perturbed_dimensions: all
-  clipping: [0.0, 1.0]
-  controlled_noise_model: gaussian
-  n_perturbations_per_instance: 3
+      - periodic_ostinato
+      - sparse_free_texture
+      - asymmetry_transition
+  sensitivity:
+    include_classes:
+      - harmonic_symmetric
+      - tense_cluster
+      - asymmetry_transition
+  hi_res_validation:
+    include_classes:
+      - harmonic_symmetric
+      - periodic_ostinato
+      - tense_cluster
 
 classes:
   - name: harmonic_symmetric
-    description: >-
-      Consonant, regular, highly symmetric harmonic profile with moderate density
-      and low tension; serves as a structured stable reference class.
     parent_class: harmonic
-    base_vector: [0.82, 0.78, 0.74, 0.76, 0.18, 0.88, 0.42, 0.26]
-    perturbation_scales: [0.01, 0.03, 0.05]
+    description: >-
+      Consonant and symmetric low-tension harmonic prototype with strong internal
+      coherence and moderate recurrence.
+    tags: [stable, consonant, symmetric, low_tension]
+    base_vector: [0.78, 0.86, 0.62, 0.34, 0.18, 0.88, 0.71, 0.29]
     n_instances: 8
+    perturbation_scales: [0.01, 0.03, 0.05]
+    deformation_role: anchor
     instance_generation:
       method: deterministic_offsets
       offsets:
-        - [ 0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00]
-        - [ 0.02, -0.01,  0.01,  0.00,  0.01,  0.01, -0.02,  0.01]
-        - [-0.02,  0.01, -0.01,  0.02, -0.01, -0.01,  0.02, -0.01]
-        - [ 0.01,  0.02,  0.00, -0.01,  0.00,  0.02, -0.01,  0.00]
-        - [-0.01, -0.02,  0.02,  0.01,  0.00, -0.02,  0.01,  0.00]
-        - [ 0.03,  0.00, -0.02,  0.01,  0.01,  0.00, -0.01,  0.02]
-        - [-0.03,  0.00,  0.02, -0.01, -0.01,  0.00,  0.01, -0.02]
-        - [ 0.00,  0.01, -0.01,  0.02, -0.02,  0.01,  0.00,  0.01]
+        - [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]
+        - [0.02, -0.01, 0.01, 0.00, 0.01, 0.00, 0.02, -0.01]
+        - [-0.01, 0.02, 0.00, -0.01, 0.00, 0.01, 0.01, 0.00]
+        - [0.01, 0.01, -0.02, 0.01, -0.01, 0.02, 0.00, -0.01]
+        - [-0.02, 0.00, 0.02, -0.01, 0.00, -0.01, 0.02, 0.01]
+        - [0.01, -0.02, 0.01, 0.02, -0.01, 0.00, -0.01, 0.00]
+        - [0.00, 0.01, -0.01, 0.01, 0.00, 0.01, 0.00, 0.02]
+        - [-0.01, 0.00, 0.02, 0.00, 0.01, -0.02, 0.01, 0.00]
 
-  - name: dense_irregular
-    description: >-
-      Dense and irregular structure with elevated contrast and weaker periodicity;
-      intended to test separability from symmetric harmonic states.
+  - name: harmonic_dense_irregular
     parent_class: irregular
-    base_vector: [0.48, 0.34, 0.30, 0.28, 0.64, 0.24, 0.84, 0.72]
-    perturbation_scales: [0.01, 0.03, 0.05]
+    description: >-
+      Dense irregular texture with elevated contrast and reduced ratio simplicity,
+      designed as a counterexample to stable consonant structure.
+    tags: [dense, irregular, high_contrast, low_symmetry]
+    base_vector: [0.44, 0.29, 0.26, 0.86, 0.77, 0.22, 0.34, 0.81]
     n_instances: 8
+    perturbation_scales: [0.01, 0.03, 0.05]
+    deformation_role: contrastive
     instance_generation:
       method: deterministic_offsets
       offsets:
-        - [ 0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00]
-        - [ 0.02, -0.02, -0.01,  0.01,  0.01, -0.01,  0.02,  0.01]
-        - [-0.02,  0.02,  0.01, -0.01, -0.01,  0.01, -0.02, -0.01]
-        - [ 0.01,  0.01, -0.02,  0.02,  0.00, -0.02,  0.01,  0.02]
-        - [-0.01, -0.01,  0.02, -0.02,  0.00,  0.02, -0.01, -0.02]
-        - [ 0.03, -0.01,  0.00,  0.01,  0.02, -0.01,  0.00,  0.01]
-        - [-0.03,  0.01,  0.00, -0.01, -0.02,  0.01,  0.00, -0.01]
-        - [ 0.00,  0.02, -0.01,  0.00,  0.01, -0.02,  0.02,  0.00]
+        - [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]
+        - [0.01, -0.02, 0.00, 0.01, 0.02, -0.01, 0.01, 0.00]
+        - [-0.02, 0.01, -0.01, 0.00, 0.01, 0.00, -0.01, 0.02]
+        - [0.00, -0.01, 0.02, -0.02, 0.01, -0.01, 0.00, 0.01]
+        - [0.02, 0.00, -0.02, 0.01, -0.01, 0.02, 0.01, -0.01]
+        - [-0.01, 0.02, 0.01, -0.01, 0.00, -0.02, 0.02, 0.01]
+        - [0.01, 0.00, -0.01, 0.02, -0.02, 0.00, 0.01, -0.01]
+        - [-0.01, -0.01, 0.02, 0.00, 0.02, 0.01, -0.02, 0.00]
 
-  - name: ostinato_sparse
-    description: >-
-      Highly repetitive but sparse class with strong periodicity, low density and
-      relatively low contrast; useful for continuity tests.
+  - name: periodic_ostinato
     parent_class: periodic
-    base_vector: [0.62, 0.70, 0.92, 0.90, 0.12, 0.66, 0.18, 0.20]
-    perturbation_scales: [0.01, 0.03, 0.05]
+    description: >-
+      Periodic ostinato-like regime with strong recurrence, moderate symmetry and
+      simple internal organization.
+    tags: [periodic, recurrent, stable, patterned]
+    base_vector: [0.69, 0.79, 0.91, 0.48, 0.27, 0.63, 0.93, 0.25]
     n_instances: 8
+    perturbation_scales: [0.01, 0.03, 0.05]
+    deformation_role: anchor
     instance_generation:
       method: deterministic_offsets
       offsets:
-        - [ 0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00]
-        - [ 0.01,  0.00, -0.01,  0.02,  0.01,  0.01, -0.01,  0.01]
-        - [-0.01,  0.00,  0.01, -0.02, -0.01, -0.01,  0.01, -0.01]
-        - [ 0.02, -0.01,  0.00,  0.01,  0.00,  0.02,  0.00,  0.00]
-        - [-0.02,  0.01,  0.00, -0.01,  0.00, -0.02,  0.00,  0.00]
-        - [ 0.00,  0.02, -0.02,  0.01,  0.01,  0.00, -0.01,  0.02]
-        - [ 0.00, -0.02,  0.02, -0.01, -0.01,  0.00,  0.01, -0.02]
-        - [ 0.01,  0.01,  0.01,  0.00, -0.01,  0.01,  0.00,  0.01]
+        - [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]
+        - [0.01, 0.01, -0.01, 0.00, 0.00, 0.01, 0.01, 0.00]
+        - [-0.01, 0.00, 0.02, -0.01, 0.01, -0.01, 0.00, 0.01]
+        - [0.02, -0.01, 0.01, 0.01, -0.01, 0.00, 0.02, -0.01]
+        - [-0.02, 0.02, -0.01, 0.00, 0.01, 0.01, -0.01, 0.00]
+        - [0.00, -0.02, 0.02, 0.01, -0.01, 0.02, 0.00, -0.01]
+        - [0.01, 0.00, -0.02, 0.02, 0.00, -0.01, 0.01, 0.01]
+        - [-0.01, 0.01, 0.01, -0.01, 0.02, 0.00, -0.02, 0.00]
 
-  - name: tense_clustered
-    description: >-
-      Tense, clustered and locally concentrated class with high density, high
-      contrast and reduced symmetry; intended to provoke bifurcation sensitivity.
-    parent_class: tense
-    base_vector: [0.40, 0.42, 0.36, 0.32, 0.88, 0.22, 0.86, 0.84]
-    perturbation_scales: [0.01, 0.03, 0.05]
-    n_instances: 8
-    instance_generation:
-      method: deterministic_offsets
-      offsets:
-        - [ 0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00]
-        - [ 0.01, -0.01,  0.00, -0.01,  0.02, -0.01,  0.01,  0.01]
-        - [-0.01,  0.01,  0.00,  0.01, -0.02,  0.01, -0.01, -0.01]
-        - [ 0.02,  0.00, -0.02,  0.02,  0.01,  0.00,  0.02,  0.01]
-        - [-0.02,  0.00,  0.02, -0.02, -0.01,  0.00, -0.02, -0.01]
-        - [ 0.00,  0.02, -0.01,  0.00,  0.02, -0.02,  0.01,  0.00]
-        - [ 0.00, -0.02,  0.01,  0.00, -0.02,  0.02, -0.01,  0.00]
-        - [ 0.01,  0.01,  0.01, -0.01,  0.00, -0.01,  0.00,  0.02]
-
-  - name: transitional_balanced
-    description: >-
-      Intermediate balanced class between harmonic and irregular regimes; useful
-      as a bridge class for family deformation trajectories.
+  - name: sparse_free_texture
     parent_class: transitional
-    base_vector: [0.58, 0.56, 0.54, 0.52, 0.46, 0.50, 0.52, 0.48]
-    perturbation_scales: [0.01, 0.03, 0.05]
-    n_instances: 8
-    instance_generation:
-      method: deterministic_offsets
-      offsets:
-        - [ 0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00]
-        - [ 0.01, -0.01,  0.01, -0.01,  0.01, -0.01,  0.01, -0.01]
-        - [-0.01,  0.01, -0.01,  0.01, -0.01,  0.01, -0.01,  0.01]
-        - [ 0.02,  0.00, -0.02,  0.00,  0.02,  0.00, -0.02,  0.00]
-        - [-0.02,  0.00,  0.02,  0.00, -0.02,  0.00,  0.02,  0.00]
-        - [ 0.00,  0.02,  0.00, -0.02,  0.00,  0.02,  0.00, -0.02]
-        - [ 0.00, -0.02,  0.00,  0.02,  0.00, -0.02,  0.00,  0.02]
-        - [ 0.01,  0.01, -0.01, -0.01,  0.01,  0.01, -0.01, -0.01]
-
-  - name: asymmetric_contrastive
     description: >-
-      Class with moderate density but strong asymmetry and high contrast
-      transitions; intended to test whether generators preserve directional bias.
-    parent_class: asymmetry
-    base_vector: [0.52, 0.38, 0.44, 0.40, 0.60, 0.10, 0.58, 0.90]
-    perturbation_scales: [0.01, 0.03, 0.05]
+      Sparse and weakly periodic texture with low density, weak recurrence and a
+      comparatively open structural form.
+    tags: [sparse, open, low_density, weak_periodicity]
+    base_vector: [0.35, 0.47, 0.19, 0.16, 0.41, 0.39, 0.24, 0.58]
     n_instances: 8
+    perturbation_scales: [0.01, 0.03, 0.05]
+    deformation_role: bridge
     instance_generation:
       method: deterministic_offsets
       offsets:
-        - [ 0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00]
-        - [ 0.02, -0.01,  0.00,  0.01,  0.01, -0.01,  0.01,  0.02]
-        - [-0.02,  0.01,  0.00, -0.01, -0.01,  0.01, -0.01, -0.02]
-        - [ 0.01,  0.02, -0.02,  0.00,  0.02, -0.01,  0.00,  0.01]
-        - [-0.01, -0.02,  0.02,  0.00, -0.02,  0.01,  0.00, -0.01]
-        - [ 0.03,  0.00, -0.01,  0.02,  0.01,  0.00, -0.02,  0.01]
-        - [-0.03,  0.00,  0.01, -0.02, -0.01,  0.00,  0.02, -0.01]
-        - [ 0.00,  0.01, -0.01,  0.01,  0.00, -0.02,  0.01,  0.00]
+        - [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]
+        - [0.02, -0.01, 0.01, 0.00, -0.01, 0.00, 0.01, 0.01]
+        - [-0.01, 0.02, -0.01, 0.01, 0.00, -0.01, 0.00, 0.02]
+        - [0.00, -0.02, 0.02, -0.01, 0.01, 0.01, -0.01, 0.00]
+        - [0.01, 0.00, -0.02, 0.02, -0.01, 0.00, 0.02, -0.01]
+        - [-0.02, 0.01, 0.00, -0.01, 0.02, -0.02, 0.01, 0.00]
+        - [0.01, -0.01, 0.01, 0.01, 0.00, 0.02, -0.02, 0.01]
+        - [-0.01, 0.00, -0.01, 0.00, 0.01, -0.01, 0.02, -0.02]
+
+  - name: tense_cluster
+    parent_class: tense
+    description: >-
+      High-tension cluster-like regime with elevated density, high stress, reduced
+      symmetry and strong contrast.
+    tags: [tense, clustered, dissonant, unstable]
+    base_vector: [0.41, 0.18, 0.38, 0.82, 0.91, 0.17, 0.28, 0.88]
+    n_instances: 8
+    perturbation_scales: [0.01, 0.03, 0.05]
+    deformation_role: stress_test
+    instance_generation:
+      method: deterministic_offsets
+      offsets:
+        - [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]
+        - [0.02, -0.01, 0.00, 0.01, 0.01, 0.00, -0.01, 0.01]
+        - [-0.01, 0.01, -0.02, 0.00, 0.02, -0.01, 0.02, 0.00]
+        - [0.01, -0.02, 0.01, -0.01, 0.00, 0.01, 0.00, 0.02]
+        - [-0.02, 0.00, 0.02, 0.01, -0.01, -0.01, 0.01, -0.01]
+        - [0.00, 0.02, -0.01, 0.02, 0.01, -0.02, 0.00, 0.01]
+        - [0.01, -0.01, 0.00, -0.02, 0.02, 0.00, -0.01, 0.02]
+        - [-0.01, 0.01, 0.01, 0.00, -0.02, 0.02, 0.01, -0.01]
+
+  - name: asymmetry_transition
+    parent_class: asymmetry
+    description: >-
+      Transitional asymmetric regime intended to probe continuity between ordered
+      and unstable classes under controlled deformations.
+    tags: [asymmetric, transitional, bridge, medium_tension]
+    base_vector: [0.56, 0.43, 0.52, 0.57, 0.59, 0.24, 0.49, 0.67]
+    n_instances: 8
+    perturbation_scales: [0.01, 0.03, 0.05]
+    deformation_role: bridge
+    instance_generation:
+      method: deterministic_offsets
+      offsets:
+        - [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]
+        - [0.01, -0.01, 0.01, 0.00, 0.01, -0.01, 0.01, 0.00]
+        - [-0.01, 0.02, -0.01, 0.01, 0.00, 0.01, -0.02, 0.01]
+        - [0.02, -0.02, 0.00, -0.01, 0.02, 0.00, 0.01, -0.01]
+        - [-0.02, 0.01, 0.02, 0.00, -0.01, -0.01, 0.02, 0.00]
+        - [0.00, 0.00, -0.02, 0.02, 0.01, 0.02, -0.01, 0.01]
+        - [0.01, -0.01, 0.00, 0.01, -0.02, 0.01, 0.00, 0.02]
+        - [-0.01, 0.01, 0.01, -0.02, 0.00, -0.02, 0.02, -0.01]

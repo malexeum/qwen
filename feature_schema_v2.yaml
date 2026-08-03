@@ -1,0 +1,811 @@
+schema_name: feature_schema_v2
+schema_version: "2.0.0"
+observer_version: "3.2.0"
+benchmark_version_family: "v4.2"
+distance_metric: "euclidean"
+normalization_scheme: "robust_zscore_per_feature"
+
+description: >
+  Расширенная схема морфологических и generator-specific признаков
+  для benchmark v4.2. Схема сохраняет обратную совместимость с v4.1
+  и добавляет multi-scale, topology, boundary, basin geometry,
+  curvature и persistence-признаки.
+
+design_goals:
+  - backward_compatible_with_v4_1_core_features
+  - improved_class_separability
+  - multi_scale_morphology_support
+  - topology_aware_identity_analysis
+  - stable_run_table_and_summary_integration
+
+groups:
+  core_legacy:
+    role: "backward-compatible core morphology"
+    description: >
+      Базовые признаки v4.1, сохранённые для совместимости
+      со старыми раннерами, таблицами и сравнением серий запусков.
+    fields:
+      - name: symmetry_score
+        dtype: float
+        source: orbit_map
+        description: "Глобальная зеркальная симметрия поля по горизонтали и вертикали."
+        include_in_morphology: true
+
+      - name: fractal_dim_proxy
+        dtype: float
+        source: orbit_map
+        description: "Прокси фрактальной размерности через box-counting бинаризованного поля."
+        include_in_morphology: true
+
+      - name: basin_entropy
+        dtype: float
+        source: orbit_map
+        description: "Локальная энтропия дискретизированных патчей как proxy неоднородности бассейнов."
+        include_in_morphology: true
+
+      - name: density_variation
+        dtype: float
+        source: visit_density
+        description: "Многомасштабная вариативность плотности посещения."
+        include_in_morphology: true
+
+      - name: edge_density
+        dtype: float
+        source: orbit_map
+        description: "Доля пикселей с высоким градиентом, то есть плотность границ/контуров."
+        include_in_morphology: true
+
+      - name: entropy_orbit
+        dtype: float
+        source: orbit_map
+        description: "Гистограммная энтропия orbit_map."
+        include_in_morphology: true
+
+      - name: entropy_visit
+        dtype: float
+        source: visit_density
+        description: "Гистограммная энтропия visit_density."
+        include_in_morphology: true
+
+      - name: kurt_orbit
+        dtype: float
+        source: orbit_map
+        description: "Эксцесс распределения orbit_map."
+        include_in_morphology: true
+
+      - name: skew_orbit
+        dtype: float
+        source: orbit_map
+        description: "Асимметрия распределения orbit_map."
+        include_in_morphology: true
+
+      - name: std_orbit
+        dtype: float
+        source: orbit_map
+        description: "Стандартное отклонение orbit_map."
+        include_in_morphology: true
+
+      - name: std_visit
+        dtype: float
+        source: visit_density
+        description: "Стандартное отклонение visit_density."
+        include_in_morphology: true
+
+  robust_statistics:
+    role: "stable scalar morphology"
+    description: >
+      Более устойчивые одномерные статистики, менее чувствительные
+      к выбросам и тяжёлым хвостам, чем mean/std alone.
+    fields:
+      - name: mad_orbit
+        dtype: float
+        source: orbit_map
+        description: "Median absolute deviation для orbit_map."
+        include_in_morphology: true
+
+      - name: mad_visit
+        dtype: float
+        source: visit_density
+        description: "Median absolute deviation для visit_density."
+        include_in_morphology: true
+
+      - name: iqr_orbit
+        dtype: float
+        source: orbit_map
+        description: "Interquartile range orbit_map."
+        include_in_morphology: true
+
+      - name: iqr_visit
+        dtype: float
+        source: visit_density
+        description: "Interquartile range visit_density."
+        include_in_morphology: true
+
+      - name: p90_p10_orbit
+        dtype: float
+        source: orbit_map
+        description: "Размах между 90-м и 10-м процентилями orbit_map."
+        include_in_morphology: true
+
+      - name: p90_p10_visit
+        dtype: float
+        source: visit_density
+        description: "Размах между 90-м и 10-м процентилями visit_density."
+        include_in_morphology: true
+
+  multi_scale:
+    role: "scale-dependent morphology"
+    description: >
+      Признаки, вычисленные после downsampling на нескольких масштабах.
+      Нужны для устойчивого различения структуры, которая сохраняется
+      или распадается при смене масштаба.
+    fields:
+      - name: multi_scale_fractal_dim_s1
+        dtype: float
+        source: orbit_map
+        scale: 1
+        description: "Fractal-dimension proxy на исходном масштабе."
+        include_in_morphology: true
+
+      - name: multi_scale_fractal_dim_s2
+        dtype: float
+        source: orbit_map
+        scale: 2
+        description: "Fractal-dimension proxy после downsampling x2."
+        include_in_morphology: true
+
+      - name: multi_scale_fractal_dim_s4
+        dtype: float
+        source: orbit_map
+        scale: 4
+        description: "Fractal-dimension proxy после downsampling x4."
+        include_in_morphology: true
+
+      - name: multi_scale_edge_density_s1
+        dtype: float
+        source: orbit_map
+        scale: 1
+        description: "Плотность границ на масштабе s1."
+        include_in_morphology: true
+
+      - name: multi_scale_edge_density_s2
+        dtype: float
+        source: orbit_map
+        scale: 2
+        description: "Плотность границ на масштабе s2."
+        include_in_morphology: true
+
+      - name: multi_scale_edge_density_s4
+        dtype: float
+        source: orbit_map
+        scale: 4
+        description: "Плотность границ на масштабе s4."
+        include_in_morphology: true
+
+      - name: multi_scale_lacunarity_s1
+        dtype: float
+        source: orbit_map
+        scale: 1
+        description: "Лакунарность как мера неоднородности заполнения на масштабе s1."
+        include_in_morphology: true
+
+      - name: multi_scale_lacunarity_s2
+        dtype: float
+        source: orbit_map
+        scale: 2
+        description: "Лакунарность на масштабе s2."
+        include_in_morphology: true
+
+      - name: multi_scale_lacunarity_s4
+        dtype: float
+        source: orbit_map
+        scale: 4
+        description: "Лакунарность на масштабе s4."
+        include_in_morphology: true
+
+      - name: multi_scale_symmetry_s1
+        dtype: float
+        source: orbit_map
+        scale: 1
+        description: "Симметрия на масштабе s1."
+        include_in_morphology: true
+
+      - name: multi_scale_symmetry_s2
+        dtype: float
+        source: orbit_map
+        scale: 2
+        description: "Симметрия на масштабе s2."
+        include_in_morphology: true
+
+      - name: multi_scale_symmetry_s4
+        dtype: float
+        source: orbit_map
+        scale: 4
+        description: "Симметрия на масштабе s4."
+        include_in_morphology: true
+
+      - name: multi_scale_basin_entropy_s1
+        dtype: float
+        source: visit_density
+        scale: 1
+        description: "Локальная basin-entropy на масштабе s1."
+        include_in_morphology: true
+
+      - name: multi_scale_basin_entropy_s2
+        dtype: float
+        source: visit_density
+        scale: 2
+        description: "Локальная basin-entropy на масштабе s2."
+        include_in_morphology: true
+
+      - name: multi_scale_basin_entropy_s4
+        dtype: float
+        source: visit_density
+        scale: 4
+        description: "Локальная basin-entropy на масштабе s4."
+        include_in_morphology: true
+
+  topology:
+    role: "connectedness and holes"
+    description: >
+      Топологические признаки бинаризованных карт: число компонент,
+      holes, Euler number и устойчивость компонент. Число компонент,
+      holes и Euler number являются стандартными топологическими
+      shape descriptors. [web:120][web:122][web:124]
+    fields:
+      - name: topology_orbit_foreground_fraction
+        dtype: float
+        source: orbit_map
+        description: "Доля foreground-пикселей после robust-thresholding."
+        include_in_morphology: true
+
+      - name: topology_orbit_n_components
+        dtype: float
+        source: orbit_map
+        description: "Число связных компонент в бинарной orbit-карте."
+        include_in_morphology: true
+
+      - name: topology_orbit_largest_component_fraction
+        dtype: float
+        source: orbit_map
+        description: "Доля площади крупнейшей компоненты."
+        include_in_morphology: true
+
+      - name: topology_orbit_mean_component_size
+        dtype: float
+        source: orbit_map
+        description: "Средний размер связной компоненты."
+        include_in_morphology: true
+
+      - name: topology_orbit_std_component_size
+        dtype: float
+        source: orbit_map
+        description: "Стандартное отклонение размеров компонент."
+        include_in_morphology: true
+
+      - name: topology_orbit_holes
+        dtype: float
+        source: orbit_map
+        description: "Число внутренних дыр в foreground."
+        include_in_morphology: true
+
+      - name: topology_orbit_euler_number
+        dtype: float
+        source: orbit_map
+        description: "Euler number = components - holes."
+        include_in_morphology: true
+
+      - name: topology_orbit_component_persistence
+        dtype: float
+        source: orbit_map
+        description: "Доля компонент, переживающих минимальный размерный отсев."
+        include_in_morphology: true
+
+      - name: topology_visit_foreground_fraction
+        dtype: float
+        source: visit_density
+        description: "Доля foreground-пикселей для visit-density карты."
+        include_in_morphology: true
+
+      - name: topology_visit_n_components
+        dtype: float
+        source: visit_density
+        description: "Число связных компонент в бинарной visit-карте."
+        include_in_morphology: true
+
+      - name: topology_visit_largest_component_fraction
+        dtype: float
+        source: visit_density
+        description: "Доля площади крупнейшей visit-компоненты."
+        include_in_morphology: true
+
+      - name: topology_visit_mean_component_size
+        dtype: float
+        source: visit_density
+        description: "Средний размер visit-компоненты."
+        include_in_morphology: true
+
+      - name: topology_visit_std_component_size
+        dtype: float
+        source: visit_density
+        description: "Разброс размеров visit-компонент."
+        include_in_morphology: true
+
+      - name: topology_visit_holes
+        dtype: float
+        source: visit_density
+        description: "Число дыр в бинарной visit-карте."
+        include_in_morphology: true
+
+      - name: topology_visit_euler_number
+        dtype: float
+        source: visit_density
+        description: "Euler number visit-карты."
+        include_in_morphology: true
+
+      - name: topology_visit_component_persistence
+        dtype: float
+        source: visit_density
+        description: "Устойчивость visit-компонент после размерного порога."
+        include_in_morphology: true
+
+  boundary:
+    role: "boundary complexity"
+    description: >
+      Дескрипторы контура: perimeter, compactness, shape index,
+      boundary fractality и статистика кривизны. Периметр, compactness
+      и boundary curvature относятся к стандартным boundary/region
+      descriptors. [web:120][web:122][web:126]
+    fields:
+      - name: boundary_orbit_perimeter_fraction
+        dtype: float
+        source: orbit_map
+        description: "Периметр foreground, нормированный на размер поля."
+        include_in_morphology: true
+
+      - name: boundary_orbit_compactness
+        dtype: float
+        source: orbit_map
+        description: "Компактность области; выше для более компактных форм."
+        include_in_morphology: true
+
+      - name: boundary_orbit_shape_index
+        dtype: float
+        source: orbit_map
+        description: "Индекс сложности формы через perimeter/area."
+        include_in_morphology: true
+
+      - name: boundary_orbit_boundary_density
+        dtype: float
+        source: orbit_map
+        description: "Доля boundary-пикселей."
+        include_in_morphology: true
+
+      - name: boundary_orbit_boundary_fractal_dim
+        dtype: float
+        source: orbit_map
+        description: "Прокси фрактальной размерности самой границы."
+        include_in_morphology: true
+
+      - name: boundary_orbit_boundary_curvature_mean
+        dtype: float
+        source: orbit_map
+        description: "Средняя абсолютная кривизна вдоль boundary."
+        include_in_morphology: true
+
+      - name: boundary_orbit_boundary_curvature_std
+        dtype: float
+        source: orbit_map
+        description: "Разброс кривизны вдоль boundary."
+        include_in_morphology: true
+
+      - name: boundary_visit_perimeter_fraction
+        dtype: float
+        source: visit_density
+        description: "Периметр foreground для visit-карты."
+        include_in_morphology: true
+
+      - name: boundary_visit_compactness
+        dtype: float
+        source: visit_density
+        description: "Компактность visit-областей."
+        include_in_morphology: true
+
+      - name: boundary_visit_shape_index
+        dtype: float
+        source: visit_density
+        description: "Индекс сложности формы visit-областей."
+        include_in_morphology: true
+
+      - name: boundary_visit_boundary_density
+        dtype: float
+        source: visit_density
+        description: "Плотность boundary-пикселей в visit-карте."
+        include_in_morphology: true
+
+      - name: boundary_visit_boundary_fractal_dim
+        dtype: float
+        source: visit_density
+        description: "Fractal boundary proxy для visit-карты."
+        include_in_morphology: true
+
+      - name: boundary_visit_boundary_curvature_mean
+        dtype: float
+        source: visit_density
+        description: "Средняя кривизна boundary в visit-карте."
+        include_in_morphology: true
+
+      - name: boundary_visit_boundary_curvature_std
+        dtype: float
+        source: visit_density
+        description: "Разброс кривизны boundary в visit-карте."
+        include_in_morphology: true
+
+  basin_geometry:
+    role: "component-level shape geometry"
+    description: >
+      Геометрия связных областей: площадь, elongation и заполнение bbox.
+      Такие region descriptors стандартно применяются для количественного
+      описания формы и размеров компонент. [web:92][web:93][web:127]
+    fields:
+      - name: basin_geom_orbit_area_mean
+        dtype: float
+        source: orbit_map
+        description: "Средняя площадь связной компоненты."
+        include_in_morphology: true
+
+      - name: basin_geom_orbit_area_std
+        dtype: float
+        source: orbit_map
+        description: "Разброс площадей компонент."
+        include_in_morphology: true
+
+      - name: basin_geom_orbit_elongation_mean
+        dtype: float
+        source: orbit_map
+        description: "Средняя вытянутость компонент."
+        include_in_morphology: true
+
+      - name: basin_geom_orbit_elongation_std
+        dtype: float
+        source: orbit_map
+        description: "Разброс вытянутости компонент."
+        include_in_morphology: true
+
+      - name: basin_geom_orbit_bbox_fill_mean
+        dtype: float
+        source: orbit_map
+        description: "Средняя доля заполнения bounding box."
+        include_in_morphology: true
+
+      - name: basin_geom_orbit_bbox_fill_std
+        dtype: float
+        source: orbit_map
+        description: "Разброс заполнения bounding box."
+        include_in_morphology: true
+
+      - name: basin_geom_visit_area_mean
+        dtype: float
+        source: visit_density
+        description: "Средняя площадь visit-компонент."
+        include_in_morphology: true
+
+      - name: basin_geom_visit_area_std
+        dtype: float
+        source: visit_density
+        description: "Разброс площадей visit-компонент."
+        include_in_morphology: true
+
+      - name: basin_geom_visit_elongation_mean
+        dtype: float
+        source: visit_density
+        description: "Средняя вытянутость visit-компонент."
+        include_in_morphology: true
+
+      - name: basin_geom_visit_elongation_std
+        dtype: float
+        source: visit_density
+        description: "Разброс вытянутости visit-компонент."
+        include_in_morphology: true
+
+      - name: basin_geom_visit_bbox_fill_mean
+        dtype: float
+        source: visit_density
+        description: "Среднее заполнение bbox для visit-компонент."
+        include_in_morphology: true
+
+      - name: basin_geom_visit_bbox_fill_std
+        dtype: float
+        source: visit_density
+        description: "Разброс заполнения bbox для visit-компонент."
+        include_in_morphology: true
+
+  curvature:
+    role: "local angular complexity"
+    description: >
+      Признаки локальной кривизны и угловой сложности градиентного поля.
+    fields:
+      - name: curvature_orbit_mean
+        dtype: float
+        source: orbit_map
+        description: "Средняя локальная кривизна градиентного направления."
+        include_in_morphology: true
+
+      - name: curvature_orbit_std
+        dtype: float
+        source: orbit_map
+        description: "Разброс локальной кривизны."
+        include_in_morphology: true
+
+      - name: curvature_orbit_p90
+        dtype: float
+        source: orbit_map
+        description: "90-й процентиль кривизны."
+        include_in_morphology: true
+
+      - name: curvature_orbit_p50
+        dtype: float
+        source: orbit_map
+        description: "50-й процентиль кривизны."
+        include_in_morphology: true
+
+      - name: curvature_orbit_corner_density
+        dtype: float
+        source: orbit_map
+        description: "Доля точек с высокой локальной кривизной."
+        include_in_morphology: true
+
+      - name: curvature_visit_mean
+        dtype: float
+        source: visit_density
+        description: "Средняя кривизна для visit-карты."
+        include_in_morphology: true
+
+      - name: curvature_visit_std
+        dtype: float
+        source: visit_density
+        description: "Разброс кривизны для visit-карты."
+        include_in_morphology: true
+
+      - name: curvature_visit_p90
+        dtype: float
+        source: visit_density
+        description: "90-й процентиль кривизны для visit-карты."
+        include_in_morphology: true
+
+      - name: curvature_visit_p50
+        dtype: float
+        source: visit_density
+        description: "50-й процентиль кривизны для visit-карты."
+        include_in_morphology: true
+
+      - name: curvature_visit_corner_density
+        dtype: float
+        source: visit_density
+        description: "Плотность высококриволинейных точек в visit-карте."
+        include_in_morphology: true
+
+  persistence:
+    role: "cross-scale and structural stability"
+    description: >
+      Интегральные показатели устойчивости морфологии между масштабами
+      и между связанными описателями.
+    fields:
+      - name: persistence_scale_consistency
+        dtype: float
+        source: derived
+        description: "Согласованность multi-scale признаков между s1/s2/s4."
+        include_in_morphology: true
+
+      - name: persistence_topology_stability
+        dtype: float
+        source: derived
+        description: "Стабильность топологических дескрипторов."
+        include_in_morphology: true
+
+      - name: persistence_boundary_stability
+        dtype: float
+        source: derived
+        description: "Стабильность boundary-descriptors."
+        include_in_morphology: true
+
+      - name: morphology_persistence_score
+        dtype: float
+        source: derived
+        description: "Интегральный persistence score по scale/topology/boundary."
+        include_in_morphology: true
+
+      - name: observer_stability_proxy
+        dtype: float
+        source: derived
+        description: "Прокси устойчивости observer к высокочастотной рваности поля."
+        include_in_morphology: true
+
+  generator_specific:
+    role: "generator-dependent observables"
+    description: >
+      Специфические признаки, которые используются только для отдельных
+      генераторов и не входят в общий morphology centroid by default.
+    by_generator:
+      duffing_lyapunov:
+        - name: lyapunov_mean
+          dtype: float
+          description: "Среднее значение lyapunov-like поля."
+          include_in_morphology: false
+        - name: lyapunov_std
+          dtype: float
+          description: "Разброс lyapunov-like поля."
+          include_in_morphology: false
+        - name: stability_gradient
+          dtype: float
+          description: "Суммарная градиентная шероховатость поля устойчивости."
+          include_in_morphology: false
+
+      chaotic_scattering:
+        - name: escape_time_mean
+          dtype: float
+          description: "Среднее время/плотность ухода."
+          include_in_morphology: false
+        - name: escape_time_std
+          dtype: float
+          description: "Разброс времени/плотности ухода."
+          include_in_morphology: false
+        - name: basin_count
+          dtype: float
+          description: "Прокси числа basin-режимов."
+          include_in_morphology: false
+
+      orbit_ifs_multi_trap:
+        - name: orbit_occupancy
+          dtype: float
+          description: "Доля сильно занятых областей."
+          include_in_morphology: false
+        - name: trap_interaction_score
+          dtype: float
+          description: "Интегральный score взаимодействия с ловушками."
+          include_in_morphology: false
+        - name: support_area
+          dtype: float
+          description: "Площадь носителя активных областей."
+          include_in_morphology: false
+
+      julia_orbit_trap:
+        - name: escape_ratio
+          dtype: float
+          description: "Доля escaping-like траекторий."
+          include_in_morphology: false
+        - name: trap_response_mean
+          dtype: float
+          description: "Средний отклик на ловушки."
+          include_in_morphology: false
+        - name: connected_component_proxy
+          dtype: float
+          description: "Прокси числа/массы активных компонент."
+          include_in_morphology: false
+
+recommended_sets:
+  morphology_core_v42:
+    description: "Основной набор признаков для robust_zscore, centroids, separability и retrieval."
+    fields:
+      - symmetry_score
+      - fractal_dim_proxy
+      - basin_entropy
+      - density_variation
+      - edge_density
+      - entropy_orbit
+      - entropy_visit
+      - kurt_orbit
+      - skew_orbit
+      - std_orbit
+      - std_visit
+      - mad_orbit
+      - mad_visit
+      - iqr_orbit
+      - iqr_visit
+      - p90_p10_orbit
+      - p90_p10_visit
+      - multi_scale_fractal_dim_s1
+      - multi_scale_fractal_dim_s2
+      - multi_scale_fractal_dim_s4
+      - multi_scale_edge_density_s1
+      - multi_scale_edge_density_s2
+      - multi_scale_edge_density_s4
+      - multi_scale_lacunarity_s1
+      - multi_scale_lacunarity_s2
+      - multi_scale_lacunarity_s4
+      - multi_scale_symmetry_s1
+      - multi_scale_symmetry_s2
+      - multi_scale_symmetry_s4
+      - multi_scale_basin_entropy_s1
+      - multi_scale_basin_entropy_s2
+      - multi_scale_basin_entropy_s4
+      - topology_orbit_foreground_fraction
+      - topology_orbit_n_components
+      - topology_orbit_largest_component_fraction
+      - topology_orbit_mean_component_size
+      - topology_orbit_std_component_size
+      - topology_orbit_holes
+      - topology_orbit_euler_number
+      - topology_orbit_component_persistence
+      - topology_visit_foreground_fraction
+      - topology_visit_n_components
+      - topology_visit_largest_component_fraction
+      - topology_visit_mean_component_size
+      - topology_visit_std_component_size
+      - topology_visit_holes
+      - topology_visit_euler_number
+      - topology_visit_component_persistence
+      - boundary_orbit_perimeter_fraction
+      - boundary_orbit_compactness
+      - boundary_orbit_shape_index
+      - boundary_orbit_boundary_density
+      - boundary_orbit_boundary_fractal_dim
+      - boundary_orbit_boundary_curvature_mean
+      - boundary_orbit_boundary_curvature_std
+      - boundary_visit_perimeter_fraction
+      - boundary_visit_compactness
+      - boundary_visit_shape_index
+      - boundary_visit_boundary_density
+      - boundary_visit_boundary_fractal_dim
+      - boundary_visit_boundary_curvature_mean
+      - boundary_visit_boundary_curvature_std
+      - basin_geom_orbit_area_mean
+      - basin_geom_orbit_area_std
+      - basin_geom_orbit_elongation_mean
+      - basin_geom_orbit_elongation_std
+      - basin_geom_orbit_bbox_fill_mean
+      - basin_geom_orbit_bbox_fill_std
+      - basin_geom_visit_area_mean
+      - basin_geom_visit_area_std
+      - basin_geom_visit_elongation_mean
+      - basin_geom_visit_elongation_std
+      - basin_geom_visit_bbox_fill_mean
+      - basin_geom_visit_bbox_fill_std
+      - curvature_orbit_mean
+      - curvature_orbit_std
+      - curvature_orbit_p90
+      - curvature_orbit_p50
+      - curvature_orbit_corner_density
+      - curvature_visit_mean
+      - curvature_visit_std
+      - curvature_visit_p90
+      - curvature_visit_p50
+      - curvature_visit_corner_density
+      - persistence_scale_consistency
+      - persistence_topology_stability
+      - persistence_boundary_stability
+      - morphology_persistence_score
+      - observer_stability_proxy
+
+  generator_specific_v42:
+    description: "Наборы признаков, подключаемые только в generator-specific анализе."
+    fields_by_generator:
+      duffing_lyapunov:
+        - lyapunov_mean
+        - lyapunov_std
+        - stability_gradient
+      chaotic_scattering:
+        - escape_time_mean
+        - escape_time_std
+        - basin_count
+      orbit_ifs_multi_trap:
+        - orbit_occupancy
+        - trap_interaction_score
+        - support_area
+      julia_orbit_trap:
+        - escape_ratio
+        - trap_response_mean
+        - connected_component_proxy
+
+notes:
+  thresholding_policy: "robust percentile-based thresholding"
+  topology_connectivity: "8-connected foreground"
+  intended_usage:
+    - robust_zscore
+    - frozen_centroids
+    - identity_layer
+    - separability_metrics
+    - retrieval_metrics
+  compatibility:
+    replaces_feature_schema_version: "1.0.0"
+    keeps_legacy_fields: true

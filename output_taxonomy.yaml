@@ -1,0 +1,222 @@
+identity_schema_version: "2.0.0"
+classification_method: rule_based_centroid
+
+centroid_policy:
+  source: frozen_reference_set
+  reference_experiment: reproducibility
+  reference_constraints:
+    noise_level: 0.0
+    deformation_step: 0
+  centroids_frozen: true
+  centroids_version: "1.0"
+  note: >-
+    Centroids are computed once from the reproducibility experiment
+    under the frozen reference slice (noise_level=0.0, deformation_step=0)
+    per generator_name and class_name, using the same normalized morphology
+    feature space as the rest of the benchmark. They are frozen for the entire
+    benchmark cycle and must not be recomputed mid-run.
+
+thresholds:
+  centroid_distance_preserved: 6.0
+  centroid_distance_transformed: 12.0
+  family_affinity_min: 0.25
+  breakage_score_min: 0.75
+  emergent_min_distance_to_any_centroid: 12.0
+  emergent_min_internal_cohesion: 0.5
+
+generator_specific_thresholds:
+  enabled: true
+  fallback_profile: global_default
+  profiles:
+    global_default:
+      centroid_distance_preserved: 6.0
+      centroid_distance_transformed: 12.0
+      family_affinity_min: 0.25
+      breakage_score_min: 0.75
+      emergent_min_distance_to_any_centroid: 12.0
+      emergent_min_internal_cohesion: 0.5
+
+    julia_orbit_trap:
+      centroid_distance_preserved: 3.0
+      centroid_distance_transformed: 6.0
+      family_affinity_min: 0.35
+      breakage_score_min: 0.55
+      emergent_min_distance_to_any_centroid: 8.0
+      emergent_min_internal_cohesion: 0.45
+      note: >-
+        Julia-type dynamics are fragile under deformation and should
+        transition to broken/emergent states earlier than other generators.
+
+    orbit_ifs_multi_trap:
+      centroid_distance_preserved: 7.5
+      centroid_distance_transformed: 14.0
+      family_affinity_min: 0.20
+      breakage_score_min: 0.90
+      emergent_min_distance_to_any_centroid: 14.0
+      emergent_min_internal_cohesion: 0.55
+      note: >-
+        Orbit-IFS structures preserve global morphology for wider deformation
+        windows; density growth alone should not be over-classified as breakage.
+
+    duffing_lyapunov:
+      centroid_distance_preserved: 4.5
+      centroid_distance_transformed: 8.5
+      family_affinity_min: 0.28
+      breakage_score_min: 0.60
+      emergent_min_distance_to_any_centroid: 10.0
+      emergent_min_internal_cohesion: 0.50
+      note: >-
+        Duffing-like responses can remain visually smooth over a broad interval,
+        then transition sharply near bifurcation onset; thresholds should detect
+        that intermediate-to-chaotic regime earlier than the global default.
+
+    chaotic_scattering:
+      centroid_distance_preserved: 5.0
+      centroid_distance_transformed: 9.0
+      family_affinity_min: 0.22
+      breakage_score_min: 0.65
+      emergent_min_distance_to_any_centroid: 10.5
+      emergent_min_internal_cohesion: 0.45
+      note: >-
+        Chaotic scattering may produce rapid basin restructuring and should
+        detect breakage/emergence with moderate sensitivity.
+
+transition_taxonomy:
+  preserved:
+    prefix: preserved_
+    rule: >-
+      centroid_distance <= centroid_distance_preserved
+      AND family_affinity >= family_affinity_min
+
+  transformed:
+    prefix: transformed_
+    rule: >-
+      centroid_distance > centroid_distance_preserved
+      AND centroid_distance <= centroid_distance_transformed
+      AND family_affinity >= family_affinity_min
+
+  broken:
+    prefix: broken_
+    rule: >-
+      breakage_score >= breakage_score_min
+      OR (
+        centroid_distance > centroid_distance_transformed
+        AND family_affinity < family_affinity_min
+      )
+
+  emergent:
+    prefix: emergent_
+    rule: >-
+      centroid_distance > emergent_min_distance_to_any_centroid
+      to ALL known centroids
+      AND local_cohesion >= emergent_min_internal_cohesion
+
+confidence_definition:
+  identity_confidence: >-
+    Piecewise confidence score based on centroid distance relative to
+    centroid_distance_preserved and centroid_distance_transformed.
+  transition_confidence: >-
+    family_affinity score in [0,1], derived from normalized inverse distance
+    ranking across centroids
+  breakage_score: >-
+    normalized combination of (1 - family_affinity) and relative excess
+    distance beyond centroid_distance_transformed
+
+class_output_taxonomy_examples:
+  harmonic_symmetric:
+    - preserved_harmonic_symmetric
+    - transformed_harmonic_symmetric
+    - broken_harmonic_symmetric
+    - emergent_unknown
+  asymmetric_contrastive:
+    - preserved_asymmetric_contrastive
+    - transformed_asymmetric_contrastive
+    - broken_asymmetric_contrastive
+    - emergent_unknown
+  tense_clustered:
+    - preserved_tense_clustered
+    - transformed_tense_clustered
+    - broken_tense_clustered
+    - emergent_unknown
+  dense_irregular:
+    - preserved_dense_irregular
+    - transformed_dense_irregular
+    - broken_dense_irregular
+    - emergent_unknown
+  ostinato_sparse:
+    - preserved_ostinato_sparse
+    - transformed_ostinato_sparse
+    - broken_ostinato_sparse
+    - emergent_unknown
+  transitional_balanced:
+    - preserved_transitional_balanced
+    - transformed_transitional_balanced
+    - broken_transitional_balanced
+    - emergent_unknown
+
+generator_specific_feature_isolation:
+  enabled: true
+  excluded_from_centroid_distance:
+    - lyapunov_mean
+    - lyapunov_std
+    - stability_gradient
+    - escape_time_mean
+    - escape_time_std
+    - escape_ratio
+    - orbit_occupancy
+    - support_area
+    - trap_interaction_score
+    - trap_response_mean
+    - basin_count
+    - connected_component_proxy
+  rule: >-
+    Generator-specific features MUST NOT be used as inputs to output_class
+    classification or centroid distance. They are used only for post-hoc
+    explanatory analysis per generator.
+
+morphology_feature_set:
+  - symmetry_score
+  - fractal_dim_proxy
+  - basin_entropy
+  - density_variation
+  - edge_density
+  - entropy_orbit
+  - entropy_visit
+  - kurt_orbit
+  - skew_orbit
+  - std_orbit
+  - std_visit
+
+classification_runtime:
+  threshold_profile_resolution:
+    source: generator_name
+    fallback: global_default
+    required: true
+  manifest_fields_required:
+    - output_class
+    - transition_type
+    - identity_confidence
+    - identity_breakage_score
+    - centroid_distance
+    - nearest_centroid_class
+    - approx_morphology_score
+    - threshold_profile_used
+  notes:
+    - threshold_profile_used must be written for every classified run.
+    - output_class must use the assigned transition prefix plus class label when applicable.
+    - emergent classifications may use emergent_unknown if no class affinity is sufficient.
+    - If generator_name is missing, classification must fall back to global_default and mark threshold_profile_used accordingly.
+
+error_policy:
+  silent_nan_forbidden: true
+  required_statuses:
+    - success
+    - failed
+    - partial
+    - skipped
+  required_failure_fields:
+    - metric_missing_reason
+    - module_name
+    - version
+    - input_id
+    - failure_stage
