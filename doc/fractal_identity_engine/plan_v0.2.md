@@ -243,7 +243,10 @@ Responsibilities:
 ### Product risks
 - Too many controls make the MVP feel technical.
 - Too few controls make it feel shallow.
+
 - If the preview is weak, the product loses the "wow" moment.
+
+ebebe24 (docs: add Fractal Identity Engine docs and cleanup old architect MVP doc)
 
 ### Technical risks
 - Browser preview rendering may be slower than expected.
