@@ -44,3 +44,5 @@ storage/
 # Python caches
 __pycache__/
 *.py[cod]
+# Local test data and exploratory test runs
+tests/
