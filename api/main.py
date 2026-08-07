@@ -13,6 +13,7 @@ import mimetypes
 import json
 import numpy as np
 import time
+import logging
 
 from .models_db import (
     SessionLocal,
@@ -35,6 +36,16 @@ from .schemas import (
     ProjectResponse,
     AnalyzeResponse,
 )
+
+# Composition pipeline — опциональный импорт
+try:
+    from lib.composition.composition_adapter import build_planner_input
+    from lib.composition.composition_planner import build_composition_plan
+    _COMPOSITION_AVAILABLE = True
+except ImportError:
+    _COMPOSITION_AVAILABLE = False
+
+logger = logging.getLogger(__name__)
 
 # =======================
 # Storage utilities
@@ -152,6 +163,26 @@ def cleanup_audio_storage(
                 except OSError:
                     continue
     return deleted
+
+
+def _build_composition_plan_safe(perceptual: dict, features: dict, style_profile_slug: str, seed: int):
+    """
+    Строит CompositionPlan из доступных данных.
+    При любой ошибке возвращает None — рендерер продолжит в legacy-режиме.
+    """
+    if not _COMPOSITION_AVAILABLE:
+        return None
+    try:
+        planner_input = build_planner_input(
+            features=features,
+            perceptual=perceptual,
+            style_profile_slug=style_profile_slug,
+            seed=seed,
+        )
+        return build_composition_plan(planner_input)
+    except Exception as exc:
+        logger.warning("CompositionPlan build failed (non-critical): %s", exc)
+        return None
 
 
 # =======================
@@ -348,31 +379,28 @@ async def analyze_audio(project_id: str, track_id: str, db=Depends(get_db)):
     clean_features = {k: _to_python_scalar(v) for k, v in features.items()}
     clean_perceptual = {k: _to_python_scalar(v) for k, v in perceptual_vector.items()}
 
+    api_feature_keys = [
+        "bpm", "key", "energy", "spectral_centroid", "brightness",
+        "onset_rate_hz", "onset_count", "beat_regularity", "beat_count",
+        "dynamic_range", "duration_sec", "repetition_score", "silence_rate",
+        "harmonic_stability", "harmonic_change_rate_hz", "spectral_flatness",
+        "high_frequency_energy_ratio", "band_energy_0_250_hz",
+        "band_energy_250_2000_hz", "band_energy_2000_6000_hz",
+        "band_energy_6000_nyquist",
+    ]
+
+    api_features = {
+        key: clean_features[key]
+        for key in api_feature_keys
+        if key in clean_features
+    }
+
     return AnalyzeResponse(
         status="success",
         project_id=project_id,
         track_id=track_id,
         analysis_id=analysis_id,
-        features={
-            "bpm": clean_features["bpm"],
-            "key": clean_features["key"],
-            "energy": clean_features["energy"],
-            "spectral_centroid": clean_features["spectral_centroid"],
-            "brightness": clean_features["brightness"],
-            "rhythm_density": clean_features["rhythm_density"],
-            "dynamic_range": clean_features["dynamic_range"],
-            "duration_sec": clean_features["duration_sec"],
-            "repetition_score": clean_features["repetition_score"],
-            "silence_rate": clean_perceptual["silence_rate"],
-            "harmonic_stability": clean_perceptual["harmonic_stability"],
-            "harmonic_change_rate_hz": clean_perceptual[
-                "harmonic_change_rate_hz"
-            ],
-            "spectral_flatness": clean_perceptual["spectral_flatness"],
-            "high_frequency_energy_ratio": clean_perceptual[
-                "high_frequency_energy_ratio"
-            ],
-        },
+        features=api_features,
         suggested_music_style=str(clean_features["suggested_music_style"]),
         perceptual=clean_perceptual,
     )
@@ -624,6 +652,33 @@ async def generate_poster(project_id: str, analysis_id: str, preset_id: str, db=
         variation_seed=int(render_params_dict.get("variation_seed", 0)),
     )
 
+    # --- Строим CompositionPlan ---
+    # Собираем features из analysis_db для planner (только устойчивые поля)
+    analysis_features_for_planner = {
+        "bpm": analysis_db.bpm or 120.0,
+        "energy": analysis_db.energy or 0.1,
+        "repetition_score": analysis_db.repetition_score or 0.5,
+        # band_energy полей нет в AudioAnalysisDB — берём из perceptual или 0
+        # (planner использует дефолты если ключей нет)
+    }
+    style_slug_for_planner = render_params_dict.get("style_profile_slug", "default")
+    seed_for_planner = int(render_params_dict.get("variation_seed", 0))
+
+    composition_plan = _build_composition_plan_safe(
+        perceptual=perceptual,
+        features=analysis_features_for_planner,
+        style_profile_slug=style_slug_for_planner,
+        seed=seed_for_planner,
+    )
+
+    if composition_plan is not None:
+        logger.info(
+            "CompositionPlan built: archetype=%s density=%.3f motifs=%d",
+            composition_plan.archetype,
+            composition_plan.density,
+            composition_plan.motif.count if composition_plan.motif else 0,
+        )
+
     poster_id = str(uuid4())
     poster_filename = f"{poster_id}.png"
     poster_path = os.path.join(POSTER_ROOT, poster_filename)
@@ -632,6 +687,7 @@ async def generate_poster(project_id: str, analysis_id: str, preset_id: str, db=
         render_params=render_params,
         perceptual=perceptual,
         output_path=poster_path,
+        composition_plan=composition_plan,
     )
 
     now = datetime.utcnow()
@@ -654,8 +710,8 @@ async def generate_poster(project_id: str, analysis_id: str, preset_id: str, db=
     db.commit()
     db.refresh(job_db)
 
-    # имя генератора пишем в render_params_dict для отчёта
     render_params_dict["generator_name"] = poster_meta.get("generator_name")
+    render_params_dict["composition_archetype"] = poster_meta.get("composition_archetype")
 
     return GenerationJob(
         id=job_db.id,
