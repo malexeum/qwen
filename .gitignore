@@ -3,7 +3,6 @@ venv/
 .env/
 .venv/
 env/
-
 # Šíè ¨ á«ã¦¥¡­ë¥ ä ©«ë Python
 __pycache__/
 *.py[cod]
@@ -12,37 +11,30 @@ __pycache__/
 *.bak
 *.configs
 *.api
-
-
 # ¥§ã«ìâ âë ¡¥­ç¬ àª®¢ ¨ ¢à¥¬¥­­ë¥ ª â «®£¨
 output_v4/
 sanity_check_outputs/
 results/
 logs/
 tmp/
-
 # íª ¯ë
 backup_qwen_local/
-
 # IDE / à¥¤ ªâ®àë
 .vscode/
 .idea/
 *.swp
-
 # Jupyter / ¢à¥¬¥­­ë¥ ­®ãâ¡ãª¨
 *.ipynb_checkpoints
 .ipynb_checkpoints/
-
 # Local experiment data and generated outputs
 data/
 output/
 storage/
-
 # Local Python environment
 .venv/
-
 # Python caches
 __pycache__/
 *.py[cod]
 # Local test data and exploratory test runs
 tests/
+configs/
