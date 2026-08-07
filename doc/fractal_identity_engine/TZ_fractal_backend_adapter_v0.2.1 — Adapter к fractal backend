@@ -1,0 +1,348 @@
+TZ_fractal_backend_adapter_v0.2.1 — Adapter к fractal backend
+0. Контекст
+Что уже есть:
+
+Фрактальная лаборатория на Python:
+
+генераторы: julia_orbit_trap, orbit_ifs_multi_trap, duffing_lyapunov, chaotic_scattering, random_baseline, smooth_geometric_baseline, single_parameter_map_baseline;
+
+конфиги через YAML/manifest;
+
+feature_schema_v2 (89 morphology features) и identity_schema_v2;
+
+benchmark-runner_v4_2.py как массовый исполнитель и исследовательский стенд.
+
+Архитектура продукта:
+
+upload → analyze → PerceptualLatent → StyleEngine (RenderParams) уже реализованы;
+Memory
+proposal_perceptual_layer.md
+
+RenderParams описаны и используются (symmetry_bias, recursion_depth, density_level, noise_level, motion_intensity, texture_complexity, layout_macro_shape, palette_id, visual_style_slug, variation_seed).
+
+Задача этого ТЗ — не писать новый фрактальный генератор, а:
+
+использовать существующие генераторы как backend;
+
+сделать adapter, который:
+
+принимает RenderParams,
+
+выбирает генератор и конфиг,
+
+вызывает фрактальную лабораторию,
+
+получает PNG (или raw image) и метаданные.
+
+1. Общая цель
+Реализовать adapter-слой между StyleEngine и фрактальной лабораторией. Цель — получить рабочий путь:
+
+RenderParams → fractal backend → PNG-изображение → PosterAsset
+
+без переписывания геометрии с нуля.
+
+2. Слои адаптера
+Адаптер должен состоять из трёх уровней:
+
+Generator API — единый способ вызвать конкретный генератор лаборатории и получить картинку.
+
+Generator selection — выбор генератора по RenderParams / стилю.
+
+Param mapping — перевод RenderParams → generator_config.
+
+3. Уровень 1: Generator API (single render)
+3.1 Точка входа
+Нужно выделить функцию:
+
+python
+
+def render_fractal_image(
+    generator_name: str,
+    generator_config: dict,
+    output_path: str
+) -> dict:
+    """
+    Рендерит одну картинку заданным генератором и конфигом.
+    Возвращает метаданные (например, итоговые параметры, seed, версии).
+    """
+Требования:
+
+использовать существующий код из lib/* / benchmark-runner_v4_2.py;
+
+не загружать полную job matrix, а выполнять один run;
+
+поддерживать хотя бы:
+
+duffing_lyapunov,
+
+single_parameter_map_baseline,
+
+smooth_geometric_baseline,
+
+random_baseline,
+
+при возможности — остальные.
+
+3.2 Метаданные
+Функция должна возвращать хотя бы:
+
+generator_name
+
+generator_version
+
+config_used (фактический конфиг / параметры)
+
+output_path
+
+feature_schema_version, identity_schema_version (если применялся анализ)
+
+возможно — идентификатор run’а (для дальнейшего анализа)
+
+Если feature/identity анализ для одиночного рендера подключить сложно — можно сделать это отдельным шагом позже; главное — обеспечить визуальный рендер.
+
+4. Уровень 2: выбор генератора (Generator selection)
+4.1 Простое правило выбора генератора
+На MVP достаточно rule-based выбора:
+
+style_profile_slug / suggested_music_style → generator_name:
+
+Пример:
+
+ambient / simple / стабильные треки:
+
+generator_name = "smooth_geometric_baseline" (для “мягких” сцен, но с guardrails по identity);
+
+tense_cluster / complex / энергичные:
+
+generator_name = "duffing_lyapunov" (главный физически содержательный генератор);
+
+harmonic_symmetric / periodic:
+
+generator_name = "single_parameter_map_baseline" (хорош для периодики и симметрии);
+
+экспериментальные / stress:
+
+generator_name = "random_baseline" (чистый негативный контроль);
+
+Задача:
+
+реализовать функцию:
+
+python
+
+def select_generator_for_render(render_params: RenderParams) -> str:
+    ...
+которая использует:
+
+style_profile_slug,
+
+перцептивные оси (energy, tension, section_complexity),
+
+и возвращает generator_name.
+
+Важно: логика выбора должна быть конфигурируемой (через YAML или хотя бы таблицу), а не жёстко прошитой — но на MVP допустим кодовый вид.
+
+5. Уровень 3: Param mapping (RenderParams → generator_config)
+5.1 Цель
+Построить функцию:
+
+python
+
+def map_render_params_to_generator_config(
+    render_params: RenderParams,
+    generator_name: str
+) -> dict:
+    ...
+которая:
+
+принимает high-level RenderParams;
+
+возвращает generator_config в формате, ожидаемом фрактальной лабораторией.
+
+5.2 Черновой mapping для одного генератора
+Начать с одного генератора (например, duffing_lyapunov) и сделать минимальный mapping:
+
+Пример (идея):
+
+recursion_depth:
+
+→ число итераций/длина траектории:
+
+iterations = base_iter + int(recursion_depth * iter_range)
+
+density_level:
+
+→ количество стартовых точек/орбит:
+
+n_orbits = base_orbits + int(density_level * orbits_range)
+
+symmetry_bias:
+
+→ выбор симметричных режимов (если они есть в генераторе), либо:
+
+параметр, контролирующий использование симметричных начальных условий;
+
+noise_level:
+
+→ амплитуда вариации начальных условий/параметров:
+
+noise_amplitude = f(noise_level)
+
+motion_intensity:
+
+→ диапазон параметров, создающих более “бурные” траектории;
+
+texture_complexity:
+
+→ включение/выключение дополнительных функций, слоёв, variational параметров.
+
+Требование:
+
+даже если mapping грубый — он должен быть реплицируемым и документированным:
+
+“simmetry_bias влияет на такие-то параметры генератора X”,
+
+“density_level влияет на N_orbits” и т.д.
+
+5.3 Расширение на другие генераторы
+После duffing_lyapunov:
+
+добавить mapping для:
+
+single_parameter_map_baseline (симметрия / периодики),
+
+smooth_geometric_baseline (для ambient),
+
+random_baseline (как стресс-генератор).
+
+Для каждого:
+
+составить мини-таблицу:
+
+“какие параметры генератора” ← “какие RenderParams/перцептивные оси”.
+
+6. Связка Adapter ↔ PosterRenderer
+6.1 Обновление render_poster (серверная версия)
+Вместо того, чтобы писать новый геометрический слой, серверный render_poster на MVP может быть thin wrapper’ом над adapter’ом:
+
+python
+
+def render_poster(
+    render_params: RenderParams,
+    output_path: str,
+    width: int = 1200,
+    height: int = 1200,
+    mode: str = "final"
+) -> PosterMetadata:
+    generator_name = select_generator_for_render(render_params)
+    generator_config = map_render_params_to_generator_config(render_params, generator_name)
+    meta = render_fractal_image(generator_name, generator_config, output_path)
+    # при необходимости apply_visual_style(image, visual_style_slug)
+    return {
+        "width": width,
+        "height": height,
+        "palette_id": render_params.palette_id,
+        "style_profile_slug": render_params.style_profile_slug,
+        "interpretation_profile_slug": render_params.interpretation_profile_slug,
+        "visual_style_slug": render_params.visual_style_slug,
+        "generator_name": generator_name,
+        "generator_meta": meta,
+        "created_at": ...
+    }
+Таким образом:
+
+серверный renderer не переписывает фрактальный ядро;
+
+он использует существующие генераторы как “двигатель”;
+
+всё, что мы обсуждали про macro/meso/visual_style остаётся как high-level спецификация, которую Java-рендер позже реализует у себя.
+
+7. Тесты и QA адаптера
+7.1 Тесты на уровне adapter’а
+Для одного генератора (например, duffing_lyapunov):
+
+взять набор RenderParams (несколько разных стилей/треков);
+
+прогнать:
+
+select_generator_for_render;
+
+map_render_params_to_generator_config;
+
+render_fractal_image;
+
+убедиться, что:
+
+изображения создаются;
+
+при одинаковых RenderParams (и variation_seed) результат детерминирован;
+
+изменения RenderParams приводят к видимым изменениям фрактала.
+
+7.2 Связь с feature/identity
+Опционально (но желательно):
+
+прогнать полученные картинки через feature/identity-пайплайн (как в benchmark-runner);
+
+сравнить:
+
+morphology_persistence,
+
+identity_breakage,
+
+family_continuity,
+
+class_stability_index;
+
+Цель:
+
+проверить, что adapter:
+
+не превращает всё в smooth_geometric generic;
+
+сохраняет “характер” разных классов/стилей.
+
+8. Нефункциональные требования
+Adapter не ломает benchmark-runner и лабораторию:
+
+использует их API аккуратно;
+
+не меняет схемы файлов/таблиц.
+
+Производительность:
+
+одиночный рендер должен быть приемлем по времени (можно использовать упрощённые конфиги/меньшую детализацию для product-потока).
+
+Детерминизм:
+
+при фиксированных RenderParams и заданном seed (variation_seed) adapter должен выдавать один и тот же конфиг для генератора и один и тот же фрактал.
+
+9. Definition of Done
+Adapter к fractal backend считается реализованным, когда:
+
+Есть функция render_fractal_image(generator_name, generator_config, output_path):
+
+использующая уже существующие генераторы;
+
+возвращающая метаданные.
+
+Есть функции:
+
+select_generator_for_render(RenderParams) → generator_name,
+
+map_render_params_to_generator_config(RenderParams, generator_name) → dict.
+
+Серверный render_poster:
+
+может использовать adapter для рендера хотя бы через один генератор (MVP: duffing_lyapunov);
+
+интегрирован с GenerationJob/PosterAsset (или хотя бы выдаёт пути к PNG в тестовом сценарии).
+
+Минимальный набор тестов:
+
+3–5 разных RenderParams → разные изображения;
+
+повторный запуск с тем же seed → те же изображения.
+
+Adapter не нарушает работу benchmark-runner и не ломает существующую identity-лабораторию.
+

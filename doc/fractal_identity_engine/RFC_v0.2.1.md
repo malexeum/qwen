@@ -162,3 +162,9 @@ v0.2.1 explicitly does not aim to:
 - `resolve-style` produces different `RenderParams` depending on interpretation profile.
 - Poster visuals visibly differ per interpretation profile while remaining tied to the audio.
 - The MVP user flow remains intact.
+
+Implementation targets
+
+Reference implementation: Python renderer (optional), используемый для R&D, benchmark’ов, визуальных тестов.
+
+Production implementation: Java renderer на стороне клиента, реализующий тот же контракт RenderParams / visual_style_slug и те же принципы flow-/фрактальной геометрии.

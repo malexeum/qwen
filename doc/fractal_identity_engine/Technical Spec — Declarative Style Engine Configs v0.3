@@ -1,0 +1,595 @@
+Technical Spec — Declarative Style Engine Configs v0.3
+1. Цель
+Перевести стиль-движок в declarative-режим:
+
+вынести axis_weights и mapping_rules из engine.py в YAML-конфиги InterpretationProfile;
+
+вынести palette- и layout-правила из кода в StyleProfile и отдельные palette-конфиги;
+
+оставить engine.py только интерпретатором конфигов и alias-мэппинга slug’ов.
+
+Цель — любое изменение стиля делать через YAML, не трогая Python, по аналогии с тем, как в StyleGAN-подобных системах ядро работает с W+/latent-пространством, а конкретные задачи задаются конфигами/encoder’ом. [.00951]
+
+2. Архитектурные принципы
+Разделение слоёв:
+
+AudioAnalysis — low-level и структурные признаки.
+
+PerceptualLatent — перцептивные оси (energy, tension, density, brightness, stability, smoothness, repetition, section_complexity, macro_shape_hint).
+proposal_perceptual_layer.md
+
+StyleProfile — музыкально-визуальный стиль (rock, blues_jazz, ambient, electronic, soundtrack, default).
+
+InterpretationProfile — как читать перцептивное пространство в визуальные решения.
+
+engine.py — интерпретатор конфигов → RenderParams.
+
+Конфиг > код:
+
+Все численные коэффициенты и mapping rules должны жить в YAML/JSON;
+
+Python-код только:
+
+читает конфиги;
+
+нормализует slug’и;
+
+применяет mapping в фиксированном порядке.
+
+Explainability chain:
+
+для любой компоненты RenderParams можно проследить:
+
+какие оси (PerceptualLatent);
+
+с какими весами (axis_weights);
+
+по каким правилам (mapping_rules);
+
+через какой профиль (InterpretationProfile, StyleProfile)
+
+повлияли на неё.
+proposal_perceptual_layer.md
+
+3. Формат InterpretationProfile (YAML)
+3.1 Базовая структура
+text
+
+slug: organic_fluid
+name: Organic / Fluid
+description: >
+  Soft, continuous, symmetrical structures with low noise and smooth evolution.
+axis_weights:
+  energy: 0.4
+  tension: 0.3
+  density: 0.3
+  brightness: 0.2
+  stability: 0.5
+  smoothness: 0.6
+  repetition: 0.4
+
+mapping_rules:
+  symmetry_bias:
+    base: 0.5
+    formula: >
+      base
+      + 0.3 * stability
+      + 0.2 * smoothness
+      - 0.2 * tension
+
+  recursion_depth:
+    base: 0.5
+    formula: >
+      base
+      + 0.3 * density
+      + 0.2 * energy
+      + 0.2 * repetition
+
+  density_level:
+    base: 0.4
+    formula: >
+      base
+      + 0.4 * density
+      + 0.2 * energy
+
+  noise_level:
+    base: 0.2
+    formula: >
+      base
+      + 0.3 * tension
+      - 0.3 * smoothness
+
+  motion_intensity:
+    base: 0.3
+    formula: >
+      base
+      + 0.4 * energy
+      + 0.2 * density
+      - 0.3 * stability
+
+  texture_complexity:
+    base: 0.5
+    formula: >
+      base
+      + 0.4 * repetition
+      + 0.3 * section_complexity
+
+  layout_macro_shape:
+    rules:
+      - when: macro_shape_hint == "ABA_like"
+        value: "ABA_like"
+      - when: macro_shape_hint == "linear"
+        value: "linear"
+      - default: "unknown"
+3.2 Требования к реализации
+Parser:
+
+читает YAML-файл;
+
+парсит axis_weights как словарь;
+
+парсит mapping_rules:
+
+для скалярных параметров (symmetry_bias, recursion_depth и т.д.) — как base+formula (строка);
+
+для layout_macro_shape — как список условных правил.
+
+Evaluation:
+
+engine.py обязан:
+
+подставлять в formula значения осей PerceptualLatent (energy, tension, …);
+
+безопасно вычислять формулы (ограниченный expression evaluator или собственная простая DSL);
+
+clamp’ить результаты в (или нужный диапазон).
+arxiv
+
+Никаких "магических" чисел в engine.py — только чтение base/коэффициентов из YAML.
+proposal_perceptual_layer.md
+
+4. Формат StyleProfile (YAML)
+4.1 Базовая структура
+text
+
+slug: blues_jazz
+music_style: blues_jazz
+visual_mood: warm_organic
+
+palette:
+  default: sepia_dark
+  by_brightness:
+    low: sepia_dark
+    medium: amber_dark
+    high: ivory_dark
+
+contrast: medium
+geometry: organic
+density:
+  base: 0.5
+  bias: 0.1   # общий сдвиг density_level
+
+motion_intensity:
+  base: 0.3
+  bias: -0.05
+
+noise_level:
+  base: 0.3
+  bias: 0.0
+
+symmetry_bias:
+  base: 0.5
+  bias: 0.1
+
+complexity_bias:
+  base: 0.5
+  bias: 0.1
+
+layout:
+  macro_shape_defaults:
+    default: "ABA_like"
+    high_tension: "explosive"
+    low_tension: "stable"
+4.2 Palette-конфиги
+При желании можно сделать отдельный palettes.yaml:
+
+text
+
+palettes:
+  sepia_dark:
+    primary: "#5c4033"
+    secondary: "#a47551"
+    accent: "#d6b39a"
+    background: "#1b120e"
+
+  neon_dark:
+    primary: "#00f5ff"
+    secondary: "#ff00ff"
+    accent: "#ffea00"
+    background: "#020014"
+StyleProfile тогда будет ссылаться на palette_id, а подробности палитры — уже дело renderer’а.
+
+5. Обновление engine.py
+5.1 Роль engine.py
+engine.py должен:
+
+нормализовать входной style_profile_slug (alias-мэппинг — оставить);
+
+загрузить:
+
+StyleProfile по slug;
+
+InterpretationProfile по slug;
+
+вычислить:
+
+base layer (из StyleProfile);
+
+perceptual layer (из InterpretationProfile + PerceptualLatent);
+
+user layer (из UserPreset);
+
+собрать RenderParams.
+
+5.2 Удалить из engine.py
+любые численные коэффициенты, типа:
+
+“для rock увеличим density на 0.2”;
+
+“для ambient уменьшим noise на 0.3”;
+
+правила выбора палитры по яркости;
+
+жёстко прошитые зависимости между per-axis значениями и RenderParams.
+
+Все эти вещи должны переместиться в YAML.
+
+5.3 Оставить в engine.py
+alias-мэппинг slug’ов:
+
+jazz/blues → blues_jazz;
+
+classical/cinematic → soundtrack;
+
+techno/electro/electronic_music → electronic;
+
+space → ambient;
+
+pop → rock;
+
+mixed → default.
+
+_safe_float и подобные защитные функции;
+
+замечательно маленький слой glue-кода:
+
+python
+
+style_profile = style_registry[style_slug]
+interp_profile = interp_registry[interp_slug]
+perceptual = load_or_build_perceptual(analysis_id)
+preset = load_or_default_preset(...)
+
+render_params = resolve_render_params(
+    perceptual,
+    style_profile,
+    interp_profile,
+    preset
+)
+6. Поведение resolve_render_params
+6.1 Порядок слоёв
+Base (StyleProfile):
+
+прочесть base/bias для:
+
+symmetry_bias, recursion_depth, density_level, noise_level, motion_intensity, texture_complexity;
+
+применить bias (жёстко, без учёта перцепции).
+
+Perceptual (InterpretationProfile):
+
+для каждого параметра:
+
+взять base из текущего значения;
+
+применить formula из YAML с использованием осей PerceptualLatent:
+
+energy, tension, density, brightness, stability, smoothness, repetition, section_complexity, macro_shape_hint;
+
+результат обрезать по допустимому диапазону.
+
+User (UserPreset):
+
+применить слайдеры как дополнительный bias:
+
+complexity → recursion_depth, texture_complexity;
+
+symmetry → symmetry_bias;
+
+density → density_level;
+
+noise → noise_level;
+
+motion → motion_intensity.
+
+диапазон влияния слайдеров задаётся в конфиге (например, ±0.2 от текущего значения).
+
+6.2 Determinism
+Никакого случайного поведения внутри engine;
+
+variation_seed вычисляется как хэш идентификаторов (ты это уже используешь — просто зафиксировать).
+
+7. Guardrails: морфология vs идентичность
+7.1 Мотивация
+Benchmark-runner показал риск:
+
+пары с высоким morphology_persistence и высоким identity_breakage означают, что морфологическая похожесть (гладкая, красивая форма) не гарантирует сохранения музыкальной идентичности. [class_generator_metrics.csv]
+
+Для постера это означает:
+
+нельзя доверять только “красивости” фрактала;
+
+нужен слой, который ограничивает морфологическую гладкость, если трек структурно сложен, и, наоборот, разрешает гладкость для простых, стабильных треков. [class_generator_metrics.csv]
+proposal_perceptual_layer.md
+
+7.2 Новая derived-ось в PerceptualLatent
+Добавить derived-поле (можно без сохранения в БД, как runtime-поле):
+
+morphology_guard (или identity_risk):
+
+Пример вычисления (conceptual):
+
+если:
+
+section_complexity высокая,
+
+repetition низкая,
+
+tension высокая,
+
+то morphology_guard → высокий (от 0 до 1).
+
+если:
+
+section_complexity низкая,
+
+repetition высокая,
+
+stability высокая,
+
+то morphology_guard → низкий.
+
+Реализация может быть простым rule-based mapping:
+
+𝑚
+𝑜
+𝑟
+𝑝
+ℎ
+𝑜
+𝑙
+𝑜
+𝑔
+𝑦
+_
+𝑔
+𝑢
+𝑎
+𝑟
+𝑑
+=
+𝑤
+1
+⋅
+𝑠
+𝑒
+𝑐
+𝑡
+𝑖
+𝑜
+𝑛
+_
+𝑐
+𝑜
+𝑚
+𝑝
+𝑙
+𝑒
+𝑥
+𝑖
+𝑡
+𝑦
++
+𝑤
+2
+⋅
+𝑡
+𝑒
+𝑛
+𝑠
+𝑖
+𝑜
+𝑛
+−
+𝑤
+3
+⋅
+𝑟
+𝑒
+𝑝
+𝑒
+𝑡
+𝑖
+𝑡
+𝑖
+𝑜
+𝑛
+−
+𝑤
+4
+⋅
+𝑠
+𝑡
+𝑎
+𝑏
+𝑖
+𝑙
+𝑖
+𝑡
+𝑦
+morphology_guard=w 
+1
+​
+ ⋅section_complexity+w 
+2
+​
+ ⋅tension−w 
+3
+​
+ ⋅repetition−w 
+4
+​
+ ⋅stability
+с последующим clamp в.
+arxiv
++1
+proposal_perceptual_layer.md
+
+7.3 Формат guardrails в InterpretationProfile
+В InterpretationProfile добавить необязательный раздел guardrails:
+
+text
+
+guardrails:
+  - name: complex_track_guard
+    when: >
+      section_complexity > 0.6 and repetition < 0.4 and tension > 0.5
+    actions:
+      symmetry_bias:
+        max: 0.6
+      noise_level:
+        min: 0.2
+      texture_complexity:
+        min: 0.5
+
+  - name: simple_track_smoothing
+    when: >
+      section_complexity < 0.4 and repetition > 0.6 and stability > 0.6
+    actions:
+      symmetry_bias:
+        min: 0.6
+      noise_level:
+        max: 0.3
+      texture_complexity:
+        max: 0.5
+Требования:
+
+when — логическое выражение над полями PerceptualLatent:
+
+energy, tension, density, brightness, stability, smoothness, repetition, section_complexity, macro_shape_hint, morphology_guard.
+
+actions:
+
+для каждого параметра (symmetry_bias, noise_level, texture_complexity, etc.) можно задавать min и/или max:
+
+min — нижняя граница (если рассчитанное значение ниже, поднять до min);
+
+max — верхняя граница (если выше, опустить до max).
+
+7.4 Поведение engine.py с guardrails
+В engine.py после применения трёх слоёв (StyleProfile → InterpretationProfile → UserPreset):
+
+Вычислить/получить PerceptualLatent и derived-ось morphology_guard.
+Memory
+proposal_perceptual_layer.md
+
+Пройти по списку guardrails из InterpretationProfile:
+
+для каждого guardrail:
+
+оценить when с подстановкой текущих значений осей перцептива;
+
+если условие истинно:
+
+применить actions:
+
+обновить параметры RenderParams, соблюдая min/max.
+
+Логировать:
+
+какие guardrails были применены;
+
+какие параметры они изменили.
+
+Важно:
+
+guardrails не пересчитывают параметры с нуля, а только ограничивают уже рассчитанные значения.
+
+guardrails работают поверх user sliders: если пользователь руками выкрутил всё “в гладкость”, а трек сложный, guardrail всё равно не даст уйти за max для symmetry_bias и min для texture_complexity. [class_generator_metrics.csv]
+
+7.5 Примеры для конкретных профилей
+Ambient / minimal
+Guardrail “simple_track_smoothing” активен чаще:
+
+ambient обычно имеет низкий section_complexity, высокую repetition, высокую stability;
+
+профиль разрешает более высокий symmetry_bias, более низкий noise_level, более низкую texture_complexity.
+
+Complex soundtrack / jazz / прогрессив
+Guardrail “complex_track_guard” защищает от “слишком гладкого” фрактала:
+
+высокая section_complexity и tension, низкая repetition → clamp:
+
+симметрия не слишком высокая,
+
+шум и текстура не ниже заданного порога.
+
+8. Тесты и валидация
+8.1 Static config tests
+При старте:
+
+загрузить все StyleProfile и InterpretationProfile;
+
+проверить:
+
+наличие обязательных полей;
+
+корректность formula (можно тестовым вызовом с фиктивным PerceptualLatent);
+
+отсутствие дублирующихся slug’ов.
+
+8.2 Behavior tests
+Для каждого тестового трека/профиля из твоего отчёта:
+
+проверить, что:
+
+при одинаковых PerceptualLatent и профилях численные RenderParams совпадают с предыдущим behavior (в пределах допустимых изменений);
+
+изменение конфигов без изменения кода даёт ожидаемое изменение RenderParams.
+
+9. Definition of Done (для этого модуля)
+В engine.py нет жёстко прошитых:
+
+palette-правил,
+
+axis→param mapping,
+
+численных bias для стилей.
+
+Все:
+
+axis_weights,
+
+mapping_rules,
+
+palette- и layout-правила
+живут в YAML InterpretationProfile и StyleProfile/palette-конфигах.
+
+/resolve-style:
+
+читает конфиги;
+
+строит RenderParams через PerceptualLatent + профили + пресеты;
+
+остаётся детерминированным.
+
