@@ -10,8 +10,9 @@ __pycache__/
 *.log
 *.tmp
 *.bak
-*.api
 *.configs
+*.api
+
 
 # ¥§ã«ìâ âë ¡¥­ç¬ àª®¢ ¨ ¢à¥¬¥­­ë¥ ª â «®£¨
 output_v4/
@@ -31,3 +32,15 @@ backup_qwen_local/
 # Jupyter / ¢à¥¬¥­­ë¥ ­®ãâ¡ãª¨
 *.ipynb_checkpoints
 .ipynb_checkpoints/
+
+# Local experiment data and generated outputs
+data/
+output/
+storage/
+
+# Local Python environment
+.venv/
+
+# Python caches
+__pycache__/
+*.py[cod]
