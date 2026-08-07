@@ -1,13 +1,7 @@
-# api/schemas.py
-
-from pydantic import BaseModel
-from pydantic import ConfigDict
-from typing import List, Optional, Dict, Any
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-# =======================
-# DTO (Pydantic schemas)
-# =======================
+from pydantic import BaseModel, ConfigDict
 
 
 class Track(BaseModel):
@@ -38,7 +32,6 @@ class AudioAnalysis(BaseModel):
     suggested_music_style: Optional[str] = None
     created_at: datetime
 
-    # Структурные поля
     sections: Optional[List[Dict[str, Any]]] = None
     recurrence_groups: Optional[List[Dict[str, Any]]] = None
     events: Optional[List[Dict[str, Any]]] = None
@@ -50,6 +43,7 @@ class PerceptualLatent(BaseModel):
     id: str
     analysis_id: str
     track_id: str
+
     energy: Optional[float] = None
     tension: Optional[float] = None
     density: Optional[float] = None
@@ -59,6 +53,14 @@ class PerceptualLatent(BaseModel):
     repetition: Optional[float] = None
     section_complexity: Optional[float] = None
     macro_shape_hint: Optional[str] = None
+
+    tempo_bpm: Optional[float] = None
+    silence_rate: Optional[float] = None
+    harmonic_stability: Optional[float] = None
+    harmonic_change_rate_hz: Optional[float] = None
+    spectral_flatness: Optional[float] = None
+    high_frequency_energy_ratio: Optional[float] = None
+
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -77,6 +79,7 @@ class UserPreset(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class GenerationJob(BaseModel):
     id: str
     project_id: str
@@ -88,7 +91,6 @@ class GenerationJob(BaseModel):
     created_at: datetime
     completed_at: Optional[datetime] = None
     error_message: Optional[str] = None
-    # новое поле, нужно test4.py
     output_path: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -136,9 +138,6 @@ class UserProject(BaseModel):
     project_state: str
 
     model_config = ConfigDict(from_attributes=True)
-
-
-# Simple request DTOs
 
 
 class CreateProjectRequest(BaseModel):

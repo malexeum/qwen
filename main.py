@@ -276,30 +276,63 @@ async def capture_audio(project_id: str, db=Depends(get_db)):
 
 
 @app.post("/analyze", response_model=AnalyzeResponse)
-async def analyze_audio(project_id: str, track_id: str, db=Depends(get_db)):
-    project_db = db.query(UserProjectDB).filter(UserProjectDB.id == project_id).first()
+async def analyze_audio(
+    project_id: str,
+    track_id: str,
+    db=Depends(get_db),
+):
+    project_db = (
+        db.query(UserProjectDB)
+        .filter(UserProjectDB.id == project_id)
+        .first()
+    )
     if not project_db:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Project not found",
+        )
 
-    track_db = db.query(TrackDB).filter(TrackDB.id == track_id).first()
+    track_db = (
+        db.query(TrackDB)
+        .filter(TrackDB.id == track_id)
+        .first()
+    )
     if not track_db:
-        raise HTTPException(status_code=404, detail="Track not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Track not found",
+        )
 
     storage_path = track_db.storage_path
     if not storage_path or not os.path.exists(storage_path):
-        raise HTTPException(status_code=400, detail="Audio file not found on storage")
+        raise HTTPException(
+            status_code=400,
+            detail="Audio file not found on storage",
+        )
 
     try:
         features = analyze_audio_file(storage_path)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Analysis failed: {e}")
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Analysis failed: {exc}",
+        )
 
     now = datetime.utcnow()
     analysis_id = str(uuid4())
 
-    sections_json = json.dumps(features.get("sections", []), ensure_ascii=False)
-    recurrence_json = json.dumps(features.get("recurrence_groups", []), ensure_ascii=False)
-    events_json = json.dumps(features.get("events", []), ensure_ascii=False)
+    sections_json = json.dumps(
+        features.get("sections", []),
+        ensure_ascii=False,
+    )
+    recurrence_json = json.dumps(
+        features.get("recurrence_groups", []),
+        ensure_ascii=False,
+    )
+    events_json = json.dumps(
+        features.get("events", []),
+        ensure_ascii=False,
+    )
 
     analysis_db = AudioAnalysisDB(
         id=analysis_id,
@@ -308,13 +341,23 @@ async def analyze_audio(project_id: str, track_id: str, db=Depends(get_db)):
         bpm=_to_python_scalar(features["bpm"]),
         key=str(features["key"]),
         energy=_to_python_scalar(features["energy"]),
-        spectral_centroid=_to_python_scalar(features["spectral_centroid"]),
+        spectral_centroid=_to_python_scalar(
+            features["spectral_centroid"]
+        ),
         brightness=_to_python_scalar(features["brightness"]),
-        rhythm_density=_to_python_scalar(features["rhythm_density"]),
-        dynamic_range=_to_python_scalar(features["dynamic_range"]),
-        duration_sec=_to_python_scalar(features["duration_sec"]),
-        repetition_score=_to_python_scalar(features["repetition_score"]),
-        suggested_music_style=str(features["suggested_music_style"]),
+        rhythm_density=None,
+        dynamic_range=_to_python_scalar(
+            features["dynamic_range"]
+        ),
+        duration_sec=_to_python_scalar(
+            features["duration_sec"]
+        ),
+        repetition_score=_to_python_scalar(
+            features["repetition_score"]
+        ),
+        suggested_music_style=str(
+            features["suggested_music_style"]
+        ),
         created_at=now,
         sections=sections_json,
         recurrence_groups=recurrence_json,
@@ -325,46 +368,85 @@ async def analyze_audio(project_id: str, track_id: str, db=Depends(get_db)):
     db.refresh(analysis_db)
 
     perceptual_vector = build_perceptual_latent(features)
-    perceptual_id = str(uuid4())
 
     perceptual_db = PerceptualLatentDB(
-        id=perceptual_id,
+        id=str(uuid4()),
         analysis_id=analysis_id,
         track_id=track_id,
         energy=_to_python_scalar(perceptual_vector["energy"]),
         tension=_to_python_scalar(perceptual_vector["tension"]),
         density=_to_python_scalar(perceptual_vector["density"]),
-        brightness=_to_python_scalar(perceptual_vector["brightness"]),
-        stability=_to_python_scalar(perceptual_vector["stability"]),
-        smoothness=_to_python_scalar(perceptual_vector["smoothness"]),
-        repetition=_to_python_scalar(perceptual_vector["repetition"]),
-        section_complexity=_to_python_scalar(perceptual_vector["section_complexity"]),
-        macro_shape_hint=str(perceptual_vector["macro_shape_hint"]),
+        brightness=_to_python_scalar(
+            perceptual_vector["brightness"]
+        ),
+        stability=_to_python_scalar(
+            perceptual_vector["stability"]
+        ),
+        smoothness=_to_python_scalar(
+            perceptual_vector["smoothness"]
+        ),
+        repetition=_to_python_scalar(
+            perceptual_vector["repetition"]
+        ),
+        section_complexity=_to_python_scalar(
+            perceptual_vector["section_complexity"]
+        ),
+        macro_shape_hint=str(
+            perceptual_vector["macro_shape_hint"]
+        ),
         created_at=now,
     )
     db.add(perceptual_db)
     db.commit()
 
-    clean_features = {k: _to_python_scalar(v) for k, v in features.items()}
-    clean_perceptual = {k: _to_python_scalar(v) for k, v in perceptual_vector.items()}
+    clean_features = {
+        key: _to_python_scalar(value)
+        for key, value in features.items()
+    }
+    clean_perceptual = {
+        key: _to_python_scalar(value)
+        for key, value in perceptual_vector.items()
+    }
+
+    api_feature_keys = [
+        "bpm",
+        "key",
+        "energy",
+        "spectral_centroid",
+        "brightness",
+        "onset_rate_hz",
+        "onset_count",
+        "beat_regularity",
+        "beat_count",
+        "dynamic_range",
+        "duration_sec",
+        "repetition_score",
+        "silence_rate",
+        "harmonic_stability",
+        "harmonic_change_rate_hz",
+        "spectral_flatness",
+        "high_frequency_energy_ratio",
+        "band_energy_0_250_hz",
+        "band_energy_250_2000_hz",
+        "band_energy_2000_6000_hz",
+        "band_energy_6000_nyquist",
+    ]
+
+    api_features = {
+        key: clean_features[key]
+        for key in api_feature_keys
+        if key in clean_features
+    }
 
     return AnalyzeResponse(
         status="success",
         project_id=project_id,
         track_id=track_id,
         analysis_id=analysis_id,
-        features={
-            "bpm": clean_features["bpm"],
-            "key": clean_features["key"],
-            "energy": clean_features["energy"],
-            "spectral_centroid": clean_features["spectral_centroid"],
-            "brightness": clean_features["brightness"],
-            "rhythm_density": clean_features["rhythm_density"],
-            "dynamic_range": clean_features["dynamic_range"],
-            "duration_sec": clean_features["duration_sec"],
-            "repetition_score": clean_features["repetition_score"],
-        },
-        suggested_music_style=str(clean_features["suggested_music_style"]),
+        features=api_features,
+        suggested_music_style=str(
+            clean_features["suggested_music_style"]
+        ),
         perceptual=clean_perceptual,
     )
 
@@ -416,7 +498,7 @@ async def resolve_style(
     if not perceptual_db:
         features = {
             "energy": analysis_db.energy or 0.0,
-            "rhythm_density": analysis_db.rhythm_density or 0.0,
+            "onset_rate_hz": 0.0,
             "brightness": analysis_db.brightness or 0.0,
             "repetition_score": analysis_db.repetition_score or 0.0,
             "dynamic_range": analysis_db.dynamic_range or 0.0,

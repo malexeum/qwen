@@ -1,34 +1,35 @@
-# api/models_db.py
-
-from sqlalchemy import (
-    Column,
-    String,
-    Integer,
-    Float,
-    DateTime,
-    Boolean,
-    ForeignKey,
-    Text,
-    create_engine,
-)
-from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from datetime import datetime
 import os
 
-# =======================
-# DB setup (SQLite)
-# =======================
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    create_engine,
+    inspect,
+    text,
+)
+from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+
 
 DB_URL = "sqlite:///./data/fractal_identity.db"
 os.makedirs("data", exist_ok=True)
 
-engine = create_engine(DB_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+engine = create_engine(
+    DB_URL,
+    connect_args={"check_same_thread": False},
+)
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+)
 Base = declarative_base()
-
-# =======================
-# ORM models (Issue 2 + v0.2.1)
-# =======================
 
 
 class UserProjectDB(Base):
@@ -72,7 +73,7 @@ class TrackDB(Base):
     __tablename__ = "tracks"
 
     id = Column(String, primary_key=True, index=True)
-    source_type = Column(String)  # "mic" | "file"
+    source_type = Column(String)
     storage_path = Column(String)
     duration_sec = Column(Float, nullable=True)
     format = Column(String)
@@ -107,10 +108,9 @@ class AudioAnalysisDB(Base):
     suggested_music_style = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    # Структурные поля (храним как JSON-строки для MVP)
-    sections = Column(Text, nullable=True)           # JSON: [{id, label, start_sec, end_sec}, ...]
-    recurrence_groups = Column(Text, nullable=True)  # JSON: [{group_id, sections: [...]}, ...]
-    events = Column(Text, nullable=True)             # JSON: [{type, time_sec, description}, ...]
+    sections = Column(Text, nullable=True)
+    recurrence_groups = Column(Text, nullable=True)
+    events = Column(Text, nullable=True)
 
     track = relationship("TrackDB", back_populates="analyses")
     project = relationship("UserProjectDB", back_populates="analyses")
@@ -132,6 +132,14 @@ class PerceptualLatentDB(Base):
     repetition = Column(Float, nullable=True)
     section_complexity = Column(Float, nullable=True)
     macro_shape_hint = Column(String, nullable=True)
+
+    tempo_bpm = Column(Float, nullable=True)
+    silence_rate = Column(Float, nullable=True)
+    harmonic_stability = Column(Float, nullable=True)
+    harmonic_change_rate_hz = Column(Float, nullable=True)
+    spectral_flatness = Column(Float, nullable=True)
+    high_frequency_energy_ratio = Column(Float, nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow)
 
     analysis = relationship("AudioAnalysisDB")
@@ -162,9 +170,9 @@ class GenerationJobDB(Base):
     analysis_id = Column(String, ForeignKey("audio_analyses.id"))
     preset_id = Column(String, ForeignKey("user_presets.id"))
 
-    status = Column(String)  # "pending" | "running" | "failed" | "completed"
-    output_type = Column(String)  # "poster_preview" | "poster_master" | "gif_preview"
-    render_params = Column(Text)  # JSON-строка с RenderParams
+    status = Column(String)
+    output_type = Column(String)
+    render_params = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime, nullable=True)
     error_message = Column(Text, nullable=True)
@@ -192,8 +200,8 @@ class PosterAssetDB(Base):
     watermarked = Column(Boolean, default=False)
     is_hi_res = Column(Boolean, default=False)
 
-    job = relationship("GenerationJobDB", back_populates="assets")
     project_id = Column(String, ForeignKey("user_projects.id"))
+    job = relationship("GenerationJobDB", back_populates="assets")
     project = relationship("UserProjectDB", back_populates="assets")
 
 
@@ -203,9 +211,9 @@ class ExportJobDB(Base):
     id = Column(String, primary_key=True, index=True)
     asset_id = Column(String, ForeignKey("poster_assets.id"))
 
-    format = Column(String)  # "png" | "jpg"
+    format = Column(String)
     preset = Column(String, nullable=True)
-    status = Column(String)  # "pending" | "running" | "failed" | "completed"
+    status = Column(String)
     output_path = Column(String, nullable=True)
     download_url = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -214,5 +222,51 @@ class ExportJobDB(Base):
     asset = relationship("PosterAssetDB")
 
 
-def init_db():
+PERCEPTUAL_LATENT_MIGRATION_COLUMNS = {
+    "tempo_bpm": "REAL",
+    "silence_rate": "REAL",
+    "harmonic_stability": "REAL",
+    "harmonic_change_rate_hz": "REAL",
+    "spectral_flatness": "REAL",
+    "high_frequency_energy_ratio": "REAL",
+}
+
+
+def migrate_perceptual_latents_schema() -> None:
+    """
+    Идемпотентно расширяет существующую SQLite-таблицу perceptual_latents.
+
+    Добавляются только отсутствующие nullable-колонки. Данные, связи и
+    исторические записи не изменяются и не удаляются.
+    """
+    inspector = inspect(engine)
+
+    if "perceptual_latents" not in inspector.get_table_names():
+        return
+
+    existing_columns = {
+        column["name"]
+        for column in inspector.get_columns("perceptual_latents")
+    }
+
+    missing_columns = {
+        name: sql_type
+        for name, sql_type in PERCEPTUAL_LATENT_MIGRATION_COLUMNS.items()
+        if name not in existing_columns
+    }
+
+    if not missing_columns:
+        return
+
+    with engine.begin() as connection:
+        for column_name, sql_type in missing_columns.items():
+            statement = (
+                f'ALTER TABLE perceptual_latents '
+                f'ADD COLUMN "{column_name}" {sql_type}'
+            )
+            connection.execute(text(statement))
+
+
+def init_db() -> None:
     Base.metadata.create_all(bind=engine)
+    migrate_perceptual_latents_schema()
