@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from composition_planner import PlannerInput
+from .composition_planner import PlannerInput
 
 
 def _clip(v: float, lo: float = 0.0, hi: float = 1.0) -> float:
@@ -59,7 +59,6 @@ def build_planner_input(
     band_high = _clip(_safe(features, "band_energy_2000_6000_hz", 0.10))
 
     # Нормировка полос: гарантируем, что band_low + band_mid + band_high <= 1
-    # (они уже нормированы как доли спектра, но перестрахуемся при граничных значениях)
     total_band = band_low + band_mid + band_high
     if total_band > 1.0:
         band_low /= total_band
@@ -68,7 +67,7 @@ def build_planner_input(
 
     # --- перцептивный слой ---
     perceptual_stability = _clip(_safe(perceptual, "stability", 0.5))
-    perceptual_tension = _clip(_safe(perceptual, "tension", 0.5))
+    perceptual_tension   = _clip(_safe(perceptual, "tension", 0.5))
 
     # --- макроформа ---
     if macro_shape_hint is None:

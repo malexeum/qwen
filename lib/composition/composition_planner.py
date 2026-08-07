@@ -206,6 +206,25 @@ def _focal_point(archetype: str, tension: float) -> tuple[float, float]:
     return (0.45, 0.50)
 
 
+def _normalize_zone_weights(zones: list) -> list:
+    """Нормирует веса зон так, чтобы их сумма была строго равна 1.0.
+
+    Применяет пропорциональное масштабирование. При нулевой сумме
+    распределяет веса равномерно.
+    """
+    total = sum(z.weight for z in zones)
+    if total <= 0.0:
+        for z in zones:
+            z.weight = round(1.0 / len(zones), 4)
+    else:
+        for z in zones:
+            z.weight = round(z.weight / total, 4)
+        # корректируем остаток на последнюю зону, чтобы избежать float-дрейфа
+        diff = round(1.0 - sum(z.weight for z in zones), 4)
+        zones[-1].weight = round(zones[-1].weight + diff, 4)
+    return zones
+
+
 # ---------------------------------------------------------------------------
 # Главная функция
 # ---------------------------------------------------------------------------
@@ -269,6 +288,9 @@ def build_composition_plan(
             weight=round(margin_weight, 4),
         ),
     ]
+
+    # Нормируем веса зон: гарантируем sum(weights) == 1.0
+    zones = _normalize_zone_weights(zones)
 
     # -------- мотивы --------
     n_motifs = _compute_motif_count(inp.bpm, density)
