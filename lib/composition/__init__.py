@@ -1,10 +1,28 @@
-# lib/composition package
-from .composition_planner import PlannerInput, CompositionPlan, build_composition_plan
-from .composition_adapter import build_planner_input
+"""lib.composition — VisualCompositionPlanner v0.3.
+
+Public API:
+    build_visual_composition_plan()
+    PerceptualLatent
+    RenderParams
+    TrackMetadata
+    VisualCompositionPlan
+    load_composition_config
+"""
+from .planner import (
+    build_visual_composition_plan,
+    PerceptualLatent,
+    RenderParams,
+    TrackMetadata,
+)
+from .schema import VisualCompositionPlan
+from .config_loader import load_composition_config, CompositionConfigError
 
 __all__ = [
-    "PlannerInput",
-    "CompositionPlan",
-    "build_composition_plan",
-    "build_planner_input",
+    "build_visual_composition_plan",
+    "PerceptualLatent",
+    "RenderParams",
+    "TrackMetadata",
+    "VisualCompositionPlan",
+    "load_composition_config",
+    "CompositionConfigError",
 ]
