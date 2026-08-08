@@ -1,0 +1,304 @@
+schema_version: visual-composition-profile/v0.3
+profile_library_version: 0.3.0
+
+imports:
+  generator_catalog: generator_catalog.yaml
+  palettes: palettes.yaml
+  postprocess_styles: poster_styles.yaml
+
+global_rules:
+  canvas:
+    width_px: 1024
+    height_px: 1024
+    mode: preview
+    color_space: sRGB
+
+  layer_limits:
+    minimum_enabled_layers: 3
+    maximum_enabled_layers: 5
+
+  coordinate_system:
+    unit: normalized_canvas
+    origin: center
+    x_range: [-1.0, 1.0]
+    y_range: [-1.0, 1.0]
+    angle_unit: deg
+
+  blend_modes:
+    allowed:
+      - normal
+      - screen
+      - add
+      - multiply
+      - soft_light
+      - max
+
+  python_policy:
+    output_size_fixed: [1024, 1024]
+    allow_final_export: false
+    allow_user_presets: false
+
+  seed_policy:
+    algorithm: sha256
+    base_components:
+      - audio_content_hash
+      - canonical_title
+      - canonical_artist
+      - duration_ms
+      - style_profile_slug
+      - profile_library_version
+    layer_components:
+      - base_seed
+      - layer_id
+      - canonical_generator_id
+      - variation_seed
+
+  validation:
+    unknown_mapping_target: error
+    unsupported_source_axis: error
+    unresolved_alias: error
+    missing_required_audio_feature: error
+    inactive_parameter_policy: explicit_na_required
+
+defaults:
+  visual_identity:
+    palette_id: neutral_noir
+    macro_archetype: quiet_field
+    postprocess_style_slug: fullcolor
+
+  composition:
+    background_opacity: 1.0
+    negative_space:
+      enabled: true
+      minimum_coverage: 0.08
+      maximum_coverage: 0.58
+
+  transforms:
+    center:
+      offset_norm: [0.0, 0.0]
+      scale_xy: [1.0, 1.0]
+      rotation_deg: 0.0
+
+profiles:
+  blues_jazz:
+    description: >
+      Ночной органический контрапункт: крупная орбитальная масса,
+      ритмические скопления, тёплый редкий акцент и активная пустота.
+
+    identity:
+      palette_id: nocturne_amber
+      macro_archetype: orbital_flow
+      postprocess_style_slug: grainfilm
+      visual_keywords:
+        - organic
+        - improvisational
+        - nocturnal
+        - warm
+
+    composition:
+      negative_space:
+        coverage_source: silence_rate
+        coverage_range: [0.14, 0.42]
+        direction_source: layout_macro_shape
+
+    layers:
+      - id: macro_orbit
+        role: macro_structure
+        generator_id: julia_orbit_trap
+        enabled: true
+        z_index: 10
+        opacity: 0.92
+        blend_mode: normal
+        palette_id: nocturne_amber
+        computation_resolution_fraction: 0.78
+        rotation_range_deg: [-24.0, 24.0]
+        mapping:
+          c_real: symmetry_bias
+          c_imag: tension
+          exponent_p: texture_complexity
+          trap_radius: density_level
+          max_iter: recursion_depth
+          stochastic_scale: noise_level
+          domain_zoom: motion_intensity
+
+      - id: rhythmic_points
+        role: meso_rhythm
+        generator_id: orbit_ifs_multi_trap
+        enabled: true
+        z_index: 20
+        opacity: 0.40
+        blend_mode: screen
+        palette_id: nocturne_amber
+        computation_resolution_fraction: 0.60
+        rotation_range_deg: [-36.0, 36.0]
+        mapping:
+          n_points: density_level
+          map_diversity: texture_complexity
+          attractor_spread: motion_intensity
+          stochastic_scale: noise_level
+          n_iter: recursion_depth
+
+      - id: grain_field
+        role: microtexture
+        generator_id: colored_noise_field
+        enabled: true
+        z_index: 30
+        opacity: 0.09
+        blend_mode: soft_light
+        palette_id: nocturne_amber
+        computation_resolution_fraction: 1.00
+        mapping:
+          amplitude: noise_level
+          frequency_scale: spectral_flatness
+          anisotropy: repetition
+          grain_size: high_frequency_energy
+
+      - id: crystalline_accent
+        role: accent
+        generator_id: symmetry_snowflake
+        enabled_if:
+          all:
+            - source: section_complexity
+              operator: gte
+              value: 0.56
+            - source: harmonic_stability
+              operator: gte
+              value: 0.38
+        z_index: 40
+        opacity: 0.11
+        blend_mode: add
+        palette_id: pale_gold_accent
+        computation_resolution_fraction: 0.42
+        rotation_range_deg: [0.0, 360.0]
+        mapping:
+          branch_count: symmetry_bias
+          branch_depth: texture_complexity
+          branch_jitter: noise_level
+          radial_scale: repetition
+          rotation_deg: harmonic_change_rate
+
+      - id: silence_mask
+        role: silence_mask
+        source_kind: procedural_mask
+        enabled: true
+        z_index: 50
+        opacity: 1.0
+        blend_mode: normal
+        palette_id: null
+        computation_resolution_fraction: 1.00
+        mapping:
+          coverage: silence_rate
+          direction: layout_macro_shape
+          edge_softness: tension
+
+  electronic:
+    description: >
+      Электрическая бифуркация: нелинейное поле напряжения, плотные
+      ритмические скопления, спектральное зерно и кристаллические импульсы.
+
+    identity:
+      palette_id: spectral_neon
+      macro_archetype: bifurcation_impulse
+      postprocess_style_slug: grainfilm
+      visual_keywords:
+        - electric
+        - kinetic
+        - unstable
+        - synthetic
+
+    composition:
+      negative_space:
+        coverage_source: silence_rate
+        coverage_range: [0.08, 0.28]
+        direction_source: layout_macro_shape
+
+    layers:
+      - id: tension_field
+        role: macro_structure
+        generator_id: duffing_lyapunov
+        enabled: true
+        z_index: 10
+        opacity: 0.86
+        blend_mode: normal
+        palette_id: spectral_neon
+        computation_resolution_fraction: 0.75
+        rotation_range_deg: [-30.0, 30.0]
+        mapping:
+          forcing: energy
+          damping: tension
+          forcing_frequency: motion_intensity
+          nonlinear_stiffness: texture_complexity
+          n_steps: recursion_depth
+          stochastic_scale: noise_level
+          gamma_window: density_level
+          omega_window: density_level
+
+      - id: pulse_density
+        role: meso_rhythm
+        generator_id: orbit_ifs_multi_trap
+        enabled: true
+        z_index: 20
+        opacity: 0.48
+        blend_mode: screen
+        palette_id: spectral_neon
+        computation_resolution_fraction: 0.64
+        rotation_range_deg: [-40.0, 40.0]
+        mapping:
+          n_points: density_level
+          map_diversity: texture_complexity
+          attractor_spread: motion_intensity
+          stochastic_scale: noise_level
+          n_iter: recursion_depth
+
+      - id: spectral_grain
+        role: microtexture
+        generator_id: colored_noise_field
+        enabled: true
+        z_index: 30
+        opacity: 0.12
+        blend_mode: add
+        palette_id: spectral_neon
+        computation_resolution_fraction: 1.00
+        mapping:
+          amplitude: noise_level
+          frequency_scale: spectral_flatness
+          color_variation: tension
+          grain_size: high_frequency_energy
+
+      - id: crystal_pulse
+        role: accent
+        generator_id: symmetry_snowflake
+        enabled_if:
+          any:
+            - source: energy
+              operator: gte
+              value: 0.54
+            - source: section_complexity
+              operator: gte
+              value: 0.62
+        z_index: 40
+        opacity: 0.13
+        blend_mode: add
+        palette_id: pale_gold_accent
+        computation_resolution_fraction: 0.38
+        rotation_range_deg: [0.0, 360.0]
+        mapping:
+          branch_count: symmetry_bias
+          branch_depth: texture_complexity
+          branch_jitter: noise_level
+          radial_scale: repetition
+          rotation_deg: harmonic_change_rate
+
+      - id: silence_mask
+        role: silence_mask
+        source_kind: procedural_mask
+        enabled: true
+        z_index: 50
+        opacity: 1.0
+        blend_mode: normal
+        palette_id: null
+        computation_resolution_fraction: 1.00
+        mapping:
+          coverage: silence_rate
+          direction: layout_macro_shape
+          edge_softness: tension

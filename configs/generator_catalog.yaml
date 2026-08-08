@@ -1,0 +1,133 @@
+schema_version: generator-catalog/v0.3
+catalog_version: 0.3.0
+
+generators:
+  julia_orbit_trap:
+    canonical_id: julia_orbit_trap
+    python_entrypoint: fractal_core.generators.julia_orbit_trap
+    builder: make_sim_state_for_julia
+    family: nonlinear_fractal
+    roles:
+      - macro_structure
+      - contour
+      - counterpoint
+    supports:
+      - symmetry_bias
+      - density_level
+      - noise_level
+      - recursion_depth
+      - texture_complexity
+      - motion_intensity
+      - tension
+    aliases:
+      - smooth_geometric_baseline
+
+  orbit_ifs_multi_trap:
+    canonical_id: orbit_ifs_multi_trap
+    python_entrypoint: fractal_core.generators.orbit_ifs_multi_trap
+    builder: make_sim_state_for_ifs
+    family: iterated_function_system
+    roles:
+      - meso_rhythm
+      - microtexture
+      - density_field
+    supports:
+      - density_level
+      - motion_intensity
+      - noise_level
+      - recursion_depth
+      - texture_complexity
+    aliases:
+      - single_parameter_map_baseline
+
+  duffing_lyapunov:
+    canonical_id: duffing_lyapunov
+    python_entrypoint: fractal_core.generators.duffing_lyapunov_map
+    builder: make_sim_state_for_duffing
+    family: nonlinear_dynamics
+    roles:
+      - macro_structure
+      - tension_field
+      - atmosphere
+    supports:
+      - tension
+      - energy
+      - density_level
+      - motion_intensity
+      - texture_complexity
+      - noise_level
+      - recursion_depth
+    aliases: []
+
+  chaotic_scattering_basins:
+    canonical_id: chaotic_scattering_basins
+    python_entrypoint: fractal_core.generators.chaotic_scattering_basins
+    builder: make_sim_state_for_scattering
+    family: basin_dynamics
+    roles:
+      - accent
+      - transition_field
+      - counterpoint
+      - macro_structure
+    supports:
+      - tension
+      - energy
+      - density_level
+      - motion_intensity
+      - texture_complexity
+      - noise_level
+    aliases:
+      - random_baseline
+
+  orbital_field:
+    canonical_id: orbital_field
+    python_entrypoint: reference_renderer.layers.orbital_field
+    builder: make_orbital_field_spec
+    family: procedural_visual
+    roles:
+      - meso_rhythm
+      - flow
+      - counterpoint
+    supports:
+      - tempo
+      - repetition
+      - density_level
+      - energy
+      - motion_intensity
+      - symmetry_bias
+    aliases: []
+
+  colored_noise_field:
+    canonical_id: colored_noise_field
+    python_entrypoint: reference_renderer.layers.colored_noise_field
+    builder: make_colored_noise_spec
+    family: procedural_visual
+    roles:
+      - microtexture
+      - atmosphere
+    supports:
+      - noise_level
+      - spectral_flatness
+      - high_frequency_energy
+      - texture_complexity
+      - repetition
+      - tension
+    aliases: []
+
+  symmetry_snowflake:
+    canonical_id: symmetry_snowflake
+    python_entrypoint: reference_renderer.layers.symmetry_snowflake
+    builder: make_snowflake_spec
+    family: procedural_visual
+    roles:
+      - accent
+      - ornament
+      - harmonic_refrain
+    supports:
+      - symmetry_bias
+      - repetition
+      - texture_complexity
+      - harmonic_stability
+      - harmonic_change_rate
+      - noise_level
+    aliases: []

@@ -1,0 +1,85 @@
+schema_version: palettes/v0.3
+palette_library_version: 0.3.0
+
+palettes:
+  neutral_noir:
+    background_rgba: [7, 9, 18, 255]
+    dominant:
+      stops:
+        - [0.00, "#070912"]
+        - [0.45, "#263347"]
+        - [0.75, "#69819A"]
+        - [1.00, "#E6E9E2"]
+    accent: "#FFFFFF"
+    saturation_budget: 0.30
+    contrast: 1.00
+
+  nocturne_amber:
+    background_rgba: [7, 9, 18, 255]
+    dominant:
+      stops:
+        - [0.00, "#06111D"]
+        - [0.40, "#0D4B63"]
+        - [0.72, "#2D8C93"]
+        - [1.00, "#F2B84B"]
+    accent: "#FFC766"
+    saturation_budget: 0.70
+    contrast: 1.10
+
+  lunar_mist:
+    background_rgba: [9, 16, 26, 255]
+    dominant:
+      stops:
+        - [0.00, "#07131F"]
+        - [0.52, "#496C86"]
+        - [1.00, "#D5E7EA"]
+    accent: "#A8E3EE"
+    saturation_budget: 0.38
+    contrast: 0.92
+
+  spectral_neon:
+    background_rgba: [5, 4, 18, 255]
+    dominant:
+      stops:
+        - [0.00, "#08172A"]
+        - [0.45, "#00C8FF"]
+        - [0.74, "#8D48FF"]
+        - [1.00, "#FF3EA5"]
+    accent: "#D7FFFF"
+    saturation_budget: 0.92
+    contrast: 1.24
+
+  pale_gold_accent:
+    background_rgba: [8, 7, 12, 255]
+    dominant:
+      stops:
+        - [0.00, "#100C12"]
+        - [0.60, "#85632B"]
+        - [1.00, "#FFE2A4"]
+    accent: "#FFF3CF"
+    saturation_budget: 0.55
+    contrast: 1.16
+
+  crimson_gold_noir:
+    background_rgba: [10, 5, 8, 255]
+    dominant:
+      stops:
+        - [0.00, "#0A0508"]
+        - [0.46, "#49151D"]
+        - [0.76, "#AF3832"]
+        - [1.00, "#D7A649"]
+    accent: "#FFE0A1"
+    saturation_budget: 0.74
+    contrast: 1.22
+
+  charcoal_red_white:
+    background_rgba: [11, 11, 12, 255]
+    dominant:
+      stops:
+        - [0.00, "#111114"]
+        - [0.45, "#49494C"]
+        - [0.72, "#B81924"]
+        - [1.00, "#EFEDE5"]
+    accent: "#FFFFFF"
+    saturation_budget: 0.68
+    contrast: 1.30
