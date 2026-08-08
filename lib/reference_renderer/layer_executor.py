@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 
 from .palette import resolve_palette, sample_gradient
 
+# Жёсткие потолки для защиты от OOM при ненормированных входных значениях
+_IFS_MAX_POINTS = 1_000_000
+_IFS_MAX_ITER   = 256
+
 
 # ─── Вспомогательные утилиты ──────────────────────────────────────────────────
 
@@ -88,8 +92,27 @@ def _gen_julia_orbit_trap(W, H, params, rng):
 
 
 def _gen_orbit_ifs(W, H, params, rng):
-    n_points = max(1000, int(float(params.get("n_points", 0.5)) * 800_000 + 50_000))
-    n_iter = max(32, int(float(params.get("n_iter", 0.5)) * 200 + 32))
+    """IFS orbit trap — density map.
+
+    Чтобы избежать OOM, матрица choice(n_iter, n_points) больше не создаётся целиком
+    — итерации выполняются построчно, выбор преобразования — хеш n_points за раз.
+    Итоговые значения n_points и n_iter ограничены _IFS_MAX_POINTS / _IFS_MAX_ITER.
+    """
+    # Хардкап: входное значение может быть сырым целым или [0,1]-флоатом
+    raw_np = params.get("n_points", 0.5)
+    if isinstance(raw_np, float) and 0.0 <= raw_np <= 1.0:
+        n_points = max(1000, int(raw_np * 200_000 + 10_000))
+    else:
+        n_points = max(1000, int(raw_np))
+    n_points = min(n_points, _IFS_MAX_POINTS)
+
+    raw_ni = params.get("n_iter", 0.5)
+    if isinstance(raw_ni, float) and 0.0 <= raw_ni <= 1.0:
+        n_iter = max(32, int(raw_ni * 64 + 32))
+    else:
+        n_iter = max(32, int(raw_ni))
+    n_iter = min(n_iter, _IFS_MAX_ITER)
+
     spread = float(params.get("attractor_spread", 0.5))
     stoch = float(params.get("stochastic_scale", 0.0))
     rot_deg = float(params.get("_rotation_deg", 0.0))
@@ -106,10 +129,10 @@ def _gen_orbit_ifs(W, H, params, rng):
 
     xs = np.zeros(n_points, dtype=np.float32)
     ys = np.zeros(n_points, dtype=np.float32)
-    choice = rng2.integers(0, n_maps, size=(n_iter, n_points)).astype(np.int8)
 
-    for it in range(n_iter):
-        idx = choice[it]
+    # Построчная итерация: choice[n_points] — не (n_iter, n_points)
+    for _ in range(n_iter):
+        idx = rng2.integers(0, n_maps, size=n_points).astype(np.intp)
         xa = a[idx] * xs + b[idx] * ys + e[idx]
         ya = c[idx] * xs + d[idx] * ys + f[idx]
         xs, ys = xa, ya
@@ -125,9 +148,9 @@ def _gen_orbit_ifs(W, H, params, rng):
 
     xi = ((xs2 + 1.0) * 0.5 * W).astype(np.int32)
     yi = ((ys2 + 1.0) * 0.5 * H).astype(np.int32)
-    mask = (xi >= 0) & (xi < W) & (yi >= 0) & (yi < H)
+    valid = (xi >= 0) & (xi < W) & (yi >= 0) & (yi < H)
     density = np.zeros((H, W), dtype=np.float32)
-    np.add.at(density, (yi[mask], xi[mask]), 1.0)
+    np.add.at(density, (yi[valid], xi[valid]), 1.0)
 
     density = np.log1p(density)
     mx = density.max()
@@ -200,9 +223,9 @@ def _gen_chaotic_scattering(W, H, params, rng):
             dx = x - cx
             dy = y - cy
             r2 = dx * dx + dy * dy + 0.04
-            f = strength / r2
-            fx -= f * dx
-            fy -= f * dy
+            fv = strength / r2
+            fx -= fv * dx
+            fy -= fv * dy
         x = x + fx * dt
         y = y + fy * dt
         basin += np.sqrt(fx * fx + fy * fy)
@@ -313,7 +336,7 @@ def execute_layer(layer, palettes_cfg: dict, W: int, H: int) -> np.ndarray:
     если не задано — используется полное W×H.
     Параметры генератора читаются из layer.sim_state (dict | None).
     """
-    # ── Разрешение вычисления: из computation_resolution_px или W×H ──────────────
+    # ── Разрешение вычисления ───────────────────────────────────────────────────
     comp_res = getattr(layer, "computation_resolution_px", None)
     if comp_res and len(comp_res) == 2 and comp_res[0] > 0 and comp_res[1] > 0:
         cW = max(32, int(comp_res[0]))
@@ -323,12 +346,11 @@ def execute_layer(layer, palettes_cfg: dict, W: int, H: int) -> np.ndarray:
 
     rng = np.random.default_rng(layer.seed)
 
-    # ── Параметры читаем из sim_state, не из parameters ───────────────────────
+    # ── Параметры из sim_state ───────────────────────────────────────────────────
     sim_state = getattr(layer, "sim_state", None)
     params: dict = dict(sim_state) if sim_state else {}
     params["_seed"] = layer.seed
 
-    # rotation_range_deg может быть в sim_state или как отдельное поле
     rot_range = params.get("rotation_range_deg") or getattr(layer, "rotation_range_deg", None)
     if rot_range and len(rot_range) == 2:
         lo, hi = float(rot_range[0]), float(rot_range[1])
@@ -341,15 +363,15 @@ def execute_layer(layer, palettes_cfg: dict, W: int, H: int) -> np.ndarray:
     if gen_id not in _GENERATOR_DISPATCH:
         return np.zeros((H, W, 4), dtype=np.float32)
 
-    field = _GENERATOR_DISPATCH[gen_id](cW, cH, params, rng)  # (cH, cW)
+    field = _GENERATOR_DISPATCH[gen_id](cW, cH, params, rng)
 
-    # ── Апскейл до W×H nearest-neighbor ──────────────────────────────────────────
+    # ── Апскейл до W×H nearest-neighbor ─────────────────────────────────────────
     if cW != W or cH != H:
         fy = np.round(np.linspace(0, cH - 1, H)).astype(int)
         fx = np.round(np.linspace(0, cW - 1, W)).astype(int)
         field = field[np.ix_(fy, fx)]
 
-    # ── Колоризация через палитру ────────────────────────────────────────────
+    # ── Колоризация ───────────────────────────────────────────────────────────
     palette_id = getattr(layer, "palette_id", None) or "neutral_noir"
     try:
         palette = resolve_palette(palette_id, palettes_cfg)
