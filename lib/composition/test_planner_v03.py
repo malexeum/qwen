@@ -116,11 +116,11 @@ def test_plan_determinism(tmp_path, cfg):
     p, r, t = _make_blues_inputs()
     plan1 = build_visual_composition_plan(
         perceptual=p, render_params=r, track_metadata=t,
-        config=cfg, storage_root=tmp / "r1", save_artifacts=True,
+        config=cfg, storage_root=tmp_path / "r1", save_artifacts=True,
     )
     plan2 = build_visual_composition_plan(
         perceptual=p, render_params=r, track_metadata=t,
-        config=cfg, storage_root=tmp / "r2", save_artifacts=True,
+        config=cfg, storage_root=tmp_path / "r2", save_artifacts=True,
     )
     assert plan1.plan_id == plan2.plan_id, "plan_id must be deterministic"
     d1 = plan1.to_dict()
@@ -189,11 +189,8 @@ def test_no_pil_imports():
     for mod_name, mod in sys.modules.items():
         top = mod_name.split(".")[0]
         if top in forbidden:
-            # check if imported FROM our composition modules
-            # (stdlib sys.modules may contain these from other parts)
             pass  # проверяем ниже
 
-    # Явная проверка: наши модули не содержат PIL в __module__ imports
     composition_mods = [
         "lib.composition.schema",
         "lib.composition.planner",
@@ -225,9 +222,9 @@ def test_storage_artifacts(tmp_path, cfg):
     p, r, t = _make_blues_inputs()
     plan = build_visual_composition_plan(
         perceptual=p, render_params=r, track_metadata=t,
-        config=cfg, storage_root=tmp, save_artifacts=True,
+        config=cfg, storage_root=tmp_path, save_artifacts=True,
     )
-    plan_dir = tmp / plan.plan_id
+    plan_dir = tmp_path / plan.plan_id
     assert (plan_dir / "visual_composition_plan.json").exists()
     assert (plan_dir / "parameter_coverage.json").exists()
     assert (plan_dir / "planner_diagnostics.json").exists()
