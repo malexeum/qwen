@@ -29,6 +29,16 @@ class RenderResult:
     layers_skipped: int
 
 
+def _identity_get(plan: VisualCompositionPlan, key: str, default: str) -> str:
+    """Безопасное чтение поля visual_identity — работает и с dict, и с dataclass."""
+    vi = plan.visual_identity
+    if not vi:
+        return default
+    if isinstance(vi, dict):
+        return vi.get(key, default) or default
+    return getattr(vi, key, default) or default
+
+
 def execute_plan(
     plan: VisualCompositionPlan,
     output_dir: Optional[Path] = None,
@@ -58,10 +68,7 @@ def execute_plan(
 
     # ── Canvas ────────────────────────────────────────────────────────────────
     canvas = Canvas.black(W, H)
-    bg_palette_id = (
-        plan.visual_identity.palette_id
-        if plan.visual_identity else "neutral_noir"
-    )
+    bg_palette_id = _identity_get(plan, "palette_id", "neutral_noir")
     try:
         from .palette import resolve_palette
         bg_palette = resolve_palette(bg_palette_id, palettes_cfg)
@@ -93,10 +100,7 @@ def execute_plan(
     # ── Post-processing ───────────────────────────────────────────────────────
     img_uint8 = canvas.to_uint8()          # (H, W, 4) uint8
     img_rgb   = img_uint8[..., :3]         # (H, W, 3) uint8
-    style_slug = (
-        plan.visual_identity.postprocess_style_slug
-        if plan.visual_identity else "grainfilm"
-    )
+    style_slug = _identity_get(plan, "postprocess_style_slug", "grainfilm")
     base_seed = int(getattr(plan, "base_seed", 0) % (2**31))
     img_rgb = postprocess(img_rgb, style_slug, seed=base_seed)
 
