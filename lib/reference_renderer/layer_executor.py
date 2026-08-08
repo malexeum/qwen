@@ -2,6 +2,7 @@
 
 Каждый генератор реализован как чистая numpy-функция без PIL.
 PIL используется только в execute_plan.py для финального сохранения.
+Параметры слоя читаются из LayerSpec.sim_state (dict | None).
 """
 from __future__ import annotations
 
@@ -291,53 +292,64 @@ def _gen_silence_mask(W, H, params, rng):
     return mask.astype(np.float32)
 
 
-# ─── Dispatch ─────────────────────────────────────────────────────────────────
+# ─── Dispatch ───────────────────────────────────────────────────────────────
 
 _GENERATOR_DISPATCH = {
-    "julia_orbit_trap":       _gen_julia_orbit_trap,
-    "orbit_ifs_multi_trap":   _gen_orbit_ifs,
-    "duffing_lyapunov":       _gen_duffing,
+    "julia_orbit_trap":          _gen_julia_orbit_trap,
+    "orbit_ifs_multi_trap":      _gen_orbit_ifs,
+    "duffing_lyapunov":          _gen_duffing,
     "chaotic_scattering_basins": _gen_chaotic_scattering,
-    "orbital_field":          _gen_orbital_field,
-    "colored_noise_field":    _gen_colored_noise,
-    "symmetry_snowflake":     _gen_symmetry_snowflake,
-    "silence_mask":           _gen_silence_mask,
+    "orbital_field":             _gen_orbital_field,
+    "colored_noise_field":       _gen_colored_noise,
+    "symmetry_snowflake":        _gen_symmetry_snowflake,
+    "silence_mask":              _gen_silence_mask,
 }
 
 
 def execute_layer(layer, palettes_cfg: dict, W: int, H: int) -> np.ndarray:
     """Рендер одного LayerSpec → (H, W, 4) float32 RGBA.
 
-    Вычисление ведётся на пониженном разрешении (computation_resolution_fraction),
-    затем апскейл до W×H nearest-neighbor (детерминизм).
+    Разрешение берётся из layer.computation_resolution_px (tuple[int,int] | list);
+    если не задано — используется полное W×H.
+    Параметры генератора читаются из layer.sim_state (dict | None).
     """
-    frac = getattr(layer, "computation_resolution_fraction", 1.0) or 1.0
-    frac = max(0.1, min(1.0, float(frac)))
-    cW = max(32, int(W * frac))
-    cH = max(32, int(H * frac))
+    # ── Разрешение вычисления: из computation_resolution_px или W×H ──────────────
+    comp_res = getattr(layer, "computation_resolution_px", None)
+    if comp_res and len(comp_res) == 2 and comp_res[0] > 0 and comp_res[1] > 0:
+        cW = max(32, int(comp_res[0]))
+        cH = max(32, int(comp_res[1]))
+    else:
+        cW, cH = W, H
 
     rng = np.random.default_rng(layer.seed)
 
-    params = dict(layer.parameters) if layer.parameters else {}
+    # ── Параметры читаем из sim_state, не из parameters ───────────────────────
+    sim_state = getattr(layer, "sim_state", None)
+    params: dict = dict(sim_state) if sim_state else {}
     params["_seed"] = layer.seed
-    rot_range = getattr(layer, "rotation_range_deg", None)
+
+    # rotation_range_deg может быть в sim_state или как отдельное поле
+    rot_range = params.get("rotation_range_deg") or getattr(layer, "rotation_range_deg", None)
     if rot_range and len(rot_range) == 2:
         lo, hi = float(rot_range[0]), float(rot_range[1])
         params["_rotation_deg"] = float(rng.uniform(lo, hi))
     else:
         params["_rotation_deg"] = 0.0
 
+    # ── Dispatch ───────────────────────────────────────────────────────────────
     gen_id = layer.generator_id
     if gen_id not in _GENERATOR_DISPATCH:
         return np.zeros((H, W, 4), dtype=np.float32)
 
     field = _GENERATOR_DISPATCH[gen_id](cW, cH, params, rng)  # (cH, cW)
 
+    # ── Апскейл до W×H nearest-neighbor ──────────────────────────────────────────
     if cW != W or cH != H:
         fy = np.round(np.linspace(0, cH - 1, H)).astype(int)
         fx = np.round(np.linspace(0, cW - 1, W)).astype(int)
         field = field[np.ix_(fy, fx)]
 
+    # ── Колоризация через палитру ────────────────────────────────────────────
     palette_id = getattr(layer, "palette_id", None) or "neutral_noir"
     try:
         palette = resolve_palette(palette_id, palettes_cfg)
