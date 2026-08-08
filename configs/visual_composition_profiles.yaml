@@ -1,5 +1,5 @@
 schema_version: visual-composition-profile/v0.3
-profile_library_version: 0.3.0
+profile_library_version: 0.3.1
 
 imports:
   generator_catalog: generator_catalog.yaml
@@ -80,27 +80,22 @@ defaults:
       rotation_deg: 0.0
 
 profiles:
+
+  # ── 1. Blues / Jazz (тёплый ноктюрн, оригинальный профиль) ─────────────────
   blues_jazz:
     description: >
       Ночной органический контрапункт: крупная орбитальная масса,
       ритмические скопления, тёплый редкий акцент и активная пустота.
-
     identity:
       palette_id: nocturne_amber
       macro_archetype: orbital_flow
       postprocess_style_slug: grainfilm
-      visual_keywords:
-        - organic
-        - improvisational
-        - nocturnal
-        - warm
-
+      visual_keywords: [organic, improvisational, nocturnal, warm]
     composition:
       negative_space:
         coverage_source: silence_rate
         coverage_range: [0.14, 0.42]
         direction_source: layout_macro_shape
-
     layers:
       - id: macro_orbit
         role: macro_structure
@@ -191,27 +186,21 @@ profiles:
           direction: layout_macro_shape
           edge_softness: tension
 
+  # ── 2. Electronic (неон и бифуркация, оригинальный профиль) ────────────────
   electronic:
     description: >
       Электрическая бифуркация: нелинейное поле напряжения, плотные
       ритмические скопления, спектральное зерно и кристаллические импульсы.
-
     identity:
       palette_id: spectral_neon
       macro_archetype: bifurcation_impulse
       postprocess_style_slug: grainfilm
-      visual_keywords:
-        - electric
-        - kinetic
-        - unstable
-        - synthetic
-
+      visual_keywords: [electric, kinetic, unstable, synthetic]
     composition:
       negative_space:
         coverage_source: silence_rate
         coverage_range: [0.08, 0.28]
         direction_source: layout_macro_shape
-
     layers:
       - id: tension_field
         role: macro_structure
@@ -288,6 +277,293 @@ profiles:
           branch_jitter: noise_level
           radial_scale: repetition
           rotation_deg: harmonic_change_rate
+
+      - id: silence_mask
+        role: silence_mask
+        source_kind: procedural_mask
+        enabled: true
+        z_index: 50
+        opacity: 1.0
+        blend_mode: normal
+        palette_id: null
+        computation_resolution_fraction: 1.00
+        mapping:
+          coverage: silence_rate
+          direction: layout_macro_shape
+          edge_softness: tension
+
+  # ── 3. Jazz (лунный импровизационный поток) ─────────────────────────────────
+  jazz:
+    description: >
+      Импровизационный лунный поток: хаотическое рассеяние как основа,
+      орбитальный слой как контрапункт, мягкая текстура и гармонический орнамент.
+    identity:
+      palette_id: lunar_mist
+      macro_archetype: fluid_scatter
+      postprocess_style_slug: grainfilm
+      visual_keywords: [fluid, improvisational, cool, airy]
+    composition:
+      negative_space:
+        coverage_source: silence_rate
+        coverage_range: [0.18, 0.50]
+        direction_source: layout_macro_shape
+    layers:
+      - id: scatter_base
+        role: macro_structure
+        generator_id: chaotic_scattering_basins
+        enabled: true
+        z_index: 10
+        opacity: 0.82
+        blend_mode: normal
+        palette_id: lunar_mist
+        computation_resolution_fraction: 0.72
+        rotation_range_deg: [-18.0, 18.0]
+        mapping:
+          forcing: energy
+          damping: tension
+          forcing_frequency: motion_intensity
+          nonlinear_stiffness: texture_complexity
+          n_steps: recursion_depth
+          stochastic_scale: noise_level
+          gamma_window: density_level
+          omega_window: density_level
+
+      - id: orbit_counterpoint
+        role: counterpoint
+        generator_id: julia_orbit_trap
+        enabled: true
+        z_index: 20
+        opacity: 0.32
+        blend_mode: screen
+        palette_id: lunar_mist
+        computation_resolution_fraction: 0.56
+        rotation_range_deg: [-45.0, 45.0]
+        mapping:
+          c_real: symmetry_bias
+          c_imag: tension
+          exponent_p: texture_complexity
+          trap_radius: density_level
+          max_iter: recursion_depth
+          stochastic_scale: noise_level
+          domain_zoom: motion_intensity
+
+      - id: airy_texture
+        role: microtexture
+        generator_id: colored_noise_field
+        enabled: true
+        z_index: 30
+        opacity: 0.07
+        blend_mode: soft_light
+        palette_id: lunar_mist
+        computation_resolution_fraction: 1.00
+        mapping:
+          amplitude: noise_level
+          frequency_scale: spectral_flatness
+          anisotropy: repetition
+          grain_size: high_frequency_energy
+
+      - id: harmonic_snowflake
+        role: harmonic_refrain
+        generator_id: symmetry_snowflake
+        enabled_if:
+          all:
+            - source: harmonic_stability
+              operator: gte
+              value: 0.50
+        z_index: 40
+        opacity: 0.14
+        blend_mode: add
+        palette_id: pale_gold_accent
+        computation_resolution_fraction: 0.40
+        rotation_range_deg: [0.0, 360.0]
+        mapping:
+          branch_count: symmetry_bias
+          branch_depth: texture_complexity
+          branch_jitter: noise_level
+          radial_scale: repetition
+          rotation_deg: harmonic_change_rate
+
+      - id: silence_mask
+        role: silence_mask
+        source_kind: procedural_mask
+        enabled: true
+        z_index: 50
+        opacity: 1.0
+        blend_mode: normal
+        palette_id: null
+        computation_resolution_fraction: 1.00
+        mapping:
+          coverage: silence_rate
+          direction: layout_macro_shape
+          edge_softness: tension
+
+  # ── 4. Ambient (туман и дрейф) ───────────────────────────────────────────────
+  ambient:
+    description: >
+      Атмосферный дрейф: orbital_field как медленный поток, плотный шумовой
+      туман, минимальная плотность и максимальное негативное пространство.
+    identity:
+      palette_id: neutral_noir
+      macro_archetype: slow_drift
+      postprocess_style_slug: fullcolor
+      visual_keywords: [atmospheric, slow, sparse, meditative]
+    composition:
+      negative_space:
+        coverage_source: silence_rate
+        coverage_range: [0.28, 0.62]
+        direction_source: layout_macro_shape
+    layers:
+      - id: drift_flow
+        role: flow
+        generator_id: orbital_field
+        enabled: true
+        z_index: 10
+        opacity: 0.78
+        blend_mode: normal
+        palette_id: neutral_noir
+        computation_resolution_fraction: 0.80
+        rotation_range_deg: [-10.0, 10.0]
+        mapping:
+          tempo: tempo
+          repetition_bias: repetition
+          point_density: density_level
+          energy_scale: energy
+          flow_intensity: motion_intensity
+          symmetry_weight: symmetry_bias
+
+      - id: mist_texture
+        role: atmosphere
+        generator_id: colored_noise_field
+        enabled: true
+        z_index: 20
+        opacity: 0.18
+        blend_mode: soft_light
+        palette_id: neutral_noir
+        computation_resolution_fraction: 1.00
+        mapping:
+          amplitude: noise_level
+          frequency_scale: spectral_flatness
+          anisotropy: repetition
+          grain_size: high_frequency_energy
+
+      - id: sparse_ifs
+        role: density_field
+        generator_id: orbit_ifs_multi_trap
+        enabled: true
+        z_index: 30
+        opacity: 0.20
+        blend_mode: screen
+        palette_id: neutral_noir
+        computation_resolution_fraction: 0.50
+        rotation_range_deg: [-20.0, 20.0]
+        mapping:
+          n_points: density_level
+          map_diversity: texture_complexity
+          attractor_spread: motion_intensity
+          stochastic_scale: noise_level
+          n_iter: recursion_depth
+
+      - id: silence_mask
+        role: silence_mask
+        source_kind: procedural_mask
+        enabled: true
+        z_index: 50
+        opacity: 1.0
+        blend_mode: normal
+        palette_id: null
+        computation_resolution_fraction: 1.00
+        mapping:
+          coverage: silence_rate
+          direction: layout_macro_shape
+          edge_softness: tension
+
+  # ── 5. Classical (структура и золото) ───────────────────────────────────────
+  classical:
+    description: >
+      Архитектурная симметрия: Julia как несущая структура с высокой
+      симметрией, золотой акцент, минимальный шум, чёткая иерархия слоёв.
+    identity:
+      palette_id: pale_gold_accent
+      macro_archetype: symmetric_structure
+      postprocess_style_slug: fullcolor
+      visual_keywords: [structured, symmetrical, refined, golden]
+    composition:
+      negative_space:
+        coverage_source: silence_rate
+        coverage_range: [0.10, 0.38]
+        direction_source: layout_macro_shape
+    layers:
+      - id: classical_structure
+        role: macro_structure
+        generator_id: julia_orbit_trap
+        enabled: true
+        z_index: 10
+        opacity: 0.95
+        blend_mode: normal
+        palette_id: pale_gold_accent
+        computation_resolution_fraction: 0.85
+        rotation_range_deg: [-8.0, 8.0]
+        mapping:
+          c_real: symmetry_bias
+          c_imag: tension
+          exponent_p: texture_complexity
+          trap_radius: density_level
+          max_iter: recursion_depth
+          stochastic_scale: noise_level
+          domain_zoom: motion_intensity
+
+      - id: ornamental_snowflake
+        role: ornament
+        generator_id: symmetry_snowflake
+        enabled: true
+        z_index: 20
+        opacity: 0.22
+        blend_mode: multiply
+        palette_id: pale_gold_accent
+        computation_resolution_fraction: 0.55
+        rotation_range_deg: [0.0, 45.0]
+        mapping:
+          branch_count: symmetry_bias
+          branch_depth: texture_complexity
+          branch_jitter: noise_level
+          radial_scale: repetition
+          rotation_deg: harmonic_change_rate
+
+      - id: subtle_texture
+        role: microtexture
+        generator_id: colored_noise_field
+        enabled: true
+        z_index: 30
+        opacity: 0.05
+        blend_mode: soft_light
+        palette_id: pale_gold_accent
+        computation_resolution_fraction: 1.00
+        mapping:
+          amplitude: noise_level
+          frequency_scale: spectral_flatness
+          anisotropy: repetition
+          grain_size: high_frequency_energy
+
+      - id: harmonic_counterpoint
+        role: counterpoint
+        generator_id: orbit_ifs_multi_trap
+        enabled_if:
+          all:
+            - source: section_complexity
+              operator: gte
+              value: 0.45
+        z_index: 40
+        opacity: 0.18
+        blend_mode: screen
+        palette_id: pale_gold_accent
+        computation_resolution_fraction: 0.45
+        rotation_range_deg: [-15.0, 15.0]
+        mapping:
+          n_points: density_level
+          map_diversity: texture_complexity
+          attractor_spread: motion_intensity
+          stochastic_scale: noise_level
+          n_iter: recursion_depth
 
       - id: silence_mask
         role: silence_mask
