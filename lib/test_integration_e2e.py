@@ -5,6 +5,9 @@
     → execute_plan → PNG
 
 Использует только синтетические признаки — реальный аудио-файл не нужен.
+
+Доступные style_profile_slug (configs/visual_composition_profiles.yaml):
+  blues_jazz, electronic
 """
 from __future__ import annotations
 
@@ -24,7 +27,7 @@ from lib.reference_renderer.execute_plan import execute_plan, RenderResult
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Синтетические признаки (raw audio_features) для разных стилей
+# Синтетические raw audio_features
 # ──────────────────────────────────────────────────────────────────────────────
 
 _BASE_AUDIO_FEATURES = {
@@ -62,6 +65,24 @@ _BASE_AUDIO_FEATURES = {
     ],
 }
 
+# Два реальных slug-а из configs/visual_composition_profiles.yaml
+_SLUG_BLUES_JAZZ  = "blues_jazz"
+_SLUG_ELECTRONIC  = "electronic"
+_SLUG_DEFAULT     = _SLUG_BLUES_JAZZ
+
+# Маппинг suggested_music_style → реальный slug
+_SLUG_MAP = {
+    "blues":      _SLUG_BLUES_JAZZ,
+    "jazz":       _SLUG_BLUES_JAZZ,
+    "electronic": _SLUG_ELECTRONIC,
+    "ambient":    _SLUG_BLUES_JAZZ,
+    "classical":  _SLUG_BLUES_JAZZ,
+    "rock":       _SLUG_ELECTRONIC,
+    "pop":        _SLUG_BLUES_JAZZ,
+    "soundtrack": _SLUG_BLUES_JAZZ,
+    "mixed":      _SLUG_BLUES_JAZZ,
+}
+
 
 def _make_audio_features(overrides: dict | None = None) -> dict:
     f = dict(_BASE_AUDIO_FEATURES)
@@ -88,21 +109,10 @@ def _latent_from_features(features: dict) -> PerceptualLatent:
     )
 
 
-def _render_params_from_features(features: dict, slug: str = "") -> RenderParams:
+def _render_params_from_features(features: dict) -> RenderParams:
     """audio_features dict → RenderParams dataclass."""
-    style = slug or features.get("suggested_music_style", "blues")
-    slug_map = {
-        "blues":      "blues_orbit_default",
-        "electronic": "electronic_pulse_default",
-        "jazz":       "jazz_fluid_default",
-        "ambient":    "ambient_drift_default",
-        "classical":  "classical_structure_default",
-        "rock":       "rock_impact_default",
-        "pop":        "pop_clarity_default",
-        "soundtrack": "soundtrack_depth_default",
-        "mixed":      "blues_orbit_default",
-    }
-    profile_slug = slug_map.get(style, "blues_orbit_default")
+    style = features.get("suggested_music_style", "blues")
+    profile_slug = _SLUG_MAP.get(style, _SLUG_DEFAULT)
     lat = build_perceptual_latent(features)
     return RenderParams(
         style_profile_slug=profile_slug,
@@ -131,9 +141,9 @@ def _make_plan(
     artist: str = "E2E Artist",
     save_artifacts: bool = False,
 ):
-    perceptual  = _latent_from_features(features)
-    render_p    = _render_params_from_features(features)
-    track_meta  = _track_meta(audio_hash, title, artist)
+    perceptual = _latent_from_features(features)
+    render_p   = _render_params_from_features(features)
+    track_meta = _track_meta(audio_hash, title, artist)
     return build_visual_composition_plan(
         perceptual=perceptual,
         render_params=render_p,
@@ -142,14 +152,17 @@ def _make_plan(
     )
 
 
-# ─── Стили для параметризованных тестов ─────────────────────────────────────────────
+# ─── Стили для параметризованных тестов (2 реальных профиля) ───────────────────────
 
 STYLES = [
-    ("blues",      {"suggested_music_style": "blues",      "bpm": 110.0, "brightness": 0.08, "repetition_score": 0.90}),
-    ("electronic", {"suggested_music_style": "electronic", "bpm": 145.0, "energy": 0.30,    "brightness": 0.25, "rhythm_density": 0.65}),
-    ("jazz",       {"suggested_music_style": "jazz",       "bpm": 115.0, "brightness": 0.12, "energy": 0.14}),
-    ("ambient",    {"suggested_music_style": "ambient",    "bpm": 75.0,  "brightness": 0.05, "rhythm_density": 0.35, "energy": 0.08}),
-    ("classical",  {"suggested_music_style": "classical",  "bpm": 90.0,  "brightness": 0.07, "energy": 0.09,   "repetition_score": 0.60}),
+    # blues/jazz/ambient/classical → blues_jazz
+    ("blues_jazz/blues",     {"suggested_music_style": "blues",     "bpm": 110.0, "brightness": 0.08, "repetition_score": 0.90}),
+    ("blues_jazz/jazz",      {"suggested_music_style": "jazz",      "bpm": 115.0, "brightness": 0.12, "energy": 0.14}),
+    ("blues_jazz/ambient",   {"suggested_music_style": "ambient",   "bpm": 75.0,  "brightness": 0.05, "rhythm_density": 0.35, "energy": 0.08}),
+    ("blues_jazz/classical", {"suggested_music_style": "classical",  "bpm": 90.0, "brightness": 0.07, "energy": 0.09, "repetition_score": 0.60}),
+    # electronic/rock → electronic
+    ("electronic/electronic", {"suggested_music_style": "electronic", "bpm": 145.0, "energy": 0.30, "brightness": 0.25, "rhythm_density": 0.65}),
+    ("electronic/rock",       {"suggested_music_style": "rock",       "bpm": 135.0, "energy": 0.28, "brightness": 0.22, "rhythm_density": 0.60}),
 ]
 
 
@@ -177,7 +190,6 @@ class TestPipelineStages:
     """E2E — поэтапная проверка выхода каждого этапа."""
 
     def test_latent_keys(self, blues_latent_dict):
-        """build_perceptual_latent возвращает все ожидаемые поля."""
         expected = {
             "energy", "tension", "density", "brightness", "stability",
             "smoothness", "repetition", "section_complexity", "macro_shape_hint",
@@ -187,7 +199,6 @@ class TestPipelineStages:
         assert expected.issubset(set(blues_latent_dict.keys()))
 
     def test_latent_ranges(self, blues_latent_dict):
-        """[скалярные поля] в [0, 1], tempo_bpm > 0."""
         for field in ["energy", "tension", "density", "brightness",
                       "stability", "smoothness", "repetition", "section_complexity"]:
             v = blues_latent_dict[field]
@@ -227,16 +238,15 @@ class TestPipelineStages:
 
 
 class TestMultiStylePipeline:
-    """E2E — планировщик работает для пяти разных стилей."""
+    """E2E — оба профиля работают для разных стилей."""
 
-    @pytest.mark.parametrize("style,overrides", STYLES)
-    def test_plan_and_render(self, style, overrides):
+    @pytest.mark.parametrize("label,overrides", STYLES)
+    def test_plan_and_render(self, label, overrides):
         features = _make_audio_features(overrides)
-        plan     = _make_plan(features, audio_hash=f"e2e_{style}_0000",
-                              title=f"{style.capitalize()} Test Track",
-                              artist="E2E Artist")
+        plan     = _make_plan(features, audio_hash=f"e2e_{label.replace('/', '_')}_0000",
+                              title=f"{label} Test Track", artist="E2E Artist")
         result   = execute_plan(plan, save_png=False)
-        assert result.layers_rendered >= 1, f"{style}: ни одного отрендеренного слоя"
+        assert result.layers_rendered >= 1, f"{label}: ни одного отрендеренного слоя"
         assert result.width == 1024 and result.height == 1024
 
 
@@ -271,7 +281,8 @@ class TestEdgeCases:
     def test_extreme_bpm(self):
         """bpm=300 (drum&bass) — планировщик не падает."""
         features = _make_audio_features({"bpm": 300.0, "energy": 0.35,
-                                         "rhythm_density": 0.80, "brightness": 0.30})
+                                         "rhythm_density": 0.80, "brightness": 0.30,
+                                         "suggested_music_style": "electronic"})
         plan   = _make_plan(features, audio_hash="extreme_bpm_hash", title="Extreme BPM", artist="None")
         result = execute_plan(plan, save_png=False)
         assert result.width == 1024
