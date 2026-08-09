@@ -1,85 +1,113 @@
 schema_version: palettes/v0.3
-palette_library_version: 0.3.0
+palette_library_version: 0.3.1
+
+global_rules:
+  color_space: sRGB
+  internal_alpha_range: [0.0, 1.0]
+  max_accents_per_plan: 1
+  allow_layer_palette_override: true
+  fallback_palette_id: neutral_noir
 
 palettes:
+
   neutral_noir:
+    family: neutral
     background_rgba: [7, 9, 18, 255]
-    dominant:
-      stops:
-        - [0.00, "#070912"]
-        - [0.45, "#263347"]
-        - [0.75, "#69819A"]
-        - [1.00, "#E6E9E2"]
-    accent: "#FFFFFF"
-    saturation_budget: 0.30
+    dominant_stops:
+      - { position: 0.00, color: "#070912" }
+      - { position: 0.45, color: "#3A4555" }
+      - { position: 1.00, color: "#E4E7E8" }
+    accent_color: "#FFFFFF"
+    saturation_budget: 0.25
     contrast: 1.00
+    luminance_gamma: 1.00
 
   nocturne_amber:
+    family: blue_amber
     background_rgba: [7, 9, 18, 255]
-    dominant:
-      stops:
-        - [0.00, "#06111D"]
-        - [0.40, "#0D4B63"]
-        - [0.72, "#2D8C93"]
-        - [1.00, "#F2B84B"]
-    accent: "#FFC766"
+    dominant_stops:
+      - { position: 0.00, color: "#06111D" }
+      - { position: 0.38, color: "#0D4B63" }
+      - { position: 0.70, color: "#278590" }
+      - { position: 1.00, color: "#E8AF48" }
+    accent_color: "#FFD07A"
     saturation_budget: 0.70
     contrast: 1.10
+    luminance_gamma: 0.94
 
   lunar_mist:
+    family: lunar
     background_rgba: [9, 16, 26, 255]
-    dominant:
-      stops:
-        - [0.00, "#07131F"]
-        - [0.52, "#496C86"]
-        - [1.00, "#D5E7EA"]
-    accent: "#A8E3EE"
-    saturation_budget: 0.38
-    contrast: 0.92
+    dominant_stops:
+      - { position: 0.00, color: "#081521" }
+      - { position: 0.50, color: "#466C86" }
+      - { position: 1.00, color: "#D3E6E8" }
+    accent_color: "#B7F0F4"
+    saturation_budget: 0.35
+    contrast: 0.94
+    luminance_gamma: 1.08
 
   spectral_neon:
+    family: neon
     background_rgba: [5, 4, 18, 255]
-    dominant:
-      stops:
-        - [0.00, "#08172A"]
-        - [0.45, "#00C8FF"]
-        - [0.74, "#8D48FF"]
-        - [1.00, "#FF3EA5"]
-    accent: "#D7FFFF"
+    dominant_stops:
+      - { position: 0.00, color: "#07172B" }
+      - { position: 0.42, color: "#00BEEA" }
+      - { position: 0.72, color: "#8050F0" }
+      - { position: 1.00, color: "#F83F9C" }
+    accent_color: "#D9FFFF"
     saturation_budget: 0.92
     contrast: 1.24
-
-  pale_gold_accent:
-    background_rgba: [8, 7, 12, 255]
-    dominant:
-      stops:
-        - [0.00, "#100C12"]
-        - [0.60, "#85632B"]
-        - [1.00, "#FFE2A4"]
-    accent: "#FFF3CF"
-    saturation_budget: 0.55
-    contrast: 1.16
+    luminance_gamma: 0.88
 
   crimson_gold_noir:
+    family: cinematic
     background_rgba: [10, 5, 8, 255]
-    dominant:
-      stops:
-        - [0.00, "#0A0508"]
-        - [0.46, "#49151D"]
-        - [0.76, "#AF3832"]
-        - [1.00, "#D7A649"]
-    accent: "#FFE0A1"
+    dominant_stops:
+      - { position: 0.00, color: "#0A0508" }
+      - { position: 0.45, color: "#46151D" }
+      - { position: 0.76, color: "#AE3731" }
+      - { position: 1.00, color: "#D5A548" }
+    accent_color: "#FFE0A3"
     saturation_budget: 0.74
     contrast: 1.22
+    luminance_gamma: 0.92
 
   charcoal_red_white:
+    family: raw_contrast
     background_rgba: [11, 11, 12, 255]
-    dominant:
-      stops:
-        - [0.00, "#111114"]
-        - [0.45, "#49494C"]
-        - [0.72, "#B81924"]
-        - [1.00, "#EFEDE5"]
-    accent: "#FFFFFF"
+    dominant_stops:
+      - { position: 0.00, color: "#111114" }
+      - { position: 0.45, color: "#49494C" }
+      - { position: 0.72, color: "#B81924" }
+      - { position: 1.00, color: "#EFEDE5" }
+    accent_color: "#FFFFFF"
     saturation_budget: 0.68
     contrast: 1.30
+    luminance_gamma: 0.90
+
+  pale_gold_accent:
+    family: accent
+    background_rgba: [0, 0, 0, 0]
+    dominant_stops:
+      - { position: 0.00, color: "#433112" }
+      - { position: 1.00, color: "#FFE5A0" }
+    accent_color: "#FFF5D2"
+    saturation_budget: 0.45
+    contrast: 1.05
+    luminance_gamma: 1.00
+
+  # B1: новая полноценная палитра для classical профиля
+  # Тёмная основа + кобальтовый корпус + слоновая кость + золотой акцент
+  ivory_cobalt:
+    family: classical
+    background_rgba: [20, 23, 27, 255]
+    dominant_stops:
+      - { position: 0.00, color: "#111820" }
+      - { position: 0.42, color: "#314F78" }
+      - { position: 0.76, color: "#B8C9D7" }
+      - { position: 1.00, color: "#F0E8D8" }
+    accent_color: "#C89B43"
+    saturation_budget: 0.42
+    contrast: 1.08
+    luminance_gamma: 0.98

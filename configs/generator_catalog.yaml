@@ -1,133 +1,526 @@
 schema_version: generator-catalog/v0.3
-catalog_version: 0.3.0
+catalog_version: 0.3.1
+
+rules:
+  canonicalize_before_builder: true
+  unknown_generator_policy: error
+  unknown_alias_policy: error
+  implicit_fallback_builder_allowed: false
+  all_parameter_units_must_be_declared: true
+  # B1: mapping targets validated against parameters section before render
+  validate_mapping_targets: true
 
 generators:
+
   julia_orbit_trap:
     canonical_id: julia_orbit_trap
-    python_entrypoint: fractal_core.generators.julia_orbit_trap
-    builder: make_sim_state_for_julia
-    family: nonlinear_fractal
+    kind: fractal_core
+    builder_id: julia_v1
     roles:
       - macro_structure
       - contour
       - counterpoint
-    supports:
-      - symmetry_bias
-      - density_level
-      - noise_level
-      - recursion_depth
-      - texture_complexity
-      - motion_intensity
-      - tension
     aliases:
       - smooth_geometric_baseline
+    capabilities:
+      supported_inputs:
+        - symmetry_bias
+        - density_level
+        - noise_level
+        - recursion_depth
+        - texture_complexity
+        - motion_intensity
+        - tension
+        - energy
+    # B1: реальные параметры из generators.py::julia_orbit_trap()
+    # theta[0]=c_real, theta[1]=c_imag, theta[2]=exponent_p,
+    # theta[3]=trap_radius, theta[4]=trap_center_x, theta[5]=trap_center_y
+    # SimState.max_iter, SimState.stochastic_scale, SimState.domain
+    parameters:
+      c_real:
+        type: float
+        range: [-1.5, 1.5]
+        unit: normalized
+        required: true
+        theta_index: 0
+      c_imag:
+        type: float
+        range: [-1.5, 1.5]
+        unit: normalized
+        required: true
+        theta_index: 1
+      exponent_p:
+        type: float
+        range: [1.5, 5.0]
+        unit: scalar
+        required: true
+        theta_index: 2
+      trap_radius:
+        type: float
+        range: [0.01, 1.0]
+        unit: domain_units
+        required: true
+        theta_index: 3
+      trap_center_x:
+        type: float
+        range: [-1.0, 1.0]
+        unit: domain_units
+        required: false
+        theta_index: 4
+      trap_center_y:
+        type: float
+        range: [-1.0, 1.0]
+        unit: domain_units
+        required: false
+        theta_index: 5
+      max_iter:
+        type: integer
+        range: [32, 2048]
+        unit: iterations
+        required: true
+        builder_target: SimState.max_iter
+      stochastic_scale:
+        type: float
+        range: [0.0, 0.05]
+        unit: normalized
+        required: false
+        builder_target: SimState.stochastic_scale
+      domain_zoom:
+        type: float
+        range: [0.5, 4.0]
+        unit: scalar
+        required: false
+        builder_target: SimState.domain
+      rotation_deg:
+        type: float
+        range: [-180.0, 180.0]
+        unit: degrees
+        required: false
+        builder_target: transform
+      recursion_depth:
+        type: integer
+        range: [32, 2048]
+        unit: iterations
+        required: false
+        builder_default: 256
+        note: alias for max_iter accepted in mapping; normalised to SimState.max_iter
+    defaults:
+      computation_resolution_px: [800, 800]
+      opacity: 0.90
+      blend_mode: normal
 
   orbit_ifs_multi_trap:
     canonical_id: orbit_ifs_multi_trap
-    python_entrypoint: fractal_core.generators.orbit_ifs_multi_trap
-    builder: make_sim_state_for_ifs
-    family: iterated_function_system
+    kind: fractal_core
+    builder_id: ifs_v1
     roles:
       - meso_rhythm
-      - microtexture
       - density_field
-    supports:
-      - density_level
-      - motion_intensity
-      - noise_level
-      - recursion_depth
-      - texture_complexity
+      - microtexture
     aliases:
       - single_parameter_map_baseline
+    capabilities:
+      supported_inputs:
+        - density_level
+        - noise_level
+        - recursion_depth
+        - motion_intensity
+        - texture_complexity
+        - repetition
+        - symmetry_bias
+    # B1: реальные параметры из generators.py::orbit_ifs_multi_trap()
+    # theta используется циклически для построения 4 IFS-карт
+    # n_points берётся из SimState.extra["n_points"]
+    parameters:
+      n_points:
+        type: integer
+        range: [5000, 200000]
+        unit: samples
+        required: true
+        builder_target: SimState.extra["n_points"]
+      map_diversity:
+        type: float
+        range: [0.0, 1.0]
+        unit: normalized
+        required: false
+        builder_default: 0.5
+        note: modulates theta spread across 4 IFS maps
+      attractor_spread:
+        type: float
+        range: [0.0, 1.0]
+        unit: normalized
+        required: false
+        builder_default: 0.5
+        note: controls cx/cy amplitude in IFS maps
+      stochastic_scale:
+        type: float
+        range: [0.0, 0.05]
+        unit: normalized
+        required: false
+        builder_target: SimState.stochastic_scale
+      domain_zoom:
+        type: float
+        range: [0.5, 4.0]
+        unit: scalar
+        required: false
+        builder_target: SimState.domain
+      rotation_deg:
+        type: float
+        range: [-180.0, 180.0]
+        unit: degrees
+        required: false
+        builder_target: transform
+    defaults:
+      computation_resolution_px: [640, 640]
+      opacity: 0.42
+      blend_mode: screen
 
   duffing_lyapunov:
     canonical_id: duffing_lyapunov
-    python_entrypoint: fractal_core.generators.duffing_lyapunov_map
-    builder: make_sim_state_for_duffing
-    family: nonlinear_dynamics
+    kind: fractal_core
+    builder_id: duffing_v1
     roles:
       - macro_structure
       - tension_field
       - atmosphere
-    supports:
-      - tension
-      - energy
-      - density_level
-      - motion_intensity
-      - texture_complexity
-      - noise_level
-      - recursion_depth
     aliases: []
+    capabilities:
+      supported_inputs:
+        - energy
+        - tension
+        - noise_level
+        - recursion_depth
+        - motion_intensity
+        - texture_complexity
+        - density_level
+    # B1: реальные параметры из generators.py::duffing_lyapunov_map()
+    # theta[0]=damping(delta), theta[1]=linear_stiffness(alpha),
+    # theta[2]=nonlinear_stiffness(beta), theta[3]=forcing(gamma0),
+    # theta[4]=forcing_frequency(omega0)
+    # n_steps → SimState.extra["n_steps"]
+    # gamma_window / omega_window управляют диапазонами сканирования
+    parameters:
+      damping:
+        type: float
+        range: [0.0, 1.0]
+        unit: normalized
+        required: true
+        theta_index: 0
+        python_expr: "delta = 0.1 + 0.25 * (th[0] + 1) / 2"
+      linear_stiffness:
+        type: float
+        range: [-1.0, 1.0]
+        unit: normalized
+        required: false
+        theta_index: 1
+        builder_default: 0.0
+        python_expr: "alpha = -1.0 + 0.5 * th[1]"
+      nonlinear_stiffness:
+        type: float
+        range: [0.0, 1.0]
+        unit: normalized
+        required: true
+        theta_index: 2
+        python_expr: "beta = 1.0 + 0.5 * th[2]"
+      forcing:
+        type: float
+        range: [0.0, 1.0]
+        unit: normalized
+        required: true
+        theta_index: 3
+        python_expr: "gamma0 = 0.2 + 0.6 * (th[3] + 1) / 2"
+      forcing_frequency:
+        type: float
+        range: [0.0, 1.0]
+        unit: normalized
+        required: false
+        theta_index: 4
+        builder_default: 0.0
+        python_expr: "omega0 = 0.8 + 0.6 * (th[4] + 1) / 2"
+      n_steps:
+        type: integer
+        range: [100, 2000]
+        unit: steps
+        required: true
+        builder_target: SimState.extra["n_steps"]
+      stochastic_scale:
+        type: float
+        range: [0.0, 0.05]
+        unit: normalized
+        required: false
+        builder_target: SimState.stochastic_scale
+      gamma_window:
+        type: float
+        range: [0.0, 0.5]
+        unit: scalar
+        required: false
+        builder_default: 0.15
+        note: half-width of gamma scan range around gamma0
+      omega_window:
+        type: float
+        range: [0.0, 0.5]
+        unit: scalar
+        required: false
+        builder_default: 0.15
+        note: half-width of omega scan range around omega0
+      rotation_deg:
+        type: float
+        range: [-180.0, 180.0]
+        unit: degrees
+        required: false
+        builder_target: transform
+    defaults:
+      computation_resolution_px: [768, 768]
+      opacity: 0.84
+      blend_mode: normal
 
   chaotic_scattering_basins:
     canonical_id: chaotic_scattering_basins
-    python_entrypoint: fractal_core.generators.chaotic_scattering_basins
-    builder: make_sim_state_for_scattering
-    family: basin_dynamics
+    kind: fractal_core
+    builder_id: scattering_v1
     roles:
-      - accent
       - transition_field
       - counterpoint
+      - accent
       - macro_structure
-    supports:
-      - tension
-      - energy
-      - density_level
-      - motion_intensity
-      - texture_complexity
-      - noise_level
     aliases:
       - random_baseline
+    capabilities:
+      supported_inputs:
+        - tension
+        - energy
+        - motion_intensity
+        - texture_complexity
+        - noise_level
+        - density_level
+        - symmetry_bias
+    # B1: реальные параметры из generators.py::chaotic_scattering_basins()
+    # theta[0]=scatterer_radius, theta[1]=center_phase_offset,
+    # theta[2]=center_radius, theta[3]=initial_velocity_x,
+    # theta[4]=initial_velocity_y
+    # max_steps → SimState.max_iter
+    # stochastic_scale → SimState.stochastic_scale
+    parameters:
+      scatterer_radius:
+        type: float
+        range: [0.05, 0.35]
+        unit: domain_units
+        required: true
+        theta_index: 0
+        python_expr: "radius = 0.15 + 0.05 * (th[0] + 1) / 2"
+      center_phase_offset:
+        type: float
+        range: [0.0, 1.0]
+        unit: normalized
+        required: false
+        theta_index: 1
+        builder_default: 0.0
+        python_expr: "ang_offset = th[1] * 0.5  # per-scatterer angular offset"
+      center_radius:
+        type: float
+        range: [0.3, 1.0]
+        unit: domain_units
+        required: false
+        theta_index: 2
+        builder_default: 0.5
+        python_expr: "r = 0.7 + 0.2 * th[2]"
+      initial_velocity_x:
+        type: float
+        range: [0.0, 0.1]
+        unit: domain_units_per_step
+        required: true
+        theta_index: 3
+        python_expr: "vx0 = 0.02 * (1 + 0.5 * th[3])"
+      initial_velocity_y:
+        type: float
+        range: [0.0, 0.1]
+        unit: domain_units_per_step
+        required: false
+        theta_index: 4
+        builder_default: 0.015
+        python_expr: "vy0 = 0.015 * (1 + 0.5 * th[4])"
+      max_steps:
+        type: integer
+        range: [200, 2000]
+        unit: steps
+        required: true
+        builder_target: SimState.max_iter
+      stochastic_scale:
+        type: float
+        range: [0.0, 0.05]
+        unit: normalized
+        required: false
+        builder_target: SimState.stochastic_scale
+      domain_zoom:
+        type: float
+        range: [0.5, 4.0]
+        unit: scalar
+        required: false
+        builder_target: SimState.domain
+      rotation_deg:
+        type: float
+        range: [-180.0, 180.0]
+        unit: degrees
+        required: false
+        builder_target: transform
+    defaults:
+      computation_resolution_px: [640, 640]
+      opacity: 0.24
+      blend_mode: add
 
   orbital_field:
     canonical_id: orbital_field
-    python_entrypoint: reference_renderer.layers.orbital_field
-    builder: make_orbital_field_spec
-    family: procedural_visual
+    kind: procedural_visual
+    builder_id: orbital_field_v1
     roles:
       - meso_rhythm
       - flow
       - counterpoint
-    supports:
-      - tempo
-      - repetition
-      - density_level
-      - energy
-      - motion_intensity
-      - symmetry_bias
     aliases: []
+    capabilities:
+      supported_inputs:
+        - tempo
+        - repetition
+        - motion_intensity
+        - symmetry_bias
+        - energy
+        - tension
+    # B1: procedural spec — параметры определены как ProcLayerSpec
+    parameters:
+      flow_speed:
+        type: float
+        range: [0.0, 1.0]
+        unit: normalized
+        required: true
+      orbit_radius:
+        type: float
+        range: [0.1, 1.0]
+        unit: normalized
+        required: true
+      line_count:
+        type: integer
+        range: [4, 128]
+        unit: count
+        required: true
+      angular_break:
+        type: float
+        range: [0.0, 1.0]
+        unit: normalized
+        required: false
+        builder_default: 0.0
+      amplitude:
+        type: float
+        range: [0.0, 1.0]
+        unit: normalized
+        required: true
+      rotation_deg:
+        type: float
+        range: [-180.0, 180.0]
+        unit: degrees
+        required: false
+        builder_default: 0.0
+    defaults:
+      computation_resolution_px: [640, 640]
+      opacity: 0.28
+      blend_mode: screen
 
   colored_noise_field:
     canonical_id: colored_noise_field
-    python_entrypoint: reference_renderer.layers.colored_noise_field
-    builder: make_colored_noise_spec
-    family: procedural_visual
+    kind: procedural_visual
+    builder_id: colored_noise_v1
     roles:
       - microtexture
       - atmosphere
-    supports:
-      - noise_level
-      - spectral_flatness
-      - high_frequency_energy
-      - texture_complexity
-      - repetition
-      - tension
     aliases: []
+    capabilities:
+      supported_inputs:
+        - noise_level
+        - spectral_flatness
+        - high_frequency_energy
+        - texture_complexity
+        - repetition
+    # B1: procedural spec — параметры определены как ProcLayerSpec
+    parameters:
+      amplitude:
+        type: float
+        range: [0.0, 1.0]
+        unit: normalized
+        required: true
+      frequency_scale:
+        type: float
+        range: [0.01, 1.0]
+        unit: normalized
+        required: true
+      color_variation:
+        type: float
+        range: [0.0, 1.0]
+        unit: normalized
+        required: false
+        builder_default: 0.5
+      anisotropy:
+        type: float
+        range: [0.0, 1.0]
+        unit: normalized
+        required: false
+        builder_default: 0.0
+      grain_size:
+        type: float
+        range: [0.5, 8.0]
+        unit: pixels
+        required: false
+        builder_default: 2.0
+    defaults:
+      computation_resolution_px: [1024, 1024]
+      opacity: 0.10
+      blend_mode: soft_light
 
   symmetry_snowflake:
     canonical_id: symmetry_snowflake
-    python_entrypoint: reference_renderer.layers.symmetry_snowflake
-    builder: make_snowflake_spec
-    family: procedural_visual
+    kind: procedural_visual
+    builder_id: snowflake_v1
     roles:
       - accent
       - ornament
       - harmonic_refrain
-    supports:
-      - symmetry_bias
-      - repetition
-      - texture_complexity
-      - harmonic_stability
-      - harmonic_change_rate
-      - noise_level
     aliases: []
+    capabilities:
+      supported_inputs:
+        - symmetry_bias
+        - repetition
+        - texture_complexity
+        - harmonic_stability
+        - harmonic_change_rate
+    # B1: procedural spec — параметры определены как ProcLayerSpec
+    parameters:
+      branch_count:
+        type: integer
+        range: [3, 12]
+        unit: count
+        required: true
+      branch_depth:
+        type: integer
+        range: [2, 8]
+        unit: count
+        required: true
+      branch_jitter:
+        type: float
+        range: [0.0, 0.5]
+        unit: normalized
+        required: false
+        builder_default: 0.05
+      rotation_deg:
+        type: float
+        range: [-180.0, 180.0]
+        unit: degrees
+        required: false
+        builder_default: 0.0
+      radial_scale:
+        type: float
+        range: [0.1, 1.0]
+        unit: normalized
+        required: false
+        builder_default: 0.5
+    defaults:
+      computation_resolution_px: [512, 512]
+      opacity: 0.12
+      blend_mode: add
