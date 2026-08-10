@@ -1,4 +1,4 @@
-"""Audio analysis — E1-fix: density, motion_intensity, harmonic_stability."""
+"""Audio analysis — E1-fix2: motion norm 1500 Hz, mfcc_variance."""
 import librosa
 import numpy as np
 from typing import Any, Dict, List
@@ -10,8 +10,11 @@ ANALYSIS_SAMPLE_RATE_HZ = DEFAULT_SR_HZ   # alias для test8
 N_FFT = 2048
 HOP_LENGTH = 512
 HIGH_FREQUENCY_CUTOFF_HZ = 4000.0
-MOTION_NORM_HZ = 8000.0   # нормировочная частота для spectral_centroid
+# центроид музыки лежит в 300–700 Hz — нормируем по вокальному пику
+# (1500 Hz ≈ верхняя граница основного музыкального диапазона)
+MOTION_NORM_HZ = 1500.0
 ONSET_RATE_NORM = 8.0     # ударов/с → быстрый рок/поп ≈ 8 онсетов/с
+MFCC_NORM = 50.0          # типовое макс std MFCC (дБ шкала)
 
 
 def _to_python_scalar(value: Any) -> Any:
@@ -48,9 +51,8 @@ def _estimate_tempo_bpm(y: np.ndarray, sr: int) -> float:
 
 def _compute_silence_rate(rms: np.ndarray) -> float:
     """
-    Доля RMS-фреймов, лежащих ниже адаптивного порога тишины.
-    Порог: max(1e-4, 0.10 * median(rms > 0)).
-    Диапазон [0, 1].
+    Доля RMS-фреймов ниже адаптивного порога.
+    Порог: max(1e-4, 0.10 * median(rms > 0)). Диапазон [0, 1].
     """
     rms = np.asarray(rms, dtype=float)
     if rms.size == 0:
@@ -75,24 +77,41 @@ def _normalize_chroma(chroma: np.ndarray) -> np.ndarray:
 
 def _compute_chroma_entropy(chroma: np.ndarray) -> float:
     """
-    Фикс 3: энтропия тональных классов (Shannon, нормированная).
-
-    0.0 = вся энергия в одном тоне (монотонная классика).
-    1.0 = равномерное распределение по 12 классам (атональный шум).
-    Джаз и блюз ожидаются высокими, классика — низкими.
+    Shannon-энтропия тональных классов, нормированная на log(12).
+    0.0 = вся энергия в одном тоне, 1.0 = равномерное распределение.
     """
     chroma = np.asarray(chroma, dtype=float)
     if chroma.size == 0:
         return 0.5
-    chroma_mean = np.mean(chroma, axis=1)          # [12]
+    chroma_mean = np.mean(chroma, axis=1)
     total = float(np.sum(chroma_mean))
     if total <= EPSILON:
         return 0.5
-    prob = chroma_mean / total                     # вероятностное распределение
-    prob = np.clip(prob, EPSILON, 1.0)
+    prob = np.clip(chroma_mean / total, EPSILON, 1.0)
     entropy = -float(np.sum(prob * np.log(prob)))
-    max_entropy = float(np.log(12))                # log(12) ≈ 2.485
-    return float(np.clip(entropy / max_entropy, 0.0, 1.0))
+    return float(np.clip(entropy / float(np.log(12)), 0.0, 1.0))
+
+
+def _compute_mfcc_variance(y: np.ndarray, sr: int) -> float:
+    """
+    Фикс harmonic_stability: среднее std по 13 MFCC-коэффициентам,
+    нормировано на MFCC_NORM (50.0 дБ).
+
+    Джаз: широкий спектр → высокое std → высокое значение.
+    Классика: стабильный тембр → низкое std → низкое значение.
+
+    В test9 ось называется harmonic_stability, но физически это
+    тембральная вариативность — хороший дифференциатор жанров.
+    """
+    if y.size == 0 or sr <= 0:
+        return 0.0
+    mfcc = librosa.feature.mfcc(
+        y=y, sr=sr, n_mfcc=13,
+        n_fft=N_FFT, hop_length=HOP_LENGTH,
+    )  # shape: [13, T]
+    # std по времени для каждого коэффициента, затем среднее по 13
+    mfcc_std = float(np.mean(np.std(mfcc, axis=1)))
+    return float(np.clip(mfcc_std / MFCC_NORM, 0.0, 1.0))
 
 
 def _compute_harmonic_metrics(
@@ -102,7 +121,7 @@ def _compute_harmonic_metrics(
 ) -> tuple[float, float]:
     """
     Возвращает:
-    - harmonic_stability: средняя косинусная близость [0, 1];
+    - harmonic_stability_cosine: средняя косинусная близость [0, 1];
     - harmonic_change_rate_hz: смен гармонии/с [Hz].
     """
     normalized_chroma = _normalize_chroma(chroma)
@@ -114,7 +133,6 @@ def _compute_harmonic_metrics(
         normalized_chroma[:, 1:] * normalized_chroma[:, :-1], axis=0
     )
     similarities = np.clip(similarities, 0.0, 1.0)
-
     valid_pairs = (
         np.linalg.norm(normalized_chroma[:, 1:], axis=0) > EPSILON
     ) & (
@@ -124,7 +142,7 @@ def _compute_harmonic_metrics(
         return 0.0, 0.0
 
     valid_similarities = similarities[valid_pairs]
-    harmonic_stability = float(np.mean(valid_similarities))
+    harmonic_stability_cosine = float(np.mean(valid_similarities))
 
     harmonic_distance = 1.0 - valid_similarities
     change_threshold = max(0.20, float(np.percentile(harmonic_distance, 75)))
@@ -132,7 +150,7 @@ def _compute_harmonic_metrics(
     duration_sec = ((num_frames - 1) * hop_length) / float(sr)
     harmonic_change_rate_hz = _safe_ratio(change_count, duration_sec)
 
-    return harmonic_stability, harmonic_change_rate_hz
+    return harmonic_stability_cosine, harmonic_change_rate_hz
 
 
 def _compute_spectral_metrics(
@@ -150,23 +168,22 @@ def _compute_spectral_metrics(
         librosa.stft(y, n_fft=N_FFT, hop_length=HOP_LENGTH, center=True)
     )
     power = magnitude ** 2
-    spectral_flatness_frames = librosa.feature.spectral_flatness(
-        S=magnitude + EPSILON
-    )[0]
-    spectral_flatness = float(np.clip(_safe_mean(spectral_flatness_frames), 0.0, 1.0))
+    sf_frames = librosa.feature.spectral_flatness(S=magnitude + EPSILON)[0]
+    spectral_flatness = float(np.clip(_safe_mean(sf_frames), 0.0, 1.0))
     if power.size == 0:
         return spectral_flatness, 0.0
-    frequencies_hz = librosa.fft_frequencies(sr=sr, n_fft=N_FFT)
+    freqs = librosa.fft_frequencies(sr=sr, n_fft=N_FFT)
     nyquist_hz = sr / 2.0
     cutoff_hz = min(HIGH_FREQUENCY_CUTOFF_HZ, 0.45 * nyquist_hz)
     if cutoff_hz <= 0.0:
         return spectral_flatness, 0.0
-    mask = frequencies_hz >= cutoff_hz
+    mask = freqs >= cutoff_hz
     if not np.any(mask):
         return spectral_flatness, 0.0
     total_power = float(np.sum(power))
-    high_power = float(np.sum(power[mask, :]))
-    hf_ratio = float(np.clip(_safe_ratio(high_power, total_power), 0.0, 1.0))
+    hf_ratio = float(np.clip(
+        _safe_ratio(float(np.sum(power[mask, :])), total_power), 0.0, 1.0
+    ))
     return spectral_flatness, hf_ratio
 
 
@@ -176,9 +193,7 @@ def analyze_audio_file(
 ) -> Dict[str, Any]:
     """
     Анализирует MP3/WAV и возвращает сериализуемый словарь признаков.
-
-    Частота дискретизации фиксирована для воспроизводимости результата:
-    sr = 44100 Hz. Сигнал сводится к моно только для анализа признаков.
+    sr = 44100 Hz фиксирован для воспроизводимости.
     """
     y, sr = librosa.load(path, sr=sr, mono=True)
     y = np.asarray(y, dtype=float)
@@ -191,23 +206,22 @@ def analyze_audio_file(
     energy = _safe_mean(rms)
     bpm = _estimate_tempo_bpm(y=y, sr=sr)
 
-    # ── spectral centroid ──────────────────────────────────────────────────────────────
-    spectral_centroid_frames = np.asarray(
+    # ── spectral centroid ─────────────────────────────────────────────────────────
+    sc_frames = np.asarray(
         librosa.feature.spectral_centroid(
             y=y, sr=sr, n_fft=N_FFT, hop_length=HOP_LENGTH
         )[0],
         dtype=float,
     )
-    spectral_centroid = _safe_mean(spectral_centroid_frames)
+    spectral_centroid = _safe_mean(sc_frames)
     nyquist_hz = sr / 2.0
-    # старый brightness (/ nyquist) — остаётся для обратной совместимости
     brightness = float(np.clip(_safe_ratio(spectral_centroid, nyquist_hz), 0.0, 1.0))
-    # Фикс 2: нормализуем по музыкальной верхней частоте 8 кГц — реальный диапазон
+    # Фикс 2 v2: norm / 1500 Hz — покрывает реальный диапазон 300–700 Hz
     spectral_centroid_norm = float(
         np.clip(_safe_ratio(spectral_centroid, MOTION_NORM_HZ), 0.0, 1.0)
     )
 
-    # ── Фикс 1: onset rate вместо медианного порога ────────────────────────────────
+    # ── Фикс 1: onset rate ─────────────────────────────────────────────────────────
     onset_env = np.asarray(
         librosa.onset.onset_strength(y=y, sr=sr, hop_length=HOP_LENGTH),
         dtype=float,
@@ -215,62 +229,50 @@ def analyze_audio_file(
     onset_frames = librosa.onset.onset_detect(
         onset_envelope=onset_env, sr=sr, hop_length=HOP_LENGTH
     )
-    if duration_sec > 0.0:
-        onset_rate_hz = float(len(onset_frames)) / duration_sec
-    else:
-        onset_rate_hz = 0.0
-    # нормированный onset rate [0, 1]  (8 Hz = быстрый рок)
+    onset_rate_hz = (
+        float(len(onset_frames)) / duration_sec if duration_sec > 0.0 else 0.0
+    )
     onset_rate_norm = float(np.clip(onset_rate_hz / ONSET_RATE_NORM, 0.0, 1.0))
-    # rhythm_density остаётся для обратной совместимости (suggest_style)
     if onset_env.size:
-        onset_threshold = float(np.median(onset_env))
-        rhythm_density = float(np.mean(onset_env > onset_threshold))
+        rhythm_density = float(np.mean(onset_env > float(np.median(onset_env))))
     else:
         rhythm_density = 0.0
 
-    # ── dynamic range ────────────────────────────────────────────────────────────────
+    # ── dynamic range ─────────────────────────────────────────────────────────────
     if rms.size:
         rms_low  = float(np.percentile(rms, 10))
         rms_high = float(np.percentile(rms, 90))
         dynamic_range = float(
             20.0 * np.log10(max(rms_high, EPSILON))
-            - 20.0 * np.log10(max(rms_low, EPSILON))
+            - 20.0 * np.log10(max(rms_low,  EPSILON))
         )
     else:
         dynamic_range = 0.0
 
-    # ── chroma ──────────────────────────────────────────────────────────────────
+    # ── chroma + repetition ───────────────────────────────────────────────────────
     chroma = np.asarray(
         librosa.feature.chroma_stft(
             y=y, sr=sr, n_fft=N_FFT, hop_length=HOP_LENGTH
         ),
         dtype=float,
     )
-
     if chroma.size:
-        chroma_mean = np.mean(chroma, axis=1)
-        chroma_mean = np.asarray(chroma_mean, dtype=float)
+        chroma_mean = np.asarray(np.mean(chroma, axis=1), dtype=float)
         chroma_energy = float(np.dot(chroma_mean, chroma_mean))
-
         if chroma_energy > EPSILON:
             lag_frames = max(1, int(round(sr / HOP_LENGTH)))
             if chroma.shape[1] > lag_frames:
-                similarity = np.sum(
+                sim = np.sum(
                     chroma[:, :-lag_frames] * chroma[:, lag_frames:], axis=0
                 )
-                left_norm  = np.linalg.norm(chroma[:, :-lag_frames], axis=0)
-                right_norm = np.linalg.norm(chroma[:, lag_frames:], axis=0)
-                normalization = left_norm * right_norm
-                valid = normalization > EPSILON
-                if np.any(valid):
-                    repetition_score = float(
-                        np.clip(
-                            np.mean(similarity[valid] / normalization[valid]),
-                            0.0, 1.0,
-                        )
-                    )
-                else:
-                    repetition_score = 0.0
+                ln = np.linalg.norm(chroma[:, :-lag_frames], axis=0)
+                rn = np.linalg.norm(chroma[:, lag_frames:], axis=0)
+                norm_lr = ln * rn
+                valid = norm_lr > EPSILON
+                repetition_score = (
+                    float(np.clip(np.mean(sim[valid] / norm_lr[valid]), 0.0, 1.0))
+                    if np.any(valid) else 0.0
+                )
             else:
                 repetition_score = 0.0
         else:
@@ -286,11 +288,12 @@ def analyze_audio_file(
         else "unknown"
     )
 
-    # ── Фикс 3: chroma entropy ──────────────────────────────────────────────────
     chroma_entropy_norm = _compute_chroma_entropy(chroma)
+    # Фикс 3: MFCC variance как основной дифференциатор жанров
+    mfcc_variance_norm = _compute_mfcc_variance(y=y, sr=sr)
 
     silence_rate = _compute_silence_rate(rms)
-    harmonic_stability, harmonic_change_rate_hz = _compute_harmonic_metrics(
+    harmonic_stability_cosine, harmonic_change_rate_hz = _compute_harmonic_metrics(
         chroma=chroma, sr=sr, hop_length=HOP_LENGTH
     )
     spectral_flatness, high_frequency_energy_ratio = _compute_spectral_metrics(
@@ -313,28 +316,29 @@ def analyze_audio_file(
     )
 
     features: Dict[str, Any] = {
-        "bpm":                       bpm,
-        "key":                       key,
-        "energy":                    energy,
-        "spectral_centroid":         spectral_centroid,
-        "spectral_centroid_norm":    spectral_centroid_norm,   # Фикс 2
-        "brightness":                brightness,
-        "rhythm_density":            rhythm_density,
-        "onset_rate_hz":             onset_rate_hz,            # Фикс 1 (Hz)
-        "onset_rate_norm":           onset_rate_norm,          # Фикс 1 ([0,1])
-        "dynamic_range":             dynamic_range,
-        "duration_sec":              duration_sec,
-        "repetition_score":          repetition_score,
-        "silence_rate":              silence_rate,
-        "harmonic_stability":        harmonic_stability,
-        "harmonic_change_rate_hz":   harmonic_change_rate_hz,
-        "chroma_entropy_norm":       chroma_entropy_norm,      # Фикс 3
-        "spectral_flatness":         spectral_flatness,
-        "high_frequency_energy_ratio": high_frequency_energy_ratio,
-        "suggested_music_style":     suggested_style,
-        "sections":                  sections,
-        "recurrence_groups":         recurrence_groups,
-        "events":                    events,
+        "bpm":                          bpm,
+        "key":                          key,
+        "energy":                       energy,
+        "spectral_centroid":            spectral_centroid,
+        "spectral_centroid_norm":       spectral_centroid_norm,
+        "brightness":                   brightness,
+        "rhythm_density":               rhythm_density,
+        "onset_rate_hz":                onset_rate_hz,
+        "onset_rate_norm":              onset_rate_norm,
+        "dynamic_range":                dynamic_range,
+        "duration_sec":                 duration_sec,
+        "repetition_score":             repetition_score,
+        "silence_rate":                 silence_rate,
+        "harmonic_stability":           harmonic_stability_cosine,
+        "harmonic_change_rate_hz":      harmonic_change_rate_hz,
+        "chroma_entropy_norm":          chroma_entropy_norm,
+        "mfcc_variance_norm":           mfcc_variance_norm,
+        "spectral_flatness":            spectral_flatness,
+        "high_frequency_energy_ratio":  high_frequency_energy_ratio,
+        "suggested_music_style":        suggested_style,
+        "sections":                     sections,
+        "recurrence_groups":            recurrence_groups,
+        "events":                       events,
     }
 
     clean_features: Dict[str, Any] = {}
@@ -356,9 +360,9 @@ def suggest_style(
     repetition_score: float,
 ) -> str:
     """Грубая rule-based классификация музыкального характера."""
-    high_bpm  = bpm > 140.0
-    mid_bpm   = 100.0 <= bpm <= 140.0
-    low_bpm   = bpm < 100.0
+    high_bpm = bpm > 140.0
+    mid_bpm  = 100.0 <= bpm <= 140.0
+    low_bpm  = bpm < 100.0
     high_energy = energy > 0.22
     mid_energy  = 0.12 <= energy <= 0.22
     low_energy  = energy < 0.12
@@ -368,9 +372,9 @@ def suggest_style(
     high_rhythm = rhythm_density > 0.55
     mid_rhythm  = 0.45 <= rhythm_density <= 0.55
     low_rhythm  = rhythm_density < 0.45
-    wide_dynamic    = dynamic_range > 12.0
-    mid_dynamic     = 8.0 <= dynamic_range <= 12.0
-    narrow_dynamic  = dynamic_range < 8.0
+    wide_dynamic   = dynamic_range > 12.0
+    mid_dynamic    = 8.0 <= dynamic_range <= 12.0
+    narrow_dynamic = dynamic_range < 8.0
 
     if mid_bpm and wide_dynamic and low_energy and low_brightness and repetition_score > 0.85:
         return "blues"
@@ -398,13 +402,13 @@ def build_simple_sections(
     """Временная MVP-сегментация на равные интервалы."""
     if duration_sec <= 0.0 or num_sections <= 0:
         return []
-    section_length_sec = duration_sec / num_sections
+    sec_len = duration_sec / num_sections
     return [
         {
             "id": f"S{i + 1}",
             "label": f"Section {i + 1}",
-            "start_sec": float(i * section_length_sec),
-            "end_sec": float(min(duration_sec, (i + 1) * section_length_sec)),
+            "start_sec": float(i * sec_len),
+            "end_sec": float(min(duration_sec, (i + 1) * sec_len)),
         }
         for i in range(num_sections)
     ]
@@ -455,8 +459,7 @@ def build_simple_events(
 
 def build_perceptual_latent(features: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Строит вектор восприятия и переносит расширенные признаки.
-    Отсутствующие поля получают 0.0 для обратной совместимости.
+    Строит вектор восприятия. Отсутствующие поля = 0.0.
     """
     energy               = float(features.get("energy", 0.0))
     rhythm_density       = float(features.get("rhythm_density", 0.0))
@@ -491,19 +494,19 @@ def build_perceptual_latent(features: Dict[str, Any]) -> Dict[str, Any]:
         else "unknown"
     )
     return {
-        "energy":                    energy,
-        "tension":                   tension,
-        "density":                   density,
-        "brightness":                brightness,
-        "stability":                 stability,
-        "smoothness":                smoothness,
-        "repetition":                repetition_score,
-        "section_complexity":        section_complexity,
-        "macro_shape_hint":          macro_shape_hint,
-        "tempo_bpm":                 tempo_bpm,
-        "silence_rate":              silence_rate,
-        "harmonic_stability":        harmonic_stability,
-        "harmonic_change_rate_hz":   harmonic_change_rate_hz,
-        "spectral_flatness":         spectral_flatness,
-        "high_frequency_energy_ratio": high_frequency_energy_ratio,
+        "energy":                       energy,
+        "tension":                      tension,
+        "density":                      density,
+        "brightness":                   brightness,
+        "stability":                    stability,
+        "smoothness":                   smoothness,
+        "repetition":                   repetition_score,
+        "section_complexity":           section_complexity,
+        "macro_shape_hint":             macro_shape_hint,
+        "tempo_bpm":                    tempo_bpm,
+        "silence_rate":                 silence_rate,
+        "harmonic_stability":           harmonic_stability,
+        "harmonic_change_rate_hz":      harmonic_change_rate_hz,
+        "spectral_flatness":            spectral_flatness,
+        "high_frequency_energy_ratio":  high_frequency_energy_ratio,
     }
