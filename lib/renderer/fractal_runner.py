@@ -30,7 +30,6 @@ def run_fractal_layer(
     Вызывает нужный генератор из lib.fractal_core.generators (или lib.generators).
     Возвращает orbit_map: float32 [H, W] in [0, 1].
     """
-    # Пробуем оба возможных пути импорта
     gen_module = None
     for mod_path in ("lib.fractal_core.generators", "lib.generators"):
         try:
@@ -39,9 +38,10 @@ def run_fractal_layer(
         except ImportError:
             continue
     if gen_module is None:
-        raise ImportError("Cannot import generators from lib.fractal_core.generators or lib.generators")
+        raise ImportError(
+            "Cannot import generators from lib.fractal_core.generators or lib.generators"
+        )
 
-    # Получаем SimState
     SimState = None
     for mod_path in ("lib.fractal_core.core", "lib.core"):
         try:
@@ -53,7 +53,7 @@ def run_fractal_layer(
     if SimState is None:
         raise ImportError("Cannot import SimState")
 
-    # Строим theta и kwargs
+    # Строим theta
     if generator_id == "julia_orbit_trap":
         theta = build_theta_julia(params)
     elif generator_id == "duffing_lyapunov":
@@ -65,28 +65,31 @@ def run_fractal_layer(
 
     sim_kwargs = build_simstate_kwargs(generator_id, params)
 
-    # SimState.разрешение: resolution=(W, H), не width=/height=
+    # Убираем поля, которые передаём явно — иначе TypeError: duplicate keyword
+    sim_kwargs.pop("generator_name", None)
+    sim_kwargs.pop("resolution", None)
+    sim_kwargs.pop("theta", None)
+    sim_kwargs.pop("seed", None)
+
     sim = SimState(
+        generator_name=generator_id,
         resolution=(W, H),
         seed=seed,
-        theta=theta,
+        theta=np.asarray(theta, dtype=np.float64),
         **sim_kwargs,
     )
 
-    # Вызываем генератор
     func_map = {
-        "julia_orbit_trap":         "julia_orbit_trap",
-        "orbit_ifs_multi_trap":      "orbit_ifs_multi_trap",
-        "duffing_lyapunov":          "duffing_lyapunov_map",
-        "chaotic_scattering_basins": "chaotic_scattering_basins",
+        "julia_orbit_trap":          "julia_orbit_trap",
+        "orbit_ifs_multi_trap":       "orbit_ifs_multi_trap",
+        "duffing_lyapunov":           "duffing_lyapunov_map",
+        "chaotic_scattering_basins":  "chaotic_scattering_basins",
     }
     func_name = func_map[generator_id]
     func = getattr(gen_module, func_name)
     result = func(sim)
 
-    # Нормализуем orbit_map в [0, 1]
-    orbit_map = _extract_orbit_map(result)
-    return orbit_map
+    return _extract_orbit_map(result)
 
 
 def _extract_orbit_map(result) -> np.ndarray:
