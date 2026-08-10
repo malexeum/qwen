@@ -1,5 +1,5 @@
 schema_version: generator-catalog/v0.3
-catalog_version: 0.3.2
+catalog_version: 0.4.0
 
 rules:
   canonicalize_before_builder: true
@@ -11,7 +11,11 @@ rules:
   validate_mapping_targets: true
 
 # E3: harmony_theta_0..7 добавлены в supports всех генераторов.
-# Любой профиль теперь может использовать harmony_theta_* как source.
+# Семантика осей:
+#   theta_0 = гармоническая чистота      theta_4 = чистый контраст секций
+#   theta_1 = стабильность × смена       theta_5 = тембральный хаос
+#   theta_2 = структурная плотность      theta_6 = энтропия развития
+#   theta_3 = неразрешённое напряжение   theta_7 = кристалличность
 
 generators:
 
@@ -32,6 +36,7 @@ generators:
       - motion_intensity
       - tension
       - energy
+      # E3: theta axes
       - harmony_theta_0
       - harmony_theta_1
       - harmony_theta_2
@@ -131,6 +136,7 @@ generators:
       - texture_complexity
       - repetition
       - symmetry_bias
+      # E3: theta axes
       - harmony_theta_0
       - harmony_theta_1
       - harmony_theta_2
@@ -201,6 +207,7 @@ generators:
       - motion_intensity
       - texture_complexity
       - density_level
+      # E3: theta axes
       - harmony_theta_0
       - harmony_theta_1
       - harmony_theta_2
@@ -302,6 +309,7 @@ generators:
       - noise_level
       - density_level
       - symmetry_bias
+      # E3: theta axes
       - harmony_theta_0
       - harmony_theta_1
       - harmony_theta_2
@@ -395,6 +403,7 @@ generators:
       - symmetry_bias
       - energy
       - tension
+      # E3: theta axes
       - harmony_theta_0
       - harmony_theta_1
       - harmony_theta_2
@@ -455,6 +464,7 @@ generators:
       - high_frequency_energy
       - texture_complexity
       - repetition
+      # E3: theta axes
       - harmony_theta_0
       - harmony_theta_1
       - harmony_theta_2
@@ -512,6 +522,7 @@ generators:
       - texture_complexity
       - harmonic_stability
       - harmonic_change_rate
+      # E3: theta axes
       - harmony_theta_0
       - harmony_theta_1
       - harmony_theta_2
