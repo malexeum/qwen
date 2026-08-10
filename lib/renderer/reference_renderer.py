@@ -1,7 +1,6 @@
 """ReferenceRenderer C1 — высокоуровневая точка входа."""
 from __future__ import annotations
 
-import importlib
 import json
 from pathlib import Path
 
@@ -18,22 +17,33 @@ from .silence_mask import apply_silence_mask, build_silence_mask
 
 
 def _load_palettes() -> dict:
-    """Загружает palettes.yaml из configs/."""
+    """Loads palettes.yaml from configs/.
+
+    palettes.yaml v0.3 структура:
+      palettes:
+        neutral_noir: { background_rgba: ..., dominant_stops: [...], ... }
+        nocturne_amber: { ... }
+        ...
+    То есть palettes — dict, не list.
+    """
     try:
         import yaml
     except ImportError:
         return {}
-    # Ищем configs/ относительно корня проекта
     here = Path(__file__).resolve()
     for parent in here.parents:
         candidate = parent / "configs" / "palettes.yaml"
         if candidate.exists():
             with open(candidate, encoding="utf-8") as f:
                 data = yaml.safe_load(f)
-            palettes = {}
-            for p in data.get("palettes", []):
-                palettes[p["palette_id"]] = p
-            return palettes
+            raw = data.get("palettes", {})
+            if isinstance(raw, dict):
+                # Формат v0.3: {palette_id: {dominant_stops, ...}}
+                return {pid: p for pid, p in raw.items()}
+            elif isinstance(raw, list):
+                # Старый формат (list собъектов с полем palette_id)
+                return {p["palette_id"]: p for p in raw if "palette_id" in p}
+            return {}
     return {}
 
 
@@ -63,51 +73,44 @@ def render(
             continue
 
         generator_id = layer.get("generator_id", "")
-        params = layer.get("params", {})
-        palette_id = layer.get("palette_id", "")
-        blend_mode = layer.get("blend_mode", "normal")
-        opacity = float(layer.get("opacity", 1.0))
-        z_index = int(layer.get("z_index", i))
-        layer_seed = int(layer.get("seed", base_seed + i))
+        params       = layer.get("params", {})
+        palette_id   = layer.get("palette_id", "")
+        blend_mode   = layer.get("blend_mode", "normal")
+        opacity      = float(layer.get("opacity", 1.0))
+        z_index      = int(layer.get("z_index", i))
+        layer_seed   = int(layer.get("seed", base_seed + i))
 
-        # Вычисляем размер слоя
         frac = float(layer.get("computation_resolution_fraction", 0.5))
         lW = max(64, int(W * frac))
         lH = max(64, int(H * frac))
 
-        # Рендерим orbit_map
         if is_fractal(generator_id):
             orbit_map = run_fractal_layer(generator_id, params, lW, lH, layer_seed)
         elif generator_id in {"orbital_field", "colored_noise_field", "symmetry_snowflake"}:
             orbit_map = run_procedural(generator_id, params, lW, lH, layer_seed)
         else:
-            # Неизвестный генератор — пропускаем
             continue
 
-        # Применяем палитру
         palette = palettes.get(palette_id, {})
         rgba = apply_palette(orbit_map, palette)  # uint8 [lH, lW, 4]
 
-        # Upscale до рабочего размера, если нужно
         if lW != W or lH != H:
-            img = Image.fromarray(rgba, mode="RGBA")
-            img = img.resize((W, H), Image.LANCZOS)
+            img  = Image.fromarray(rgba, mode="RGBA")
+            img  = img.resize((W, H), Image.LANCZOS)
             rgba = np.asarray(img)
 
         layers_out.append({
-            "rgba": rgba,
+            "rgba":       rgba,
             "blend_mode": blend_mode,
-            "opacity": opacity,
-            "z_index": z_index,
+            "opacity":    opacity,
+            "z_index":    z_index,
         })
 
-    # Если нет слоёв — чёрный холст
     if not layers_out:
         canvas = np.zeros((H, W, 3), dtype=np.float32)
     else:
         canvas = composite_layers(layers_out, W, H)
 
-    # Silence mask
     silence = plan.get("silence_mask", {})
     if silence.get("enabled", False):
         mask = build_silence_mask(
@@ -119,15 +122,13 @@ def render(
         )
         canvas = apply_silence_mask(canvas, mask)
 
-    # Финальный upscale до 1024×1024 если canvas другого размера
     if W != 1024 or H != 1024:
         img = Image.fromarray(
             np.clip(canvas * 255, 0, 255).astype(np.uint8), mode="RGB"
         )
-        img = img.resize((1024, 1024), Image.LANCZOS)
+        img    = img.resize((1024, 1024), Image.LANCZOS)
         canvas = np.asarray(img).astype(np.float32) / 255.0
 
-    # Экспорт PNG
     out_path = Path(output_dir) / f"preview_{plan_id}.png"
     return export_png(
         canvas,
