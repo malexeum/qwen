@@ -29,6 +29,22 @@ THETA_AXES: List[str] = [
 
 _THETA_DEFAULT = 0.5  # нейтральное значение при отсутствии оси в perceptual
 
+# ---------------------------------------------------------------------------
+# Таблица алиасов slug-ов (применяется ДО проверки реестра)
+# ---------------------------------------------------------------------------
+# E3: pop — самостоятельный профиль, алиас pop→rock удалён.
+# jazz/blues всегда → blues_jazz, даже если появится jazz.yaml в configs.
+_STYLE_ALIASES: Dict[str, str] = {
+    "jazz":             "blues_jazz",
+    "blues":            "blues_jazz",
+    "cinematic":        "soundtrack",
+    "techno":           "electronic",
+    "electro":          "electronic",
+    "electronic_music": "electronic",
+    "space":            "ambient",
+    "mixed":            "default",
+}
+
 
 # ---------------------------------------------------------------------------
 # Dataclasses
@@ -126,27 +142,25 @@ def _normalize_style_slug(
     style_profile_slug: str,
     style_registry: Dict[str, StyleProfile],
 ) -> str:
+    """
+    Нормализует slug стиля:
+    1. Применяет таблицу алиасов _STYLE_ALIASES (ДО проверки реестра).
+       Это гарантирует, что jazz → blues_jazz даже если jazz.yaml появится в configs.
+    2. Если после маппинга slug есть в реестре — возвращает его.
+    3. Иначе возвращает оригинальный slug (engine выбросит ValueError).
+    """
     slug = (style_profile_slug or "default").strip()
+
+    # Шаг 1: применяем алиасы (приоритет выше реестра)
+    canonical = _STYLE_ALIASES.get(slug.lower())
+    if canonical is not None:
+        return canonical
+
+    # Шаг 2: slug уже в реестре — возвращаем как есть
     if slug in style_registry:
         return slug
 
-    # E3: pop теперь самостоятельный профиль — алиас удалён.
-    # jazz/blues остаются как алиасы blues_jazz (исторически).
-    aliases = {
-        "jazz": "blues_jazz",
-        "blues": "blues_jazz",
-        "cinematic": "soundtrack",
-        "techno": "electronic",
-        "electro": "electronic",
-        "electronic_music": "electronic",
-        "space": "ambient",
-        "mixed": "default",
-    }
-
-    mapped = aliases.get(slug.lower())
-    if mapped and mapped in style_registry:
-        return mapped
-
+    # Шаг 3: неизвестный slug — возвращаем как есть, engine выбросит ValueError
     return slug
 
 
@@ -340,9 +354,6 @@ def resolve_render_params(
         base = float(rule.get("base", base_default))
         expr = str(rule.get("formula", "")) if "formula" in rule else ""
         if expr:
-            # Если формула ссылается на неизвестную ось — _safe_eval_expr
-            # не бросает, но при strict_theta мы хотим знать об ошибке.
-            # Передаём все axes в контекст формулы, включая theta.
             raw_val = _safe_eval_expr(expr, {"base": base, **axes})
         else:
             raw_val = base
