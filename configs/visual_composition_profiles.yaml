@@ -4,7 +4,11 @@ schema_version: visual-composition-profile/v0.3
 # classical: orbital_field (rotation=0) → строгие рельсы, ifs multiply → решётка,
 #            symmetry_snowflake opacity 0.35 → видимая симметрия
 # 5 профилей: 5 разных macro_structure генераторов
-profile_library_version: 0.3.3
+# V1: duffing_lyapunov добавлен как chaos_underbody (soft_light/multiply, opacity 0.10–0.14)
+#     в blues_jazz, ambient, classical — тонкий хаос внутри основной формы
+#     ambient: добавлен chaotic_scattering_basins как edge_distortion (фрактальная граница)
+#     blues_jazz/jazz: snowflake opacity поднята до видимого уровня
+profile_library_version: 0.3.4
 
 imports:
   generator_catalog: generator_catalog.yaml
@@ -86,12 +90,12 @@ defaults:
 
 profiles:
 
-  # B2: blues_jazz — orbital_field как главная сцена, julia как свечение
-  # Орбитальные дуги — первое что видит глаз. Julia поверх как глубина/свечение.
+  # blues_jazz — orbital_field главная сцена, julia свечение, duffing подслой хаоса
   blues_jazz:
     description: >
       Ночной органический контрапункт: орбитальные дуги как главная сцена,
-      julia-свечение поверх как глубина, тёплый редкий акцент, активная пустота.
+      julia-свечение поверх как глубина, duffing-хаос внутри формы (тонко),
+      тёплый редкий акцент, активная пустота.
 
     identity:
       palette_id: nocturne_amber
@@ -135,6 +139,28 @@ profiles:
           amplitude: energy
           rotation_deg: motion_intensity
 
+      # z15: duffing_lyapunov — тонкий хаотический подслой внутри формы
+      # soft_light не разрушает цвет, добавляет фактуру и глубину
+      - id: chaos_underbody
+        role: chaos_underbody
+        generator_id: duffing_lyapunov
+        enabled: true
+        z_index: 15
+        opacity: 0.14
+        blend_mode: soft_light
+        palette_id: nocturne_amber
+        computation_resolution_fraction: 0.56
+
+        mapping:
+          forcing: energy
+          damping: tension
+          forcing_frequency: motion_intensity
+          nonlinear_stiffness: texture_complexity
+          n_steps: recursion_depth
+          stochastic_scale: noise_level
+          gamma_window: density_level
+          omega_window: density_level
+
       # z20: julia_orbit_trap — свечение и глубина поверх дуг
       - id: julia_glow
         role: fractal_body
@@ -177,6 +203,7 @@ profiles:
           anisotropy: repetition
           grain_size: high_frequency_energy
 
+      # z40: snowflake — поднята opacity 0.11→0.28, теперь видима
       - id: crystalline_accent
         role: accent
         generator_id: symmetry_snowflake
@@ -189,14 +216,14 @@ profiles:
               operator: gte
               value: 0.38
         z_index: 40
-        opacity: 0.11
+        opacity: 0.28
         blend_mode: add
         palette_id: pale_gold_accent
-        computation_resolution_fraction: 0.42
+        computation_resolution_fraction: 0.50
 
         transform:
           anchor_from: track_identity_seed
-          scale_range: [0.12, 0.32]
+          scale_range: [0.18, 0.38]
           scale_source: texture_complexity
           rotation_range_deg: [0.0, 360.0]
           rotation_source: harmonic_change_rate
@@ -224,8 +251,9 @@ profiles:
 
   ambient:
     description: >
-      Холодное медленное поле: разреженный julia-материал как дрейфующий туман,
-      едва заметный orbital breath, туманная микрофактура и большая пауза.
+      Холодное медленное поле: разреженный julia как дрейфующий туман,
+      duffing-хаос тонким подслоем, фрактальная граница через scattering,
+      едва заметный orbital breath и большая пауза.
 
     identity:
       palette_id: lunar_mist
@@ -270,6 +298,29 @@ profiles:
           domain_zoom: motion_intensity
           stochastic_scale: noise_level
 
+      # z15: duffing_lyapunov — тонкий хаос внутри туманного поля
+      # opacity 0.10 — едва заметно, но ломает монолитность julia
+      - id: chaos_underbody
+        role: chaos_underbody
+        generator_id: duffing_lyapunov
+        enabled: true
+        z_index: 15
+        opacity: 0.10
+        blend_mode: soft_light
+        palette_id: lunar_mist
+        computation_resolution_fraction: 0.50
+
+        mapping:
+          forcing: energy
+          damping: tension
+          forcing_frequency: motion_intensity
+          nonlinear_stiffness: texture_complexity
+          n_steps: recursion_depth
+          stochastic_scale: noise_level
+          gamma_window: density_level
+          omega_window: density_level
+
+      # z20: orbital_breath — тихое дыхание
       - id: orbital_breath
         role: meso_rhythm
         generator_id: orbital_field
@@ -286,6 +337,27 @@ profiles:
           line_count: density_level
           amplitude: energy
           rotation_deg: motion_intensity
+
+      # z25: chaotic_scattering_basins — фрактальная граница формы
+      # screen + opacity 0.18 — не доминирует, но создаёт живой край
+      - id: edge_distortion
+        role: edge_distortion
+        generator_id: chaotic_scattering_basins
+        enabled: true
+        z_index: 25
+        opacity: 0.18
+        blend_mode: screen
+        palette_id: lunar_mist
+        computation_resolution_fraction: 0.48
+
+        mapping:
+          scatterer_radius: density_level
+          center_phase_offset: symmetry_bias
+          center_radius: texture_complexity
+          initial_velocity_x: energy
+          initial_velocity_y: motion_intensity
+          max_steps: recursion_depth
+          stochastic_scale: noise_level
 
       - id: mist
         role: microtexture
@@ -438,11 +510,10 @@ profiles:
           direction: layout_macro_shape
           edge_softness: tension
 
-  # B1 CRITICAL FIX: jazz — scattering-native mapping
   jazz:
     description: >
       Свободная импровизационная динамика: бассейны притяжения с хаотическими
-      траекториями, лунная мгла, микрозерно и лёгкий гармонический орнамент.
+      траекториями, лунная мгла, микрозерно и усиленный гармонический орнамент.
 
     identity:
       palette_id: lunar_mist
@@ -520,6 +591,8 @@ profiles:
           anisotropy: repetition
           grain_size: high_frequency_energy
 
+      # snowflake: opacity 0.10→0.22, порог harmonic_stability 0.52→0.42
+      # jazz имеет h_stab=0.471 — теперь орнамент включится
       - id: harmonic_ornament
         role: accent
         generator_id: symmetry_snowflake
@@ -527,12 +600,12 @@ profiles:
           all:
             - source: harmonic_stability
               operator: gte
-              value: 0.52
+              value: 0.42
         z_index: 40
-        opacity: 0.10
+        opacity: 0.22
         blend_mode: add
         palette_id: pale_gold_accent
-        computation_resolution_fraction: 0.36
+        computation_resolution_fraction: 0.48
 
         mapping:
           branch_count: symmetry_bias
@@ -556,10 +629,11 @@ profiles:
           direction: layout_macro_shape
           edge_softness: tension
 
-  # B2: classical — orbital_field строго концентрический + решётка + видимая симметрия
+  # classical — orbital_field строго концентрический + решётка + duffing подслой + видимая симметрия
   classical:
     description: >
       Симметричная архитектурная композиция: строгие концентрические рельсы,
+      duffing-хаос multiply внутри (ломает монолит, не разрушает структуру),
       фрактальная решётка, видимый гармонический орнамент, кобальтово-слоновая палитра.
 
     identity:
@@ -579,7 +653,7 @@ profiles:
         direction_source: layout_macro_shape
 
     layers:
-      # z10: orbital_field с rotation=[0,0] — строго концентрические орбиты, не вращается
+      # z10: orbital_field с rotation=[0,0] — строго концентрические орбиты
       - id: orbital_rails
         role: macro_structure
         generator_id: orbital_field
@@ -604,6 +678,29 @@ profiles:
           amplitude: energy
           rotation_deg: motion_intensity
 
+      # z15: duffing_lyapunov multiply — хаос внутри структуры
+      # multiply темнит и добавляет фактуру, не светит наружу
+      # opacity 0.12 — почти не заметен, но убирает пластиковость
+      - id: chaos_underbody
+        role: chaos_underbody
+        generator_id: duffing_lyapunov
+        enabled: true
+        z_index: 15
+        opacity: 0.12
+        blend_mode: multiply
+        palette_id: ivory_cobalt
+        computation_resolution_fraction: 0.56
+
+        mapping:
+          forcing: energy
+          damping: tension
+          forcing_frequency: motion_intensity
+          nonlinear_stiffness: texture_complexity
+          n_steps: recursion_depth
+          stochastic_scale: noise_level
+          gamma_window: density_level
+          omega_window: density_level
+
       # z20: orbit_ifs_multi_trap multiply — решётчатая фрактальная структура поверх рельсов
       - id: fractal_grid
         role: meso_rhythm
@@ -621,7 +718,7 @@ profiles:
           attractor_spread: motion_intensity
           stochastic_scale: noise_level
 
-      # z30: symmetry_snowflake opacity 0.35 screen — видимая симметрия, архитектурный орнамент
+      # z30: symmetry_snowflake opacity 0.35 screen — видимая симметрия
       - id: architectural_symmetry
         role: accent
         generator_id: symmetry_snowflake
