@@ -32,7 +32,7 @@ from lib.composition.planner import (
 
 STORAGE_ROOT = Path(r"D:\WORK\AVCoder\storage\poster_runs")
 
-# ── Маппинг music style → profile slug ─────────────────────────────────────
+# ── Маппинг music style → profile slug ───────────────────────────────────────────
 _SLUG_MAP = {
     "blues":      "blues_jazz",
     "jazz":       "jazz",
@@ -46,7 +46,7 @@ _SLUG_MAP = {
 }
 _SLUG_DEFAULT = "blues_jazz"
 
-# ── D1: дифференцированные features по 17 осям для каждого профиля ──────────
+# ── D1: дифференцированные features по 17 осям для каждого профиля ────────────
 # Ключевые контрасты:
 #   electronic : energy=0.88, silence_rate=0.08, density_level=0.85
 #   ambient    : energy=0.22, silence_rate=0.52, harmonic_stability=0.88
@@ -183,7 +183,7 @@ STYLES: list[tuple[str, str]] = [
 ]
 
 
-# ── Хелперы ────────────────────────────────────────────────────────────────
+# ── Хелперы ────────────────────────────────────────────────────────────────────
 
 def _make_latent(features: dict) -> PerceptualLatent:
     lat = build_perceptual_latent(features)
@@ -203,6 +203,13 @@ def _make_latent(features: dict) -> PerceptualLatent:
 
 
 def _make_render_params(features: dict, slug: str) -> RenderParams:
+    """Build RenderParams from features dict.
+
+    FIX (D1.1): раньше recursion_depth не передавался из features →
+    оставался 0.5 по дефолту → orbital_field/ifs давали мало шагов →
+    быстрый рендер (0.85s для classical).
+    Теперь recursion_depth берётся напрямую из features.
+    """
     lat = build_perceptual_latent(features)
     return RenderParams(
         style_profile_slug=slug,
@@ -211,6 +218,8 @@ def _make_render_params(features: dict, slug: str) -> RenderParams:
         noise_level=float(features.get("noise_level", lat.get("spectral_flatness", 0.1))),
         motion_intensity=float(features.get("motion_intensity", lat.get("tension", 0.5))),
         texture_complexity=float(features.get("texture_complexity", lat.get("section_complexity", 0.5))),
+        # FIX D1.1: recursion_depth был опущен, теперь пробрасывается из features
+        recursion_depth=float(features.get("recursion_depth", 0.5)),
         palette_id="",
     )
 
@@ -226,7 +235,7 @@ def run_style(
     perceptual = _make_latent(features)
     render_p   = _make_render_params(features, profile_slug)
     track_meta = TrackMetadata(
-        audio_content_hash=f"full_run_{style_name}_d1_0001",
+        audio_content_hash=f"full_run_{style_name}_d1_0002",  # bumped: D1.1
         title=f"{style_name.capitalize()} Demo Track",
         artist="AVCoder Demo",
         duration_ms=int(features.get("duration_sec", 180) * 1000),
@@ -251,7 +260,6 @@ def run_style(
         plan_json_path = plan_dir / "visual_composition_plan.json"
         raw_png = c1_render(plan_json_path, output_dir=plan_dir)
 
-        # Имя файла = poster_{style_name}.png — сразу понятно что внутри
         poster_path = plan_dir / f"poster_{style_name}.png"
         if raw_png.resolve() != poster_path.resolve():
             raw_png.rename(poster_path)
@@ -289,7 +297,7 @@ def main() -> None:
     STORAGE_ROOT.mkdir(parents=True, exist_ok=True)
 
     print(f"\n{'='*60}")
-    print(f"  Full Pipeline Run D1  |  styles: {len(styles)}  |  render: {do_render}")
+    print(f"  Full Pipeline Run D1.1  |  styles: {len(styles)}  |  render: {do_render}")
     print(f"  storage: {STORAGE_ROOT}")
     print(f"{'='*60}\n")
 
@@ -317,7 +325,7 @@ def main() -> None:
         print(f"  Total render time : {total_render:.1f}s")
     print(f"{'='*60}\n")
 
-    summary_path = STORAGE_ROOT / "run_summary_d1.json"
+    summary_path = STORAGE_ROOT / "run_summary_d1_1.json"
     with open(summary_path, "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
     print(f"  Summary saved: {summary_path}\n")
