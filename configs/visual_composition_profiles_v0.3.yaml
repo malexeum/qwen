@@ -1,5 +1,5 @@
 schema_version: visual-composition-profile/v0.3
-profile_library_version: 0.3.2
+profile_library_version: 0.3.3
 
 imports:
   generator_catalog: generator_catalog.yaml
@@ -84,9 +84,9 @@ profiles:
   # ── 1. Blues / Jazz ─────────────────────────────────────────────────────────
   blues_jazz:
     description: >
-      Тёплый ночной контрапункт: круговая органика как мелодическое тело,
-      ритмические скопления как импровизация, редкий золотой акцент и
-      активная пауза. Доминанта холодно-синяя, акцент — янтарный.
+      Тёплый ночной контрапункт: орбитальные дуги как основная сцена,
+      фрактальная масса как глубина, редкий золотой акцент
+      и активная пауза. Доминанта холодно-синяя, акцент — янтарный.
     identity:
       palette_id: nocturne_amber
       macro_archetype: orbital_flow
@@ -100,15 +100,36 @@ profiles:
         direction_source: layout_macro_shape
 
     layers:
-      - id: macro_orbit
+      # Слой 1: орбитальные дуги — главная сцена (z=10)
+      # orbital_field после D1-фикса рисует видимые траектории
+      - id: orbital_lines
         role: macro_structure
-        generator_id: julia_orbit_trap
+        generator_id: orbital_field
         enabled: true
         z_index: 10
-        opacity: 0.92
+        opacity: 0.82
         blend_mode: normal
         palette_id: nocturne_amber
-        computation_resolution_fraction: 0.78
+        computation_resolution_fraction: 0.80
+        rotation_range_deg: [-24.0, 24.0]
+        mapping:
+          flow_speed: tempo
+          orbit_radius: repetition
+          line_count: density_level
+          amplitude: energy
+          angular_break: motion_intensity
+          rotation_deg: symmetry_bias
+
+      # Слой 2: фрактальная глубина (вторичный, screen)
+      - id: fractal_depth
+        role: fractal_body
+        generator_id: julia_orbit_trap
+        enabled: true
+        z_index: 20
+        opacity: 0.45
+        blend_mode: screen
+        palette_id: nocturne_amber
+        computation_resolution_fraction: 0.65
         rotation_range_deg: [-24.0, 24.0]
         mapping:
           c_real: symmetry_bias
@@ -119,23 +140,7 @@ profiles:
           stochastic_scale: noise_level
           domain_zoom: motion_intensity
 
-      - id: rhythmic_points
-        role: meso_rhythm
-        generator_id: orbit_ifs_multi_trap
-        enabled: true
-        z_index: 20
-        opacity: 0.40
-        blend_mode: screen
-        palette_id: nocturne_amber
-        computation_resolution_fraction: 0.60
-        rotation_range_deg: [-36.0, 36.0]
-        mapping:
-          n_points: density_level
-          map_diversity: texture_complexity
-          attractor_spread: motion_intensity
-          stochastic_scale: noise_level
-          n_iter: recursion_depth
-
+      # Слой 3: зерно
       - id: grain_field
         role: microtexture
         generator_id: colored_noise_field
@@ -151,6 +156,7 @@ profiles:
           anisotropy: repetition
           grain_size: high_frequency_energy
 
+      # Слой 4: золотой акцент (условный)
       - id: crystalline_accent
         role: accent
         generator_id: symmetry_snowflake
@@ -327,7 +333,6 @@ profiles:
         palette_id: lunar_mist
         computation_resolution_fraction: 0.72
         rotation_range_deg: [-18.0, 18.0]
-        # scattering-native mapping (не Duffing targets)
         mapping:
           scatterer_radius: density_level
           center_phase_offset: symmetry_bias
@@ -492,10 +497,9 @@ profiles:
   # ── 5. Classical ─────────────────────────────────────────────────────────────
   classical:
     description: >
-      Архитектурная гармония: ясная Julia-структура, сдержанный
-      симметричный орнамент, тонкая фактура и спокойный контрапункт.
-      Основное поле — слоновая кость и кобальт; золото допускается
-      только как редкий акцент.
+      Архитектурная гармония: орбитальные рельсы и симметрия как архитектура,
+      фрактальная решётка как внутренняя структура, наложенный
+      золотой орнамент как видимая симметрия.
     identity:
       palette_id: ivory_cobalt
       macro_archetype: symmetric_structure
@@ -509,31 +513,51 @@ profiles:
         direction_source: layout_macro_shape
 
     layers:
-      - id: classical_structure
+      # Слой 1: орбитальные рельсы — архитектурная основа (z=10)
+      # orbit_radius=symmetry_bias (высокий) → почти идеальные круги
+      - id: orbital_rails
         role: macro_structure
-        generator_id: julia_orbit_trap
+        generator_id: orbital_field
         enabled: true
         z_index: 10
-        opacity: 0.92
+        opacity: 0.78
         blend_mode: normal
         palette_id: ivory_cobalt
         computation_resolution_fraction: 0.85
+        rotation_range_deg: [0.0, 0.0]
+        mapping:
+          flow_speed: tempo
+          orbit_radius: symmetry_bias
+          line_count: density_level
+          amplitude: energy
+          angular_break: harmonic_stability
+          rotation_deg: harmonic_change_rate
+
+      # Слой 2: фрактальная решётка (orbit_ifs) (вторичный, multiply)
+      - id: lattice_body
+        role: fractal_body
+        generator_id: orbit_ifs_multi_trap
+        enabled: true
+        z_index: 20
+        opacity: 0.52
+        blend_mode: multiply
+        palette_id: ivory_cobalt
+        computation_resolution_fraction: 0.60
         rotation_range_deg: [-8.0, 8.0]
         mapping:
-          c_real: symmetry_bias
-          c_imag: tension
-          exponent_p: texture_complexity
-          trap_radius: density_level
-          max_iter: recursion_depth
+          n_points: density_level
+          map_diversity: texture_complexity
+          attractor_spread: motion_intensity
           stochastic_scale: noise_level
-          domain_zoom: motion_intensity
+          n_iter: recursion_depth
 
+      # Слой 3: симметричный орнамент — видимый (opacity 0.35)
       - id: ornamental_snowflake
         role: ornament
         generator_id: symmetry_snowflake
         enabled: true
-        z_index: 20
-        opacity: 0.14
+        z_index: 30
+        opacity: 0.35
         blend_mode: screen
         palette_id: pale_gold_accent
         computation_resolution_fraction: 0.55
@@ -545,27 +569,7 @@ profiles:
           radial_scale: repetition
           rotation_deg: harmonic_change_rate
 
-      - id: harmonic_counterpoint
-        role: counterpoint
-        generator_id: orbit_ifs_multi_trap
-        enabled_if:
-          all:
-            - source: section_complexity
-              operator: gte
-              value: 0.45
-        z_index: 30
-        opacity: 0.16
-        blend_mode: screen
-        palette_id: ivory_cobalt
-        computation_resolution_fraction: 0.45
-        rotation_range_deg: [-15.0, 15.0]
-        mapping:
-          n_points: density_level
-          map_diversity: texture_complexity
-          attractor_spread: motion_intensity
-          stochastic_scale: noise_level
-          n_iter: recursion_depth
-
+      # Слой 4: тонкая фактура
       - id: subtle_texture
         role: microtexture
         generator_id: colored_noise_field
