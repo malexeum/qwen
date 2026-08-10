@@ -5,3 +5,10 @@ d:\IFZ\qwen_coder>pip install pyyaml
 d:\IFZ\qwen_coder>python -m pip install scikit-learn
 d:\IFZ\qwen_coder>python benchmark-runner.py
 d:\IFZ\qwen_coder>python benchmark-runner_v3.py
+
+cd /d D:\WORK\AVCoder
+.venv\Scripts\activate
+uvicorn api.main:app --reload
+
+http://127.0.0.1:8000/docs
+
