@@ -7,30 +7,41 @@ from scipy.ndimage import gaussian_filter
 
 def run_orbital_field(params: dict, W: int, H: int, seed: int) -> np.ndarray:
     """
-    params: flow_speed, orbit_radius, line_count, amplitude, angular_break, rotation_deg
+    D1-fix: angle пересчитывается после каждого шага, orbit_radius — аттрактор.
+    params: flow_speed, orbit_radius, line_count, amplitude, angular_break
     Returns float32 [H, W] in [0, 1]
     """
     rng = np.random.default_rng(seed)
     canvas = np.zeros((H, W), dtype=np.float32)
     n = int(np.clip(params.get("line_count", 0.5) * 120 + 40, 40, 200))
-    flow_speed = float(params.get("flow_speed", 0.5))
-    amplitude = float(params.get("amplitude", 0.5))
+    flow_speed   = float(params.get("flow_speed",    0.5))
+    amplitude    = float(params.get("amplitude",     0.5))
     angular_break = float(params.get("angular_break", 0.0))
+    orbit_radius  = float(params.get("orbit_radius",  0.5)) * 0.6 + 0.15
+    steps = int(flow_speed * 400 + 100)
+
     for _ in range(n):
         x0 = rng.uniform(-1.0, 1.0)
         y0 = rng.uniform(-1.0, 1.0)
-        angle = rng.uniform(0, 2 * np.pi)
-        steps = int(flow_speed * 400 + 100)
+        angle = np.arctan2(y0, x0)          # угол от центра при старте
+
         for _ in range(steps):
             r = np.sqrt(x0 ** 2 + y0 ** 2) + 1e-9
-            dr = -amplitude * 0.02
-            dtheta = (angular_break * 0.5 + 0.5) / r
-            x0 += dr * np.cos(angle) - dtheta * np.sin(angle)
-            y0 += dr * np.sin(angle) + dtheta * np.cos(angle)
+            # Радиальное притяжение к orbit_radius (аттрактор)
+            dr = (orbit_radius - r) * amplitude * 0.04
+            # Тангенциальная орбитальная скорость
+            dtheta = (angular_break * 0.5 + 0.5) / (r + 0.3)
+            # Перемещаем точку ПЕРЕД записью
+            cos_a, sin_a = np.cos(angle), np.sin(angle)
+            x0 += dr * cos_a - dtheta * sin_a
+            y0 += dr * sin_a + dtheta * cos_a
+            angle = np.arctan2(y0, x0)      # обновляем angle после движения
+
             ix = int((x0 + 1.0) / 2.0 * (W - 1))
             iy = int((y0 + 1.0) / 2.0 * (H - 1))
             if 0 <= ix < W and 0 <= iy < H:
                 canvas[iy, ix] += 1.0
+
     canvas = np.log1p(canvas)
     mx = canvas.max()
     if mx > 0:
@@ -45,9 +56,9 @@ def run_colored_noise_field(params: dict, W: int, H: int, seed: int) -> np.ndarr
     """
     rng = np.random.default_rng(seed)
     frequency_scale = float(params.get("frequency_scale", 0.5))
-    grain_size = float(params.get("grain_size", 2.0))
-    anisotropy = float(params.get("anisotropy", 0.0))
-    amplitude = float(params.get("amplitude", 0.5))
+    grain_size      = float(params.get("grain_size",      2.0))
+    anisotropy      = float(params.get("anisotropy",      0.0))
+    amplitude       = float(params.get("amplitude",       0.5))
     freqs = int(np.clip(frequency_scale * 8 + 2, 2, 12))
     canvas = np.zeros((H, W), dtype=np.float32)
     for f in range(1, freqs + 1):
@@ -66,16 +77,17 @@ def run_colored_noise_field(params: dict, W: int, H: int, seed: int) -> np.ndarr
 
 def run_symmetry_snowflake(params: dict, W: int, H: int, seed: int) -> np.ndarray:
     """
+    D1-fix: gaussian_filter после заполнения — ветви становятся видимыми лучами.
     params: branch_count, branch_depth, branch_jitter, radial_scale, rotation_deg
     Returns float32 [H, W] in [0, 1]
     """
     rng = np.random.default_rng(seed)
     canvas = np.zeros((H, W), dtype=np.float32)
     n_branches = max(3, int(params.get("branch_count", 0.5) * 10 + 3))
-    depth = max(1, int(params.get("branch_depth", 0.5) * 5 + 1))
+    depth      = max(1, int(params.get("branch_depth", 0.5) * 5 + 1))
     base_angle = np.radians(float(params.get("rotation_deg", 0.0)))
-    scale = float(params.get("radial_scale", 0.5)) * 0.8 + 0.1
-    jitter = float(params.get("branch_jitter", 0.05)) * 0.15
+    scale      = float(params.get("radial_scale",  0.5)) * 0.8 + 0.1
+    jitter     = float(params.get("branch_jitter", 0.05)) * 0.15
 
     def draw_branch(cx: float, cy: float, angle: float, length: float, d: int) -> None:
         if d == 0 or length < 2:
@@ -98,6 +110,10 @@ def run_symmetry_snowflake(params: dict, W: int, H: int, seed: int) -> np.ndarra
         angle = base_angle + 2 * np.pi * k / n_branches
         draw_branch(0.0, 0.0, angle, scale * 0.9, depth)
 
+    # D1-fix: сглаживаем ветви — из пиксельных линий в видимые лучи
+    line_width = float(params.get("branch_jitter", 0.05)) * 3.0 + 0.8
+    canvas = gaussian_filter(canvas, sigma=line_width)
+
     mx = canvas.max()
     if mx > 0:
         canvas /= mx
@@ -113,9 +129,9 @@ def run_procedural(
 ) -> np.ndarray:
     """Диспетчер процедурных генераторов."""
     dispatch = {
-        "orbital_field": run_orbital_field,
+        "orbital_field":       run_orbital_field,
         "colored_noise_field": run_colored_noise_field,
-        "symmetry_snowflake": run_symmetry_snowflake,
+        "symmetry_snowflake":  run_symmetry_snowflake,
     }
     if generator_id not in dispatch:
         raise ValueError(f"Unknown procedural generator: {generator_id}")
