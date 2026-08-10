@@ -1,8 +1,10 @@
 schema_version: visual-composition-profile/v0.3
-# B1: версия повышена до 0.3.2
-# Изменения: jazz→scattering-native mapping, classical→ivory_cobalt,
-# все mapping targets верифицированы против generator_catalog v0.3.1
-profile_library_version: 0.3.2
+# B2: структурная дифференциация blues_jazz и classical
+# blues_jazz: orbital_field → главная сцена, julia → свечение поверх
+# classical: orbital_field (rotation=0) → строгие рельсы, ifs multiply → решётка,
+#            symmetry_snowflake opacity 0.35 → видимая симметрия
+# 5 профилей: 5 разных macro_structure генераторов
+profile_library_version: 0.3.3
 
 imports:
   generator_catalog: generator_catalog.yaml
@@ -84,10 +86,12 @@ defaults:
 
 profiles:
 
+  # B2: blues_jazz — orbital_field как главная сцена, julia как свечение
+  # Орбитальные дуги — первое что видит глаз. Julia поверх как глубина/свечение.
   blues_jazz:
     description: >
-      Ночной органический контрапункт: крупная орбитальная масса,
-      ритмические скопления, тёплый редкий акцент, активная пустота.
+      Ночной органический контрапункт: орбитальные дуги как главная сцена,
+      julia-свечение поверх как глубина, тёплый редкий акцент, активная пустота.
 
     identity:
       palette_id: nocturne_amber
@@ -106,15 +110,41 @@ profiles:
         direction_source: layout_macro_shape
 
     layers:
-      - id: macro_orbit
+      # z10: orbital_field — главная сцена, органические дуги
+      - id: orbital_arcs
         role: macro_structure
-        generator_id: julia_orbit_trap
+        generator_id: orbital_field
         enabled: true
         z_index: 10
-        opacity: 0.92
+        opacity: 0.82
         blend_mode: normal
         palette_id: nocturne_amber
-        computation_resolution_fraction: 0.78
+        computation_resolution_fraction: 0.80
+
+        transform:
+          offset_from: layout_macro_shape
+          scale_range: [0.74, 1.16]
+          scale_source: energy
+          rotation_range_deg: [-24.0, 24.0]
+          rotation_source: motion_intensity
+
+        mapping:
+          flow_speed: tempo
+          orbit_radius: repetition
+          line_count: density_level
+          amplitude: energy
+          rotation_deg: motion_intensity
+
+      # z20: julia_orbit_trap — свечение и глубина поверх дуг
+      - id: julia_glow
+        role: fractal_body
+        generator_id: julia_orbit_trap
+        enabled: true
+        z_index: 20
+        opacity: 0.45
+        blend_mode: screen
+        palette_id: nocturne_amber
+        computation_resolution_fraction: 0.72
 
         transform:
           offset_from: layout_macro_shape
@@ -129,29 +159,6 @@ profiles:
           exponent_p: texture_complexity
           trap_radius: density_level
           max_iter: recursion_depth
-          stochastic_scale: noise_level
-
-      - id: rhythmic_points
-        role: meso_rhythm
-        generator_id: orbit_ifs_multi_trap
-        enabled: true
-        z_index: 20
-        opacity: 0.40
-        blend_mode: screen
-        palette_id: nocturne_amber
-        computation_resolution_fraction: 0.60
-
-        transform:
-          offset_from: layout_macro_shape
-          scale_range: [0.48, 0.94]
-          scale_source: density_level
-          rotation_range_deg: [-36.0, 36.0]
-          rotation_source: motion_intensity
-
-        mapping:
-          n_points: density_level
-          map_diversity: texture_complexity
-          attractor_spread: motion_intensity
           stochastic_scale: noise_level
 
       - id: grain_field
@@ -217,8 +224,8 @@ profiles:
 
   ambient:
     description: >
-      Холодное медленное поле: разреженный фрактальный материал,
-      едва заметный orbital flow, туманная микрофактура и большая пауза.
+      Холодное медленное поле: разреженный julia-материал как дрейфующий туман,
+      едва заметный orbital breath, туманная микрофактура и большая пауза.
 
     identity:
       palette_id: lunar_mist
@@ -432,8 +439,6 @@ profiles:
           edge_softness: tension
 
   # B1 CRITICAL FIX: jazz — scattering-native mapping
-  # Удалены Duffing targets (forcing, damping, forcing_frequency, nonlinear_stiffness,
-  # gamma_window, omega_window). Заменены на реальные параметры chaotic_scattering_basins.
   jazz:
     description: >
       Свободная импровизационная динамика: бассейны притяжения с хаотическими
@@ -473,7 +478,6 @@ profiles:
           rotation_range_deg: [-20.0, 20.0]
           rotation_source: motion_intensity
 
-        # B1: scattering-native targets, верифицированы против generators.py
         mapping:
           scatterer_radius: density_level
           center_phase_offset: symmetry_bias
@@ -552,15 +556,13 @@ profiles:
           direction: layout_macro_shape
           edge_softness: tension
 
-  # B1 FIX: classical — ivory_cobalt как основная палитра
-  # pale_gold_accent оставлен только для accent-слоёв (он прозрачный — так и задумано)
+  # B2: classical — orbital_field строго концентрический + решётка + видимая симметрия
   classical:
     description: >
-      Симметричная архитектурная композиция: орбитальные контуры,
-      гармонический орнамент, кобальтово-слоновая палитра и строгая структура.
+      Симметричная архитектурная композиция: строгие концентрические рельсы,
+      фрактальная решётка, видимый гармонический орнамент, кобальтово-слоновая палитра.
 
     identity:
-      # B1: заменено с pale_gold_accent на ivory_cobalt — полноценная непрозрачная палитра
       palette_id: ivory_cobalt
       macro_archetype: architectural_symmetry
       postprocess_style_slug: fullcolor
@@ -577,14 +579,14 @@ profiles:
         direction_source: layout_macro_shape
 
     layers:
-      - id: classical_structure
+      # z10: orbital_field с rotation=[0,0] — строго концентрические орбиты, не вращается
+      - id: orbital_rails
         role: macro_structure
-        generator_id: julia_orbit_trap
+        generator_id: orbital_field
         enabled: true
         z_index: 10
-        opacity: 0.88
+        opacity: 0.78
         blend_mode: normal
-        # B1: ivory_cobalt — основная палитра, не акцентная
         palette_id: ivory_cobalt
         computation_resolution_fraction: 0.80
 
@@ -592,26 +594,26 @@ profiles:
           offset_from: layout_macro_shape
           scale_range: [0.72, 1.12]
           scale_source: energy
-          rotation_range_deg: [-18.0, 18.0]
+          rotation_range_deg: [0.0, 0.0]
           rotation_source: motion_intensity
 
         mapping:
-          c_real: symmetry_bias
-          c_imag: tension
-          exponent_p: texture_complexity
-          trap_radius: density_level
-          max_iter: recursion_depth
-          stochastic_scale: noise_level
+          flow_speed: tempo
+          orbit_radius: harmonic_stability
+          line_count: symmetry_bias
+          amplitude: energy
+          rotation_deg: motion_intensity
 
-      - id: harmonic_grid
+      # z20: orbit_ifs_multi_trap multiply — решётчатая фрактальная структура поверх рельсов
+      - id: fractal_grid
         role: meso_rhythm
         generator_id: orbit_ifs_multi_trap
         enabled: true
         z_index: 20
-        opacity: 0.34
-        blend_mode: screen
+        opacity: 0.52
+        blend_mode: multiply
         palette_id: ivory_cobalt
-        computation_resolution_fraction: 0.60
+        computation_resolution_fraction: 0.64
 
         mapping:
           n_points: density_level
@@ -619,23 +621,8 @@ profiles:
           attractor_spread: motion_intensity
           stochastic_scale: noise_level
 
-      - id: classical_grain
-        role: microtexture
-        generator_id: colored_noise_field
-        enabled: true
-        z_index: 30
-        opacity: 0.07
-        blend_mode: soft_light
-        palette_id: ivory_cobalt
-        computation_resolution_fraction: 1.00
-
-        mapping:
-          amplitude: noise_level
-          frequency_scale: spectral_flatness
-          anisotropy: repetition
-          grain_size: texture_complexity
-
-      - id: architectural_ornament
+      # z30: symmetry_snowflake opacity 0.35 screen — видимая симметрия, архитектурный орнамент
+      - id: architectural_symmetry
         role: accent
         generator_id: symmetry_snowflake
         enabled_if:
@@ -646,12 +633,11 @@ profiles:
             - source: section_complexity
               operator: gte
               value: 0.48
-        z_index: 40
-        opacity: 0.14
-        blend_mode: add
-        # pale_gold_accent корректен для accent-слоя (прозрачный, blendable)
-        palette_id: pale_gold_accent
-        computation_resolution_fraction: 0.44
+        z_index: 30
+        opacity: 0.35
+        blend_mode: screen
+        palette_id: ivory_cobalt
+        computation_resolution_fraction: 0.50
 
         transform:
           anchor_from: track_identity_seed
@@ -666,6 +652,22 @@ profiles:
           branch_jitter: noise_level
           rotation_deg: harmonic_change_rate
           radial_scale: repetition
+
+      - id: classical_grain
+        role: microtexture
+        generator_id: colored_noise_field
+        enabled: true
+        z_index: 40
+        opacity: 0.07
+        blend_mode: soft_light
+        palette_id: ivory_cobalt
+        computation_resolution_fraction: 1.00
+
+        mapping:
+          amplitude: noise_level
+          frequency_scale: spectral_flatness
+          anisotropy: repetition
+          grain_size: texture_complexity
 
       - id: silence_mask
         role: silence_mask
@@ -744,7 +746,6 @@ profiles:
         palette_id: crimson_gold_noir
         computation_resolution_fraction: 0.48
 
-        # B1: soundtrack также переведён на scattering-native targets
         mapping:
           scatterer_radius: density_level
           center_phase_offset: symmetry_bias
@@ -809,7 +810,6 @@ profiles:
         palette_id: charcoal_red_white
         computation_resolution_fraction: 0.76
 
-        # B1: rock также переведён на scattering-native targets
         mapping:
           scatterer_radius: density_level
           center_phase_offset: symmetry_bias
