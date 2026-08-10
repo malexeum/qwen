@@ -240,7 +240,7 @@ profiles:
 
   # ─────────────────────────────────────────────────────────
   # ambient — пространство, плавность, контролируемая неопределённость
-  # θ₀→julia.c_real  θ₃→duffing.forcing  θ₂→ifs density  θ₆→orbital.angular_break
+  # θ₀→julia.c_real  θ₃→duffing.forcing  θ₂→scattering.center_radius  θ₆→orbital.angular_break
   # ─────────────────────────────────────────────────────────
   ambient:
     description: >
@@ -374,7 +374,7 @@ profiles:
 
   # ─────────────────────────────────────────────────────────
   # jazz — активная гармония и контрапункт без визуального хаоса
-  # θ₁→orbital.flow_speed  θ₂→ifs.map_diversity  θ₃→duffing.forcing  θ₇→snowflake symmetry
+  # θ₁→orbital.flow_speed  θ₂→ifs.map_diversity  θ₃→scatter.velocity  θ₇→snowflake.branch_depth
   # ─────────────────────────────────────────────────────────
   jazz:
     description: >
@@ -505,7 +505,7 @@ profiles:
 
   # ─────────────────────────────────────────────────────────
   # classical — иерархия, ясный центр, сдержанный контраст
-  # θ₇→snowflake.branch_depth  θ₄→ifs macro contrast  θ₃→duffing(лимит 0.35)  θ₅ не доминирует
+  # θ₇→snowflake.branch_depth  θ₄→ifs.map_diversity  θ₃→duffing(limit 0.35)
   # ─────────────────────────────────────────────────────────
   classical:
     description: >
@@ -552,7 +552,7 @@ profiles:
           amplitude: energy
           rotation_deg: motion_intensity
 
-      # θ₃ используется с жёстким верхним лимитом 0.35 — classical не должен разрушаться хаосом
+      # θ₃ с верхним лимитом 0.35 — classical не должен разрушаться хаосом
       - id: chaos_underbody
         role: chaos_underbody
         generator_id: duffing_lyapunov
@@ -606,4 +606,583 @@ profiles:
         computation_resolution_fraction: 0.50
         transform:
           anchor_from: track_identity_seed
-          scale
+          scale_range: [0.22, 0.50]
+          scale_source: harmonic_stability
+          rotation_range_deg: [0.0, 60.0]
+          rotation_source: section_complexity
+        mapping:
+          branch_count: symmetry_bias
+          branch_depth: harmony_theta_7
+          branch_jitter: noise_level
+          radial_scale: harmonic_stability
+
+      - id: classical_grain
+        role: microtexture
+        generator_id: colored_noise_field
+        enabled: true
+        z_index: 40
+        opacity: 0.05
+        blend_mode: soft_light
+        palette_id: ivory_cobalt
+        computation_resolution_fraction: 1.00
+        mapping:
+          amplitude: harmony_theta_5
+          frequency_scale: spectral_flatness
+          anisotropy: repetition
+          grain_size: texture_complexity
+
+      - id: silence_mask
+        role: silence_mask
+        source_kind: procedural_mask
+        enabled: true
+        z_index: 50
+        opacity: 1.0
+        blend_mode: normal
+        palette_id: null
+        computation_resolution_fraction: 1.00
+        mapping:
+          coverage: silence_rate
+          direction: layout_macro_shape
+          edge_softness: tension
+
+  # ─────────────────────────────────────────────────────────
+  # electronic — синтетическая точность, duffing-хаос как основа
+  # θ₀→julia.c_real  θ₁→orbital.flow_speed  θ₃→duffing.forcing  θ₅→noise.amplitude
+  # ─────────────────────────────────────────────────────────
+  electronic:
+    description: >
+      Синтетическая сетка: duffing-хаос как macro-структура, julia-фракталы
+      как цветовая глубина, чёткие орбитальные линии как ритм-сетка,
+      минимум органики, максимум точности.
+
+    identity:
+      palette_id: neon_dark
+      macro_archetype: grid_pulse
+      postprocess_style_slug: fullcolor
+      visual_keywords:
+        - synthetic
+        - precise
+        - dark
+        - pulsing
+
+    composition:
+      negative_space:
+        coverage_source: silence_rate
+        coverage_range: [0.10, 0.36]
+        direction_source: layout_macro_shape
+
+    layers:
+      - id: duffing_macro
+        role: macro_structure
+        generator_id: duffing_lyapunov
+        enabled: true
+        z_index: 10
+        opacity: 0.88
+        blend_mode: normal
+        palette_id: neon_dark
+        computation_resolution_fraction: 0.72
+        transform:
+          offset_from: layout_macro_shape
+          scale_range: [0.80, 1.20]
+          scale_source: energy
+          rotation_range_deg: [0.0, 0.0]
+          rotation_source: motion_intensity
+        mapping:
+          forcing: harmony_theta_3
+          damping: tension
+          forcing_frequency: tempo
+          nonlinear_stiffness: harmony_theta_5
+          n_steps: recursion_depth
+          stochastic_scale: noise_level
+          gamma_window: density_level
+          omega_window: density_level
+
+      - id: julia_depth
+        role: fractal_body
+        generator_id: julia_orbit_trap
+        enabled: true
+        z_index: 20
+        opacity: 0.38
+        blend_mode: screen
+        palette_id: neon_dark
+        computation_resolution_fraction: 0.64
+        mapping:
+          c_real: harmony_theta_0
+          c_imag: harmony_theta_4
+          exponent_p: texture_complexity
+          trap_radius: density_level
+          max_iter: recursion_depth
+          stochastic_scale: noise_level
+
+      - id: rhythm_grid
+        role: meso_rhythm
+        generator_id: orbital_field
+        enabled: true
+        z_index: 25
+        opacity: 0.30
+        blend_mode: add
+        palette_id: neon_dark
+        computation_resolution_fraction: 0.56
+        mapping:
+          flow_speed: harmony_theta_1
+          orbit_radius: repetition
+          line_count: density_level
+          amplitude: energy
+          rotation_deg: motion_intensity
+          angular_break: harmony_theta_6
+
+      - id: electronic_noise
+        role: microtexture
+        generator_id: colored_noise_field
+        enabled: true
+        z_index: 30
+        opacity: 0.07
+        blend_mode: add
+        palette_id: neon_dark
+        computation_resolution_fraction: 1.00
+        mapping:
+          amplitude: harmony_theta_5
+          frequency_scale: spectral_flatness
+          anisotropy: repetition
+          grain_size: high_frequency_energy
+
+      - id: symmetry_flash
+        role: accent
+        generator_id: symmetry_snowflake
+        enabled_if:
+          all:
+            - source: energy
+              operator: gte
+              value: 0.70
+        z_index: 40
+        opacity: 0.20
+        blend_mode: add
+        palette_id: neon_dark
+        computation_resolution_fraction: 0.40
+        mapping:
+          branch_count: symmetry_bias
+          branch_depth: harmony_theta_7
+          branch_jitter: noise_level
+          radial_scale: energy
+
+      - id: silence_mask
+        role: silence_mask
+        source_kind: procedural_mask
+        enabled: true
+        z_index: 50
+        opacity: 1.0
+        blend_mode: normal
+        palette_id: null
+        computation_resolution_fraction: 1.00
+        mapping:
+          coverage: silence_rate
+          direction: layout_macro_shape
+          edge_softness: tension
+
+  # ─────────────────────────────────────────────────────────
+  # rock — энергия, напряжение, фрагментированные структуры
+  # θ₃→duffing.forcing  θ₆→orbital.angular_break  θ₇→snowflake.branch_depth  θ₄→ifs diversity
+  # ─────────────────────────────────────────────────────────
+  rock:
+    description: >
+      Высокая энергия и напряжение: duffing-хаос как доминирующая структура,
+      орбитальные дуги с угловыми изломами, фрактальный IFS как текстура удара,
+      минимум тишины, максимум насыщенности.
+
+    identity:
+      palette_id: crimson_forge
+      macro_archetype: fracture_field
+      postprocess_style_slug: grainfilm
+      visual_keywords:
+        - aggressive
+        - energetic
+        - fractured
+        - dark
+
+    composition:
+      negative_space:
+        coverage_source: silence_rate
+        coverage_range: [0.06, 0.28]
+        direction_source: layout_macro_shape
+
+    layers:
+      - id: duffing_core
+        role: macro_structure
+        generator_id: duffing_lyapunov
+        enabled: true
+        z_index: 10
+        opacity: 0.90
+        blend_mode: normal
+        palette_id: crimson_forge
+        computation_resolution_fraction: 0.80
+        transform:
+          offset_from: layout_macro_shape
+          scale_range: [0.85, 1.25]
+          scale_source: energy
+          rotation_range_deg: [-15.0, 15.0]
+          rotation_source: motion_intensity
+        mapping:
+          forcing: harmony_theta_3
+          damping: tension
+          forcing_frequency: tempo
+          nonlinear_stiffness: harmony_theta_5
+          n_steps: recursion_depth
+          stochastic_scale: noise_level
+          gamma_window: density_level
+          omega_window: density_level
+
+      - id: angular_arcs
+        role: meso_rhythm
+        generator_id: orbital_field
+        enabled: true
+        z_index: 20
+        opacity: 0.42
+        blend_mode: screen
+        palette_id: crimson_forge
+        computation_resolution_fraction: 0.64
+        mapping:
+          flow_speed: tempo
+          orbit_radius: repetition
+          line_count: density_level
+          amplitude: energy
+          rotation_deg: motion_intensity
+          angular_break: harmony_theta_6
+
+      - id: ifs_fracture
+        role: fractal_body
+        generator_id: orbit_ifs_multi_trap
+        enabled: true
+        z_index: 25
+        opacity: 0.35
+        blend_mode: screen
+        palette_id: crimson_forge
+        computation_resolution_fraction: 0.56
+        mapping:
+          n_points: density_level
+          map_diversity: harmony_theta_4
+          attractor_spread: motion_intensity
+          stochastic_scale: noise_level
+
+      - id: rock_grain
+        role: microtexture
+        generator_id: colored_noise_field
+        enabled: true
+        z_index: 30
+        opacity: 0.14
+        blend_mode: soft_light
+        palette_id: crimson_forge
+        computation_resolution_fraction: 1.00
+        mapping:
+          amplitude: harmony_theta_5
+          frequency_scale: spectral_flatness
+          anisotropy: repetition
+          grain_size: high_frequency_energy
+
+      - id: spike_accent
+        role: accent
+        generator_id: symmetry_snowflake
+        enabled_if:
+          all:
+            - source: energy
+              operator: gte
+              value: 0.65
+            - source: tension
+              operator: gte
+              value: 0.50
+        z_index: 40
+        opacity: 0.18
+        blend_mode: add
+        palette_id: pale_gold_accent
+        computation_resolution_fraction: 0.40
+        mapping:
+          branch_count: symmetry_bias
+          branch_depth: harmony_theta_7
+          branch_jitter: noise_level
+          radial_scale: energy
+
+      - id: silence_mask
+        role: silence_mask
+        source_kind: procedural_mask
+        enabled: true
+        z_index: 50
+        opacity: 1.0
+        blend_mode: normal
+        palette_id: null
+        computation_resolution_fraction: 1.00
+        mapping:
+          coverage: silence_rate
+          direction: layout_macro_shape
+          edge_softness: tension
+
+  # ─────────────────────────────────────────────────────────
+  # pop — яркость, чистота, симметрия, управляемый контраст
+  # θ₀→julia.c_real  θ₁→orbital.flow_speed  θ₇→snowflake.branch_depth  θ₄→ifs diversity
+  # ─────────────────────────────────────────────────────────
+  pop:
+    description: >
+      Яркая центрированная симметрия: julia как чистый цветовой центр,
+      орбитальные дуги как ритм-обрамление, снежинка как главный акцент,
+      мягкий шум, широкая пустота, ясный лаконичный образ.
+
+    identity:
+      palette_id: vivid_bloom
+      macro_archetype: radial_bloom
+      postprocess_style_slug: fullcolor
+      visual_keywords:
+        - bright
+        - clean
+        - centered
+        - symmetrical
+
+    composition:
+      negative_space:
+        coverage_source: silence_rate
+        coverage_range: [0.20, 0.52]
+        direction_source: layout_macro_shape
+
+    layers:
+      - id: julia_center
+        role: macro_structure
+        generator_id: julia_orbit_trap
+        enabled: true
+        z_index: 10
+        opacity: 0.80
+        blend_mode: normal
+        palette_id: vivid_bloom
+        computation_resolution_fraction: 0.72
+        transform:
+          offset_from: layout_macro_shape
+          scale_range: [0.65, 1.05]
+          scale_source: energy
+          rotation_range_deg: [-10.0, 10.0]
+          rotation_source: motion_intensity
+        mapping:
+          c_real: harmony_theta_0
+          c_imag: harmony_theta_4
+          exponent_p: texture_complexity
+          trap_radius: density_level
+          max_iter: recursion_depth
+          stochastic_scale: noise_level
+
+      - id: orbital_frame
+        role: meso_rhythm
+        generator_id: orbital_field
+        enabled: true
+        z_index: 20
+        opacity: 0.34
+        blend_mode: screen
+        palette_id: vivid_bloom
+        computation_resolution_fraction: 0.60
+        mapping:
+          flow_speed: harmony_theta_1
+          orbit_radius: repetition
+          line_count: density_level
+          amplitude: energy
+          rotation_deg: motion_intensity
+          angular_break: harmony_theta_6
+
+      - id: pop_ifs
+        role: fractal_body
+        generator_id: orbit_ifs_multi_trap
+        enabled: true
+        z_index: 25
+        opacity: 0.22
+        blend_mode: screen
+        palette_id: vivid_bloom
+        computation_resolution_fraction: 0.50
+        mapping:
+          n_points: density_level
+          map_diversity: harmony_theta_4
+          attractor_spread: motion_intensity
+          stochastic_scale: noise_level
+
+      - id: pop_bloom
+        role: accent
+        generator_id: symmetry_snowflake
+        enabled_if:
+          all:
+            - source: harmonic_stability
+              operator: gte
+              value: 0.40
+        z_index: 30
+        opacity: 0.42
+        blend_mode: screen
+        palette_id: vivid_bloom
+        computation_resolution_fraction: 0.50
+        transform:
+          anchor_from: track_identity_seed
+          scale_range: [0.25, 0.55]
+          scale_source: harmonic_stability
+          rotation_range_deg: [0.0, 360.0]
+          rotation_source: harmonic_change_rate
+        mapping:
+          branch_count: symmetry_bias
+          branch_depth: harmony_theta_7
+          branch_jitter: noise_level
+          radial_scale: harmonic_stability
+
+      - id: pop_grain
+        role: microtexture
+        generator_id: colored_noise_field
+        enabled: true
+        z_index: 35
+        opacity: 0.06
+        blend_mode: soft_light
+        palette_id: vivid_bloom
+        computation_resolution_fraction: 1.00
+        mapping:
+          amplitude: harmony_theta_5
+          frequency_scale: spectral_flatness
+          anisotropy: repetition
+          grain_size: texture_complexity
+
+      - id: silence_mask
+        role: silence_mask
+        source_kind: procedural_mask
+        enabled: true
+        z_index: 50
+        opacity: 1.0
+        blend_mode: normal
+        palette_id: null
+        computation_resolution_fraction: 1.00
+        mapping:
+          coverage: silence_rate
+          direction: layout_macro_shape
+          edge_softness: tension
+
+  # ─────────────────────────────────────────────────────────
+  # default — нейтральный универсальный профиль
+  # θ₀→julia.c_real  θ₃→duffing.forcing  θ₆→orbital.angular_break  θ₇→snowflake.branch_depth
+  # ─────────────────────────────────────────────────────────
+  default:
+    description: >
+      Нейтральный сбалансированный профиль для неопределённых или смешанных жанров:
+      julia как мягкий центр, orbital как ритм-обрамление, duffing-хаос тонко,
+      нейтральная палитра.
+
+    identity:
+      palette_id: neutral_noir
+      macro_archetype: quiet_field
+      postprocess_style_slug: fullcolor
+      visual_keywords:
+        - neutral
+        - balanced
+        - universal
+        - calm
+
+    composition:
+      negative_space:
+        coverage_source: silence_rate
+        coverage_range: [0.15, 0.50]
+        direction_source: layout_macro_shape
+
+    layers:
+      - id: julia_base
+        role: macro_structure
+        generator_id: julia_orbit_trap
+        enabled: true
+        z_index: 10
+        opacity: 0.72
+        blend_mode: normal
+        palette_id: neutral_noir
+        computation_resolution_fraction: 0.72
+        transform:
+          offset_from: layout_macro_shape
+          scale_range: [0.65, 1.10]
+          scale_source: energy
+          rotation_range_deg: [-15.0, 15.0]
+          rotation_source: motion_intensity
+        mapping:
+          c_real: harmony_theta_0
+          c_imag: harmony_theta_3
+          exponent_p: texture_complexity
+          trap_radius: density_level
+          max_iter: recursion_depth
+          stochastic_scale: noise_level
+
+      - id: orbital_rhythm
+        role: meso_rhythm
+        generator_id: orbital_field
+        enabled: true
+        z_index: 20
+        opacity: 0.28
+        blend_mode: screen
+        palette_id: neutral_noir
+        computation_resolution_fraction: 0.56
+        mapping:
+          flow_speed: tempo
+          orbit_radius: repetition
+          line_count: density_level
+          amplitude: energy
+          rotation_deg: motion_intensity
+          angular_break: harmony_theta_6
+
+      - id: chaos_sub
+        role: chaos_underbody
+        generator_id: duffing_lyapunov
+        enabled: true
+        z_index: 15
+        opacity: 0.10
+        blend_mode: soft_light
+        palette_id: neutral_noir
+        computation_resolution_fraction: 0.48
+        mapping:
+          forcing: harmony_theta_3
+          damping: tension
+          forcing_frequency: motion_intensity
+          nonlinear_stiffness: texture_complexity
+          n_steps: recursion_depth
+          stochastic_scale: harmony_theta_5
+          gamma_window: density_level
+          omega_window: density_level
+
+      - id: default_grain
+        role: microtexture
+        generator_id: colored_noise_field
+        enabled: true
+        z_index: 30
+        opacity: 0.07
+        blend_mode: soft_light
+        palette_id: neutral_noir
+        computation_resolution_fraction: 1.00
+        mapping:
+          amplitude: harmony_theta_5
+          frequency_scale: spectral_flatness
+          anisotropy: repetition
+          grain_size: texture_complexity
+
+      - id: default_snowflake
+        role: accent
+        generator_id: symmetry_snowflake
+        enabled_if:
+          all:
+            - source: harmonic_stability
+              operator: gte
+              value: 0.50
+            - source: section_complexity
+              operator: gte
+              value: 0.40
+        z_index: 40
+        opacity: 0.20
+        blend_mode: add
+        palette_id: neutral_noir
+        computation_resolution_fraction: 0.44
+        mapping:
+          branch_count: symmetry_bias
+          branch_depth: harmony_theta_7
+          branch_jitter: noise_level
+          radial_scale: harmonic_stability
+
+      - id: silence_mask
+        role: silence_mask
+        source_kind: procedural_mask
+        enabled: true
+        z_index: 50
+        opacity: 1.0
+        blend_mode: normal
+        palette_id: null
+        computation_resolution_fraction: 1.00
+        mapping:
+          coverage: silence_rate
+          direction: layout_macro_shape
+          edge_softness: tension
