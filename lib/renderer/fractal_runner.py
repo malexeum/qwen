@@ -61,12 +61,13 @@ def run_fractal_layer(
     elif generator_id == "chaotic_scattering_basins":
         theta = build_theta_scattering(params)
     else:  # orbit_ifs_multi_trap
-        theta = [0.0] * 8  # theta не используется напрямую
+        theta = [0.0] * 8
 
     sim_kwargs = build_simstate_kwargs(generator_id, params)
+
+    # SimState.разрешение: resolution=(W, H), не width=/height=
     sim = SimState(
-        width=W,
-        height=H,
+        resolution=(W, H),
         seed=seed,
         theta=theta,
         **sim_kwargs,
@@ -74,9 +75,9 @@ def run_fractal_layer(
 
     # Вызываем генератор
     func_map = {
-        "julia_orbit_trap": "julia_orbit_trap",
-        "orbit_ifs_multi_trap": "orbit_ifs_multi_trap",
-        "duffing_lyapunov": "duffing_lyapunov_map",
+        "julia_orbit_trap":         "julia_orbit_trap",
+        "orbit_ifs_multi_trap":      "orbit_ifs_multi_trap",
+        "duffing_lyapunov":          "duffing_lyapunov_map",
         "chaotic_scattering_basins": "chaotic_scattering_basins",
     }
     func_name = func_map[generator_id]
@@ -89,7 +90,7 @@ def run_fractal_layer(
 
 
 def _extract_orbit_map(result) -> np.ndarray:
-    """Извлекает и нормализует orbit_map из RunResult или np.ndarray."""
+    """Extract and normalise orbit_map from RunResult or np.ndarray."""
     if hasattr(result, "orbit_map"):
         arr = np.asarray(result.orbit_map, dtype=np.float32)
     elif isinstance(result, np.ndarray):
