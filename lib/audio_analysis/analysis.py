@@ -1,4 +1,5 @@
-"""Audio analysis — E1-fix2: motion norm 1500 Hz, mfcc_variance."""
+"""Audio analysis — E1-fix3: symmetry_bias консонанс, section_complexity CV, noise_level log."""
+import math
 import librosa
 import numpy as np
 from typing import Any, Dict, List
@@ -6,15 +7,20 @@ from typing import Any, Dict, List
 
 EPSILON = 1e-12
 DEFAULT_SR_HZ = 44100
-ANALYSIS_SAMPLE_RATE_HZ = DEFAULT_SR_HZ   # alias для test8
+ANALYSIS_SAMPLE_RATE_HZ = DEFAULT_SR_HZ
 N_FFT = 2048
 HOP_LENGTH = 512
 HIGH_FREQUENCY_CUTOFF_HZ = 4000.0
-# центроид музыки лежит в 300–700 Hz — нормируем по вокальному пику
-# (1500 Hz ≈ верхняя граница основного музыкального диапазона)
 MOTION_NORM_HZ = 1500.0
-ONSET_RATE_NORM = 8.0     # ударов/с → быстрый рок/поп ≈ 8 онсетов/с
-MFCC_NORM = 50.0          # типовое макс std MFCC (дБ шкала)
+ONSET_RATE_NORM = 8.0
+MFCC_NORM = 50.0
+
+# Issue #2: консонантные полутоны (унисон, м3, б3, кварта, квинта, м6, б6)
+CONSONANT_SEMITONES: frozenset[int] = frozenset({0, 3, 4, 5, 7, 8, 9})
+
+# Issue #4: границы log-шкалы для spectral flatness
+SF_MIN = 1.0e-5   # чистый тон
+SF_MAX = 0.50     # белый шум
 
 
 def _to_python_scalar(value: Any) -> Any:
@@ -39,6 +45,10 @@ def _safe_ratio(numerator: float, denominator: float) -> float:
     return float(numerator / denominator)
 
 
+def _clip01(value: float) -> float:
+    return float(np.clip(value, 0.0, 1.0))
+
+
 def _estimate_tempo_bpm(y: np.ndarray, sr: int) -> float:
     tempo, _ = librosa.beat.beat_track(y=y, sr=sr, hop_length=HOP_LENGTH)
     if isinstance(tempo, (list, tuple)):
@@ -50,10 +60,6 @@ def _estimate_tempo_bpm(y: np.ndarray, sr: int) -> float:
 
 
 def _compute_silence_rate(rms: np.ndarray) -> float:
-    """
-    Доля RMS-фреймов ниже адаптивного порога.
-    Порог: max(1e-4, 0.10 * median(rms > 0)). Диапазон [0, 1].
-    """
     rms = np.asarray(rms, dtype=float)
     if rms.size == 0:
         return 0.0
@@ -76,10 +82,7 @@ def _normalize_chroma(chroma: np.ndarray) -> np.ndarray:
 
 
 def _compute_chroma_entropy(chroma: np.ndarray) -> float:
-    """
-    Shannon-энтропия тональных классов, нормированная на log(12).
-    0.0 = вся энергия в одном тоне, 1.0 = равномерное распределение.
-    """
+    """Shannon-энтропия тональных классов, нормированная на log(12)."""
     chroma = np.asarray(chroma, dtype=float)
     if chroma.size == 0:
         return 0.5
@@ -93,25 +96,109 @@ def _compute_chroma_entropy(chroma: np.ndarray) -> float:
 
 
 def _compute_mfcc_variance(y: np.ndarray, sr: int) -> float:
-    """
-    Фикс harmonic_stability: среднее std по 13 MFCC-коэффициентам,
-    нормировано на MFCC_NORM (50.0 дБ).
-
-    Джаз: широкий спектр → высокое std → высокое значение.
-    Классика: стабильный тембр → низкое std → низкое значение.
-
-    В test9 ось называется harmonic_stability, но физически это
-    тембральная вариативность — хороший дифференциатор жанров.
-    """
+    """Среднее std по 13 MFCC-коэффициентам / MFCC_NORM."""
     if y.size == 0 or sr <= 0:
         return 0.0
     mfcc = librosa.feature.mfcc(
         y=y, sr=sr, n_mfcc=13,
         n_fft=N_FFT, hop_length=HOP_LENGTH,
-    )  # shape: [13, T]
-    # std по времени для каждого коэффициента, затем среднее по 13
+    )
     mfcc_std = float(np.mean(np.std(mfcc, axis=1)))
-    return float(np.clip(mfcc_std / MFCC_NORM, 0.0, 1.0))
+    return _clip01(mfcc_std / MFCC_NORM)
+
+
+def _compute_symmetry_bias(chroma: np.ndarray) -> float:
+    """Issue #2: доля консонантной chroma-энергии относительно локального
+    доминирующего тона. Физически: насколько гармония трека строится на
+    консонансах — в отличие от энтропии, разделяет жанры.
+
+    Алгоритм (пофреймово, взвешенное по энергии среднее):
+      1. root = argmax(chroma[:, frame])
+      2. intervals = (pitch_class - root) % 12 для каждого из 12 классов
+      3. consonant_ratio = sum(energy[consonant]) / sum(energy[all])
+      4. итог = среднее по фреймам, вес = суммарная энергия фрейма
+
+    Ожидаемые диапазоны: classical/ambient > blues_jazz > electronic.
+    std >= 0.10 при 5 жанровых треках.
+    """
+    chroma = np.asarray(chroma, dtype=float)
+    if chroma.ndim != 2 or chroma.shape[0] != 12 or chroma.shape[1] == 0:
+        return 0.0
+
+    frame_totals = np.sum(chroma, axis=0)          # (n_frames,)
+    valid = frame_totals > EPSILON
+    if not np.any(valid):
+        return 0.0
+
+    chroma_v = chroma[:, valid]                    # (12, n_valid)
+    totals_v = frame_totals[valid]                 # (n_valid,)
+    roots = np.argmax(chroma_v, axis=0)            # (n_valid,)  int
+
+    pitch_idx = np.arange(12, dtype=np.int16)[:, None]          # (12, 1)
+    intervals = (pitch_idx - roots[None, :]) % 12               # (12, n_valid)
+    consonant_mask = np.isin(intervals, tuple(CONSONANT_SEMITONES))  # (12, n_valid)
+
+    consonant_energy = np.sum(np.where(consonant_mask, chroma_v, 0.0), axis=0)
+    frame_ratios = consonant_energy / totals_v     # (n_valid,)
+
+    weights = totals_v / (np.sum(totals_v) + EPSILON)
+    return _clip01(float(np.sum(frame_ratios * weights)))
+
+
+def _compute_section_complexity(
+    y: np.ndarray,
+    sr: int,
+    hop_length: int,
+    n_segments: int = 6,
+) -> float:
+    """Issue #3: межсекционный энергетический контраст.
+
+    CV (coefficient of variation) средних RMS-энергий n_segments
+    равных временных сегментов, нормированный по 0.5.
+
+    Ambient/drone: низкая CV → низкое значение.
+    Рок/электроника с нарастаниями: высокая CV → высокое значение.
+    std >= 0.10 при 5 жанровых треках.
+    """
+    if y.size == 0 or hop_length <= 0 or n_segments < 2:
+        return 0.0
+
+    y_f = np.asarray(y, dtype=np.float64)
+    frame_count = max(1, int(np.ceil(y_f.size / hop_length)))
+    pad = frame_count * hop_length - y_f.size
+    if pad > 0:
+        y_f = np.pad(y_f, (0, pad), mode="constant")
+
+    frames = y_f.reshape(frame_count, hop_length)
+    rms_frames = np.sqrt(np.mean(np.square(frames), axis=1))
+
+    chunks = np.array_split(rms_frames, n_segments)
+    seg_means = np.array(
+        [float(np.mean(c)) if c.size else 0.0 for c in chunks],
+        dtype=np.float64,
+    )
+    mean_energy = float(np.mean(seg_means))
+    if mean_energy <= EPSILON:
+        return 0.0
+
+    cv = float(np.std(seg_means) / mean_energy)
+    return _clip01(cv / 0.5)
+
+
+def _compute_noise_level(spectral_flatness_raw: float) -> float:
+    """Issue #4: log-шкалирование spectral flatness → perceptual noise.
+
+    Музыкальные треки физически имеют SF ~ 0.001–0.01 (сильно тональный
+    сигнал), поэтому линейное использование SF сжимает весь диапазон в 1%.
+    Логарифмическое шкалирование растягивает музыкально значимую область.
+
+    SF_MIN = 1e-5  (чистый синус),  SF_MAX = 0.5  (белый шум).
+    noise_level != spectral_flatness (разные оси, разная семантика).
+    """
+    sf = max(float(spectral_flatness_raw), SF_MIN)
+    numerator = math.log10(sf) - math.log10(SF_MIN)
+    denominator = math.log10(SF_MAX) - math.log10(SF_MIN)
+    return _clip01(numerator / denominator)
 
 
 def _compute_harmonic_metrics(
@@ -159,7 +246,7 @@ def _compute_spectral_metrics(
 ) -> tuple[float, float]:
     """
     Возвращает:
-    - spectral_flatness [0, 1];
+    - spectral_flatness_raw [0, 1];
     - high_frequency_energy_ratio (мощность > 4 кГц) [0, 1].
     """
     if y.size == 0 or sr <= 0:
@@ -169,22 +256,20 @@ def _compute_spectral_metrics(
     )
     power = magnitude ** 2
     sf_frames = librosa.feature.spectral_flatness(S=magnitude + EPSILON)[0]
-    spectral_flatness = float(np.clip(_safe_mean(sf_frames), 0.0, 1.0))
+    spectral_flatness_raw = float(np.clip(_safe_mean(sf_frames), 0.0, 1.0))
     if power.size == 0:
-        return spectral_flatness, 0.0
+        return spectral_flatness_raw, 0.0
     freqs = librosa.fft_frequencies(sr=sr, n_fft=N_FFT)
     nyquist_hz = sr / 2.0
     cutoff_hz = min(HIGH_FREQUENCY_CUTOFF_HZ, 0.45 * nyquist_hz)
     if cutoff_hz <= 0.0:
-        return spectral_flatness, 0.0
+        return spectral_flatness_raw, 0.0
     mask = freqs >= cutoff_hz
     if not np.any(mask):
-        return spectral_flatness, 0.0
+        return spectral_flatness_raw, 0.0
     total_power = float(np.sum(power))
-    hf_ratio = float(np.clip(
-        _safe_ratio(float(np.sum(power[mask, :])), total_power), 0.0, 1.0
-    ))
-    return spectral_flatness, hf_ratio
+    hf_ratio = _clip01(_safe_ratio(float(np.sum(power[mask, :])), total_power))
+    return spectral_flatness_raw, hf_ratio
 
 
 def analyze_audio_file(
@@ -206,7 +291,7 @@ def analyze_audio_file(
     energy = _safe_mean(rms)
     bpm = _estimate_tempo_bpm(y=y, sr=sr)
 
-    # ── spectral centroid ─────────────────────────────────────────────────────────
+    # ── spectral centroid ─────────────────────────────────────────────────────
     sc_frames = np.asarray(
         librosa.feature.spectral_centroid(
             y=y, sr=sr, n_fft=N_FFT, hop_length=HOP_LENGTH
@@ -215,13 +300,10 @@ def analyze_audio_file(
     )
     spectral_centroid = _safe_mean(sc_frames)
     nyquist_hz = sr / 2.0
-    brightness = float(np.clip(_safe_ratio(spectral_centroid, nyquist_hz), 0.0, 1.0))
-    # Фикс 2 v2: norm / 1500 Hz — покрывает реальный диапазон 300–700 Hz
-    spectral_centroid_norm = float(
-        np.clip(_safe_ratio(spectral_centroid, MOTION_NORM_HZ), 0.0, 1.0)
-    )
+    brightness = _clip01(_safe_ratio(spectral_centroid, nyquist_hz))
+    spectral_centroid_norm = _clip01(_safe_ratio(spectral_centroid, MOTION_NORM_HZ))
 
-    # ── Фикс 1: onset rate ─────────────────────────────────────────────────────────
+    # ── onset rate ────────────────────────────────────────────────────────────
     onset_env = np.asarray(
         librosa.onset.onset_strength(y=y, sr=sr, hop_length=HOP_LENGTH),
         dtype=float,
@@ -232,13 +314,13 @@ def analyze_audio_file(
     onset_rate_hz = (
         float(len(onset_frames)) / duration_sec if duration_sec > 0.0 else 0.0
     )
-    onset_rate_norm = float(np.clip(onset_rate_hz / ONSET_RATE_NORM, 0.0, 1.0))
+    onset_rate_norm = _clip01(onset_rate_hz / ONSET_RATE_NORM)
     if onset_env.size:
         rhythm_density = float(np.mean(onset_env > float(np.median(onset_env))))
     else:
         rhythm_density = 0.0
 
-    # ── dynamic range ─────────────────────────────────────────────────────────────
+    # ── dynamic range ─────────────────────────────────────────────────────────
     if rms.size:
         rms_low  = float(np.percentile(rms, 10))
         rms_high = float(np.percentile(rms, 90))
@@ -249,7 +331,7 @@ def analyze_audio_file(
     else:
         dynamic_range = 0.0
 
-    # ── chroma + repetition ───────────────────────────────────────────────────────
+    # ── chroma + repetition ───────────────────────────────────────────────────
     chroma = np.asarray(
         librosa.feature.chroma_stft(
             y=y, sr=sr, n_fft=N_FFT, hop_length=HOP_LENGTH
@@ -270,7 +352,7 @@ def analyze_audio_file(
                 norm_lr = ln * rn
                 valid = norm_lr > EPSILON
                 repetition_score = (
-                    float(np.clip(np.mean(sim[valid] / norm_lr[valid]), 0.0, 1.0))
+                    _clip01(float(np.mean(sim[valid] / norm_lr[valid])))
                     if np.any(valid) else 0.0
                 )
             else:
@@ -289,16 +371,27 @@ def analyze_audio_file(
     )
 
     chroma_entropy_norm = _compute_chroma_entropy(chroma)
-    # Фикс 3: MFCC variance как основной дифференциатор жанров
-    mfcc_variance_norm = _compute_mfcc_variance(y=y, sr=sr)
+    mfcc_variance_norm  = _compute_mfcc_variance(y=y, sr=sr)
+
+    # Issue #2: новая symmetry_bias — консонансная энергия
+    symmetry_bias_val   = _compute_symmetry_bias(chroma)
+
+    # Issue #3: новая section_complexity — CV по RMS-сегментам
+    section_complexity_val = _compute_section_complexity(
+        y=y, sr=sr, hop_length=HOP_LENGTH
+    )
 
     silence_rate = _compute_silence_rate(rms)
     harmonic_stability_cosine, harmonic_change_rate_hz = _compute_harmonic_metrics(
         chroma=chroma, sr=sr, hop_length=HOP_LENGTH
     )
-    spectral_flatness, high_frequency_energy_ratio = _compute_spectral_metrics(
+    # spectral_flatness_raw нужен и для оси spectral_flatness, и для noise_level
+    spectral_flatness_raw, high_frequency_energy_ratio = _compute_spectral_metrics(
         y=y, sr=sr
     )
+
+    # Issue #4: noise_level через log-шкалу, отдельно от spectral_flatness
+    noise_level_val = _compute_noise_level(spectral_flatness_raw)
 
     suggested_style = suggest_style(
         bpm=bpm,
@@ -333,21 +426,24 @@ def analyze_audio_file(
         "harmonic_change_rate_hz":      harmonic_change_rate_hz,
         "chroma_entropy_norm":          chroma_entropy_norm,
         "mfcc_variance_norm":           mfcc_variance_norm,
-        "spectral_flatness":            spectral_flatness,
+        "spectral_flatness":            spectral_flatness_raw,
         "high_frequency_energy_ratio":  high_frequency_energy_ratio,
         "suggested_music_style":        suggested_style,
+        # ── новые ключи E1-fix3 ────────────────────────────────────────────
+        "symmetry_bias":                symmetry_bias_val,
+        "section_complexity":           section_complexity_val,
+        "noise_level":                  noise_level_val,
+        # ── структурные ───────────────────────────────────────────────────
         "sections":                     sections,
         "recurrence_groups":            recurrence_groups,
         "events":                       events,
     }
 
-    clean_features: Dict[str, Any] = {}
     structural_keys = {"sections", "recurrence_groups", "events"}
-    for key_name, value in features.items():
-        clean_features[key_name] = (
-            value if key_name in structural_keys
-            else _to_python_scalar(value)
-        )
+    clean_features: Dict[str, Any] = {
+        k: (v if k in structural_keys else _to_python_scalar(v))
+        for k, v in features.items()
+    }
     return clean_features
 
 
@@ -460,6 +556,8 @@ def build_simple_events(
 def build_perceptual_latent(features: Dict[str, Any]) -> Dict[str, Any]:
     """
     Строит вектор восприятия. Отсутствующие поля = 0.0.
+    Issue #3: section_complexity теперь берётся из features (CV-метрика),
+    а не вычисляется как len(sections)/10.
     """
     energy               = float(features.get("energy", 0.0))
     rhythm_density       = float(features.get("rhythm_density", 0.0))
@@ -472,7 +570,8 @@ def build_perceptual_latent(features: Dict[str, Any]) -> Dict[str, Any]:
     spectral_flatness    = float(features.get("spectral_flatness", 0.0))
     high_frequency_energy_ratio = float(features.get("high_frequency_energy_ratio", 0.0))
     tempo_bpm            = float(features.get("bpm", 0.0))
-    sections             = features.get("sections", []) or []
+    # Issue #3: CV-метрика из analyze_audio_file, не len(sections)/10
+    section_complexity   = float(features.get("section_complexity", 0.0))
     events               = features.get("events", []) or []
 
     tension  = float(np.clip(dynamic_range / 20.0, 0.0, 1.0))
@@ -487,10 +586,9 @@ def build_perceptual_latent(features: Dict[str, Any]) -> Dict[str, Any]:
         + 0.25 * (1.0 - spectral_flatness),
         0.0, 1.0,
     ))
-    section_complexity = float(np.clip(len(sections) / 10.0, 0.0, 1.0))
     macro_shape_hint = (
-        "ABA_like" if len(sections) >= 3
-        else "linear" if len(sections) == 1
+        "ABA_like" if section_complexity > 0.5
+        else "linear" if section_complexity < 0.1
         else "unknown"
     )
     return {

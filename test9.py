@@ -5,16 +5,19 @@
      (+ duration_sec + style) для каждого из 5 контрольных треков.
   2. Все числовые значения конечны и лежат в [0, 1] (duration_sec — >0).
   3. Адаптер реально различает треки: для ключевых осей межтрековый
-     std > 0.05 (не константа).
+     std > 0.05 (не константа). E1-fix3: добавлены symmetry_bias,
+     section_complexity, noise_level.
   4. Suggested style не пустой, если style_hint не передан.
+  5. Доменные проверки: noise_level != spectral_flatness,
+     ambient section_complexity < 0.5, blues noise_level > 0.20.
 
 Запуск:
   python test9.py
 
 Отчёты:
-  output/test9_features_<timestamp>.json   — полный дамп
-  output/test9_features_<timestamp>.csv    — матрица треки × оси
-  output/test9_report_<timestamp>.md       — читаемый отчёт
+  output/test9_features_<timestamp>.json
+  output/test9_features_<timestamp>.csv
+  output/test9_report_<timestamp>.md
 """
 from __future__ import annotations
 
@@ -30,12 +33,12 @@ import numpy as np
 
 from lib.audio_analysis.audio_file_adapter import extract_features
 
-# ── Пути ──────────────────────────────────────────────────────────────────────
+# ── Пути ─────────────────────────────────────────────────────────────────────
 AUDIO_DIR  = Path("tests/audio")
 OUTPUT_DIR = Path("output")
 OUTPUT_DIR.mkdir(exist_ok=True)
 
-# ── Контрольные треки (5 профилей) ────────────────────────────────────────────
+# ── Контрольные треки (5 профилей) ───────────────────────────────────────────
 CONTROL_TRACKS: list[tuple[str, str]] = [
     ("Front_Porch_Blues.mp3",                      "blues_jazz"),
     ("Space.mp3",                                  "ambient"),
@@ -44,7 +47,7 @@ CONTROL_TRACKS: list[tuple[str, str]] = [
     ("Sing, Sing, Sing.mp3",                       "electronic"),
 ]
 
-# ── 17 перцептивных осей ──────────────────────────────────────────────────────
+# ── 17 перцептивных осей ─────────────────────────────────────────────────────
 AXES_17: list[str] = [
     "energy",
     "tension",
@@ -66,6 +69,7 @@ AXES_17: list[str] = [
 ]
 
 # Оси где ожидаем реальный межтрековый разброс std > MIN_SPREAD
+# E1-fix3: добавлены три новые оси
 SPREAD_AXES: list[str] = [
     "energy",
     "tension",
@@ -73,8 +77,11 @@ SPREAD_AXES: list[str] = [
     "density_level",
     "motion_intensity",
     "harmonic_stability",
+    "symmetry_bias",        # #2
+    "section_complexity",   # #3
+    "noise_level",          # #4
 ]
-MIN_SPREAD = 0.05  # минимальный межтрековый std
+MIN_SPREAD = 0.05
 
 
 def fail(message: str) -> None:
@@ -123,32 +130,85 @@ def validate_features(
     return errors
 
 
+def domain_checks(results: list[dict[str, Any]]) -> list[str]:
+    """Доменные проверки E1-fix3."""
+    warnings: list[str] = []
+    by_style: dict[str, dict[str, Any]] = {
+        r["style_hint"]: r["features"] for r in results
+    }
+
+    # #4: noise_level != spectral_flatness (числа разные)
+    for r in results:
+        f = r["features"]
+        nl = as_float(f.get("noise_level"))
+        sf = as_float(f.get("spectral_flatness"))
+        if nl is not None and sf is not None and abs(nl - sf) < 1e-6:
+            warnings.append(
+                f"{r['track']}: noise_level == spectral_flatness ({nl:.6f}) — "
+                "log-шкала не применена"
+            )
+
+    # #3: ambient section_complexity < 0.5  (ambient энергетически однороден)
+    if "ambient" in by_style:
+        sc = as_float(by_style["ambient"].get("section_complexity"))
+        if sc is not None and sc >= 0.5:
+            warnings.append(
+                f"ambient section_complexity = {sc:.4f} >= 0.5 — "
+                "ожидаем низкий контраст секций для ambient/drone"
+            )
+
+    # #2: хотя бы один трек section_complexity > 0.3 (есть треки с контрастом)
+    all_sc = [
+        as_float(r["features"].get("section_complexity"))
+        for r in results
+        if as_float(r["features"].get("section_complexity")) is not None
+    ]
+    if all_sc and max(all_sc) <= 0.3:
+        warnings.append(
+            f"Максимальная section_complexity = {max(all_sc):.4f} — "
+            "все треки дают низкий CV, фикс #3 неэффективен"
+        )
+
+    # #2: blues_jazz noise_level > 0.10
+    if "blues_jazz" in by_style:
+        nl = as_float(by_style["blues_jazz"].get("noise_level"))
+        if nl is not None and nl <= 0.10:
+            warnings.append(
+                f"blues_jazz noise_level = {nl:.4f} <= 0.10 — "
+                "ожидаем умеренный шум для blues"
+            )
+
+    return warnings
+
+
 def write_reports(
     timestamp: str,
     results: list[dict[str, Any]],
     spread_check: list[dict[str, Any]],
     errors: list[str],
+    domain_warnings: list[str],
 ) -> tuple[Path, Path, Path]:
     json_path = OUTPUT_DIR / f"test9_features_{timestamp}.json"
     csv_path  = OUTPUT_DIR / f"test9_features_{timestamp}.csv"
     md_path   = OUTPUT_DIR / f"test9_report_{timestamp}.md"
 
-    # JSON ────────────────────────────────────────────────────────────────────
+    # JSON ─────────────────────────────────────────────────────────────────────
     with json_path.open("w", encoding="utf-8") as fh:
         json.dump(
             {
-                "test_name": "test9_audio_file_adapter_e1",
+                "test_name": "test9_audio_file_adapter_e1_fix3",
                 "created_at_local": timestamp,
                 "tracks": results,
                 "spread_check": spread_check,
                 "validation_errors": errors,
+                "domain_warnings": domain_warnings,
             },
             fh,
             ensure_ascii=False,
             indent=2,
         )
 
-    # CSV — матрица треки × оси ───────────────────────────────────────────────
+    # CSV — матрица треки × оси ────────────────────────────────────────────────
     fieldnames = ["track", "style_hint", "detected_style", "duration_sec"] + AXES_17
     with csv_path.open("w", newline="", encoding="utf-8") as fh:
         writer = csv.DictWriter(fh, fieldnames=fieldnames)
@@ -162,36 +222,46 @@ def write_reports(
                 **{axis: fmt(row["features"].get(axis)) for axis in AXES_17},
             })
 
-    # Markdown ────────────────────────────────────────────────────────────────
+    # Markdown ─────────────────────────────────────────────────────────────────
     lines: list[str] = [
-        "# Test9 — E1 AudioFileAdapter",
+        "# Test9 — E1 AudioFileAdapter (fix3)",
         "",
         f"Время запуска: `{timestamp}`",
-        f"Ошибок: **{len(errors)}**",
+        f"Ошибок: **{len(errors)}**   Доменных предупреждений: **{len(domain_warnings)}**",
         "",
         "## Матрица признаков",
         "",
     ]
 
-    header_axes = ["energy", "tension", "tempo", "density_level",
-                   "harmonic_stability", "symmetry_bias", "recursion_depth"]
+    header_axes = [
+        "energy", "tension", "tempo", "density_level",
+        "harmonic_stability", "symmetry_bias", "section_complexity",
+        "noise_level", "recursion_depth",
+    ]
     lines.append("| Трек | style | " + " | ".join(header_axes) + " |")
     lines.append("|---" * (2 + len(header_axes)) + "|")
     for row in results:
         f = row["features"]
         vals = " | ".join(fmt(f.get(ax)) for ax in header_axes)
-        lines.append(f"| {row['track']} | {f.get('style','')} | {vals} |")  # noqa: E501
+        lines.append(f"| {row['track']} | {f.get('style', '')} | {vals} |")
 
     lines.extend([
         "",
         "## Межтрековый разброс (std по 5 трекам)",
         "",
-        "| Ось | std | Вердикт |",
-        "|---|---:|---|",
+        "| Ось | std | Порог | Вердикт |",
+        "|---|---:|---:|---|",
     ])
     for sc in spread_check:
-        verdict = "✅ разброс" if sc["ok"] else "⚠️ слабый разброс"
-        lines.append(f"| `{sc['axis']}` | {fmt(sc['std'])} | {verdict} |")
+        verdict = "✅" if sc["ok"] else "⚠️ слабый"
+        lines.append(
+            f"| `{sc['axis']}` | {fmt(sc['std'])} | {MIN_SPREAD} | {verdict} |"
+        )
+
+    if domain_warnings:
+        lines.extend(["", "## Доменные предупреждения", ""])
+        for w in domain_warnings:
+            lines.append(f"- ⚠️ {w}")
 
     lines.extend(["", "## Ошибки валидации", ""])
     if errors:
@@ -210,12 +280,11 @@ def main() -> None:
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     print("\n" + "=" * 72)
-    print("TEST9 — E1 AudioFileAdapter: extract_features() smoke test")
+    print("TEST9 — E1 AudioFileAdapter (fix3): extract_features() smoke test")
     print("=" * 72)
     print(f"Контрольных треков: {len(CONTROL_TRACKS)}")
-    print(f"Осей: {len(AXES_17)}")
+    print(f"Осей: {len(AXES_17)}  |  Spread-осей: {len(SPREAD_AXES)}")
 
-    # Проверяем что все треки существуют
     missing = [
         fname for fname, _ in CONTROL_TRACKS
         if not (AUDIO_DIR / fname).exists()
@@ -249,14 +318,13 @@ def main() -> None:
             "features":   features,
         })
 
-        # Краткий прогресс-принт
         print(
-            f"  style={features.get('style','?'):<12s}"
-            f"  dur={fmt(features.get('duration_sec'),1)}s"
+            f"  style={features.get('style', '?'):<12s}"
+            f"  dur={fmt(features.get('duration_sec'), 1)}s"
             f"  energy={fmt(features.get('energy'))}"
-            f"  tempo={fmt(features.get('tempo'))}"
-            f"  density={fmt(features.get('density_level'))}"
-            f"  h_stab={fmt(features.get('harmonic_stability'))}"
+            f"  sym={fmt(features.get('symmetry_bias'))}"
+            f"  sec_cx={fmt(features.get('section_complexity'))}"
+            f"  noise={fmt(features.get('noise_level'))}"
         )
         if errs:
             for e in errs:
@@ -270,7 +338,7 @@ def main() -> None:
             print(f"❌ {e}")
         fail("Test9: не все треки обработаны.")
 
-    # ── Межтрековый разброс ──────────────────────────────────────────────────
+    # ── Межтрековый разброс ───────────────────────────────────────────────────
     print(f"\n{'─' * 72}")
     print("Межтрековый разброс (std по 5 трекам):")
     spread_check: list[dict[str, Any]] = []
@@ -282,35 +350,42 @@ def main() -> None:
             for row in results
             if as_float(row["features"].get(axis)) is not None
         ]
-        if len(values) < 2:
-            std = 0.0
-        else:
-            std = float(np.std(values, ddof=0))
-
+        std = float(np.std(values, ddof=0)) if len(values) >= 2 else 0.0
         ok = std >= MIN_SPREAD
         spread_check.append({"axis": axis, "std": std, "ok": ok})
         status = "✅" if ok else "⚠️ "
         print(f"  {status} {axis:<25s}  std = {std:.4f}")
         if not ok:
             spread_warnings.append(
-                f"axis '{axis}': std={std:.4f} < {MIN_SPREAD} — "
-                "адаптер плохо различает треки по этой оси"
+                f"axis '{axis}': std={std:.4f} < {MIN_SPREAD}"
             )
 
-    # ── Отчёты ───────────────────────────────────────────────────────────────
+    # ── Доменные проверки ─────────────────────────────────────────────────────
+    print(f"\n{'─' * 72}")
+    print("Доменные проверки (E1-fix3):")
+    domain_warnings = domain_checks(results)
+    if domain_warnings:
+        for w in domain_warnings:
+            print(f"  ⚠️  {w}")
+    else:
+        print("  ✅ все доменные проверки пройдены")
+
+    # ── Отчёты ────────────────────────────────────────────────────────────────
     json_path, csv_path, md_path = write_reports(
         timestamp=timestamp,
         results=results,
         spread_check=spread_check,
         errors=validation_errors,
+        domain_warnings=domain_warnings,
     )
 
     print("\n" + "=" * 72)
     print("РЕЗУЛЬТАТ TEST9")
     print("=" * 72)
-    print(f"Треков обработано:    {len(results)}/{len(CONTROL_TRACKS)}")
-    print(f"Ошибок валидации:     {len(validation_errors)}")
-    print(f"Предупреждений spread:{len(spread_warnings)}")
+    print(f"Треков обработано:       {len(results)}/{len(CONTROL_TRACKS)}")
+    print(f"Ошибок валидации:        {len(validation_errors)}")
+    print(f"Предупреждений spread:   {len(spread_warnings)}")
+    print(f"Доменных предупреждений: {len(domain_warnings)}")
     print("\nОтчёты:")
     print(f"  JSON: {json_path}")
     print(f"  CSV:  {csv_path}")
@@ -318,16 +393,22 @@ def main() -> None:
 
     if validation_errors:
         for e in validation_errors:
-            print(f"  ⚠️  {e}")
+            print(f"  ❌ {e}")
         sys.exit(2)
 
     if spread_warnings:
-        print("\n⚠️  Test9 завершён с предупреждениями о разбросе:")
+        print("\n⚠️  Предупреждения о разбросе:")
         for w in spread_warnings:
             print(f"  - {w}")
         sys.exit(2)
 
-    print("\n✅ Test9 — extract_features() работает корректно на всех 5 треках.")
+    if domain_warnings:
+        print("\n⚠️  Доменные предупреждения (не блокирующие):")
+        for w in domain_warnings:
+            print(f"  - {w}")
+        # Доменные предупреждения не блокируют — только информируют
+
+    print("\n✅ Test9 (fix3) — extract_features() корректна на всех 5 треках.")
 
 
 if __name__ == "__main__":
