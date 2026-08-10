@@ -7,7 +7,7 @@
        → storage/poster_runs/{plan_id}/parameter_coverage.json
        → storage/poster_runs/{plan_id}/planner_diagnostics.json
   → C1 render (lib/renderer/reference_renderer.py)
-       → storage/poster_runs/{plan_id}/poster.png  (1024×1024 sRGB)
+       → storage/poster_runs/{plan_id}/poster_{style}.png  (1024×1024 sRGB)
 
 Запуск:
   python run_full.py
@@ -164,8 +164,8 @@ FEATURES: dict[str, dict] = {
         "duration_sec": 300.0,
         "spectral_centroid": 1800.0,
         "sections": [
-            {"id": "S1", "label": "Exposition",   "start_sec": 0.0,   "end_sec": 75.0},
-            {"id": "S2", "label": "Development",  "start_sec": 75.0,  "end_sec": 150.0},
+            {"id": "S1", "label": "Exposition",    "start_sec": 0.0,   "end_sec": 75.0},
+            {"id": "S2", "label": "Development",   "start_sec": 75.0,  "end_sec": 150.0},
             {"id": "S3", "label": "Recapitulation","start_sec": 150.0, "end_sec": 225.0},
             {"id": "S4", "label": "Coda",          "start_sec": 225.0, "end_sec": 300.0},
         ],
@@ -249,11 +249,13 @@ def run_style(
         from lib.renderer.reference_renderer import render as c1_render
         t1 = time.perf_counter()
         plan_json_path = plan_dir / "visual_composition_plan.json"
-        png_path = c1_render(plan_json_path, output_dir=plan_dir)
-        poster_path = plan_dir / "poster.png"
-        if png_path.name != "poster.png":
-            png_path.rename(poster_path)
-            png_path = poster_path
+        raw_png = c1_render(plan_json_path, output_dir=plan_dir)
+
+        # Имя файла = poster_{style_name}.png — сразу понятно что внутри
+        poster_path = plan_dir / f"poster_{style_name}.png"
+        if raw_png.resolve() != poster_path.resolve():
+            raw_png.rename(poster_path)
+        png_path = poster_path
         t_render = time.perf_counter() - t1
 
     return {
