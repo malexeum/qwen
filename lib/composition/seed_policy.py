@@ -3,7 +3,11 @@
 Base seed:
     SHA-256( audio_content_hash | normalize(title) | normalize(artist)
              | duration_ms | style_profile_slug | profile_library_version
-             | variation_seed )
+             | variation_seed | harmony_theta_hash )
+
+    harmony_theta_hash — sha256[:16] от rounded(θ, 3), поставляется
+    HarmonyEncoder.hash (E2). Если не задан, используется пустая строка
+    (обратная совместимость с планами до E2).
 
 Layer seed:
     SHA-256( base_seed | layer_id | canonical_generator_id )
@@ -39,8 +43,13 @@ def compute_base_seed(
     style_profile_slug: str,
     profile_library_version: str,
     variation_seed: int,
+    harmony_theta_hash: str | None = None,   # E2: hash от HarmonyTheta.hash
 ) -> int:
-    """Детерминированный base seed трека."""
+    """Детерминированный base seed трека.
+
+    harmony_theta_hash — опционально (E2+). Если None или пустая строка,
+    поведение идентично версии до E2 (обратная совместимость).
+    """
     parts = [
         audio_content_hash,
         normalize_text(title),
@@ -49,6 +58,7 @@ def compute_base_seed(
         style_profile_slug,
         profile_library_version,
         str(variation_seed),
+        harmony_theta_hash or "",   # E2: пусто если не задан → совместимость
     ]
     material = "|".join(parts)
     return sha256_to_uint64(material)

@@ -8,6 +8,9 @@
 
 Возвращает CompositionConfig — единственный объект конфигурации,
 используемый во всех остальных модулях пакета.
+
+E2: добавлены harmony_theta_0..7 в VALID_HARMONY_THETA_AXES —
+whitelist для секций mapping генераторов (profile validator).
 """
 from __future__ import annotations
 
@@ -28,6 +31,11 @@ CONFIGS_DIR = Path(__file__).resolve().parents[2] / "configs"
 ALLOWED_BLEND_MODES = {
     "normal", "screen", "add", "multiply", "soft_light", "max",
 }
+
+# E2: harmony_theta_0..7 — валидные источники для секций mapping генераторов
+VALID_HARMONY_THETA_AXES: frozenset[str] = frozenset(
+    f"harmony_theta_{i}" for i in range(8)
+)
 
 
 class CompositionConfigError(ValueError):
@@ -95,7 +103,6 @@ def _validate_catalog(catalog: dict) -> None:
     generators = catalog.get("generators", {})
     if not generators:
         raise CompositionConfigError("generator_catalog.yaml: 'generators' is empty")
-    # Build reverse-alias index to catch duplicates
     seen_aliases: dict[str, str] = {}
     for gid, spec in generators.items():
         missing = required_fields - set(spec.keys())
@@ -134,7 +141,6 @@ def _validate_profiles(profiles: dict, catalog: dict, palettes: dict) -> None:
 
     palette_ids = set(palettes.get("palettes", {}).keys())
     generator_ids = set(catalog.get("generators", {}).keys())
-    # collect all known aliases
     all_aliases: dict[str, str] = {}
     for gid, spec in catalog.get("generators", {}).items():
         for alias in spec.get("aliases", []):
@@ -162,6 +168,18 @@ def _validate_profiles(profiles: dict, catalog: dict, palettes: dict) -> None:
                     f"Profile '{slug}', layer '{layer.get('id')}': "
                     f"blend_mode '{bm}' not allowed"
                 )
+
+            # E2: валидация источников в секции mapping
+            # harmony_theta_0..7 допустимы наравне со стандартными осями
+            mapping = layer.get("mapping", {})
+            for axis_name, source_val in mapping.items():
+                if isinstance(source_val, str) and source_val.startswith("harmony_theta_"):
+                    if source_val not in VALID_HARMONY_THETA_AXES:
+                        raise CompositionConfigError(
+                            f"Profile '{slug}', layer '{layer.get('id')}', "
+                            f"mapping '{axis_name}': invalid harmony_theta axis "
+                            f"'{source_val}'. Valid: harmony_theta_0..7"
+                        )
 
 
 def _compute_config_hash(*dicts: dict) -> str:

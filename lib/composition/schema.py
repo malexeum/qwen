@@ -2,12 +2,28 @@
 
 Единственный источник правды между Python reference renderer и Java renderer.
 Не импортировать PIL, matplotlib, fractal generators.
+
+E2: добавлен HarmonyThetaArtifact — поле harmony_theta в TrackIdentity.
 """
 from __future__ import annotations
 
 import json
 from dataclasses import dataclass, asdict, field
 from typing import Any
+
+
+@dataclass
+class HarmonyThetaArtifact:
+    """Гармоническая сигнатура трека θ ∈ ℝ^8 (E2).
+
+    Сериализуется в track_artifact.yaml рядом с feature_vector.
+    Формат соответствует HarmonyTheta.to_dict().
+    """
+    version: str
+    algorithm: str
+    source_axes: list[str]
+    values: list[float]         # len == 8, каждый ∈ [0, 1]
+    hash: str                   # sha256[:16] для seed_policy
 
 
 @dataclass
@@ -19,6 +35,7 @@ class TrackIdentity:
     style_profile_slug: str
     base_seed: int
     variation_seed: int
+    harmony_theta: HarmonyThetaArtifact | None = None   # E2: опционально
 
 
 @dataclass
