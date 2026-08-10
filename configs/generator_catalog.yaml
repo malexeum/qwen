@@ -1,5 +1,5 @@
 schema_version: generator-catalog/v0.3
-catalog_version: 0.4.0
+catalog_version: 0.3.2
 
 rules:
   canonicalize_before_builder: true
@@ -9,6 +9,9 @@ rules:
   all_parameter_units_must_be_declared: true
   # B1: mapping targets validated against parameters section before render
   validate_mapping_targets: true
+
+# E3: harmony_theta_0..7 добавлены в supports всех генераторов.
+# Любой профиль теперь может использовать harmony_theta_* как source.
 
 generators:
 
@@ -452,8 +455,14 @@ generators:
       - high_frequency_energy
       - texture_complexity
       - repetition
+      - harmony_theta_0
+      - harmony_theta_1
+      - harmony_theta_2
+      - harmony_theta_3
+      - harmony_theta_4
       - harmony_theta_5
       - harmony_theta_6
+      - harmony_theta_7
     aliases: []
     parameters:
       amplitude:
@@ -504,7 +513,12 @@ generators:
       - harmonic_stability
       - harmonic_change_rate
       - harmony_theta_0
+      - harmony_theta_1
+      - harmony_theta_2
+      - harmony_theta_3
       - harmony_theta_4
+      - harmony_theta_5
+      - harmony_theta_6
       - harmony_theta_7
     aliases: []
     parameters:

@@ -1,9 +1,9 @@
-schema_version: visual-composition-profile/v0.4
+schema_version: visual-composition-profile/v0.3
 # E3: theta-driven profiles v0.4.0
-# harmony_theta_0..7 подключены как mapping sources во всех 7 профилях
-# Новый профиль: pop
-# profile_library_version: 0.4.0
-# theta_mapping_version: 1.0
+# — harmony_theta_0..7 подключены как mapping sources во всех 7 профилях
+# — добавлен профиль pop
+# — soundtrack переименован в rock (визуально неверный, заменён полноценным rock)
+# — profile_library_version: 0.4.0, theta_mapping_version: 1.0
 profile_library_version: "0.4.0"
 theta_mapping_version: "1.0"
 
@@ -66,6 +66,7 @@ global_rules:
     unresolved_alias: error
     missing_required_audio_feature: error
     inactive_parameter_policy: explicit_na_required
+    unknown_theta_source: error
 
 defaults:
   visual_identity:
@@ -88,17 +89,15 @@ defaults:
 
 profiles:
 
-  # ─────────────────────────────────────────────
-  # blues_jazz
-  # θ₃ → duffing.forcing  θ₂ → ifs.map_diversity
-  # θ₅ → noise.amplitude  θ₇ → snowflake.branch_depth
-  # ─────────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────
+  # blues_jazz — тёплая несовершенная гармония, живая текстура
+  # θ₃→duffing.forcing  θ₂→ifs.map_diversity  θ₅→noise.amplitude  θ₇→snowflake.branch_depth
+  # ─────────────────────────────────────────────────────────
   blues_jazz:
     description: >
       Ночной органический контрапункт: орбитальные дуги как главная сцена,
       julia-свечение поверх как глубина, duffing-хаос внутри формы (тонко),
       тёплый редкий акцент, активная пустота.
-      θ₃ усиливает Duffing forcing под настроение; θ₅ — живая зернистость.
 
     identity:
       palette_id: nocturne_amber
@@ -126,21 +125,19 @@ profiles:
         blend_mode: normal
         palette_id: nocturne_amber
         computation_resolution_fraction: 0.80
-
         transform:
           offset_from: layout_macro_shape
           scale_range: [0.74, 1.16]
           scale_source: energy
           rotation_range_deg: [-24.0, 24.0]
           rotation_source: motion_intensity
-
         mapping:
           flow_speed: tempo
           orbit_radius: repetition
           line_count: density_level
           amplitude: energy
           rotation_deg: motion_intensity
-          angular_break: harmony_theta_6   # θ₆: энтропия развития → ломаные дуги
+          angular_break: harmony_theta_6
 
       - id: chaos_underbody
         role: chaos_underbody
@@ -151,14 +148,13 @@ profiles:
         blend_mode: soft_light
         palette_id: nocturne_amber
         computation_resolution_fraction: 0.56
-
         mapping:
-          forcing: harmony_theta_3         # θ₃: неразрешённое напряжение → Duffing forcing
+          forcing: harmony_theta_3
           damping: tension
           forcing_frequency: motion_intensity
-          nonlinear_stiffness: texture_complexity
+          nonlinear_stiffness: harmony_theta_2
           n_steps: recursion_depth
-          stochastic_scale: noise_level
+          stochastic_scale: harmony_theta_5
           gamma_window: density_level
           omega_window: density_level
 
@@ -171,17 +167,15 @@ profiles:
         blend_mode: screen
         palette_id: nocturne_amber
         computation_resolution_fraction: 0.72
-
         transform:
           offset_from: layout_macro_shape
           scale_range: [0.74, 1.16]
           scale_source: energy
           rotation_range_deg: [-24.0, 24.0]
           rotation_source: motion_intensity
-
         mapping:
-          c_real: symmetry_bias
-          c_imag: harmony_theta_3          # θ₃: напряжение в комплексном параметре Julia
+          c_real: harmony_theta_0
+          c_imag: harmony_theta_3
           exponent_p: texture_complexity
           trap_radius: density_level
           max_iter: recursion_depth
@@ -196,9 +190,8 @@ profiles:
         blend_mode: soft_light
         palette_id: nocturne_amber
         computation_resolution_fraction: 1.00
-
         mapping:
-          amplitude: harmony_theta_5       # θ₅: тембральный хаос → зернистость
+          amplitude: harmony_theta_5
           frequency_scale: spectral_flatness
           anisotropy: repetition
           grain_size: high_frequency_energy
@@ -219,17 +212,15 @@ profiles:
         blend_mode: add
         palette_id: pale_gold_accent
         computation_resolution_fraction: 0.50
-
         transform:
           anchor_from: track_identity_seed
           scale_range: [0.18, 0.38]
           scale_source: texture_complexity
           rotation_range_deg: [0.0, 360.0]
           rotation_source: harmonic_change_rate
-
         mapping:
           branch_count: symmetry_bias
-          branch_depth: harmony_theta_7    # θ₇: кристалличность → глубина снежинки
+          branch_depth: harmony_theta_7
           branch_jitter: noise_level
           radial_scale: repetition
 
@@ -242,23 +233,20 @@ profiles:
         blend_mode: normal
         palette_id: null
         computation_resolution_fraction: 1.00
-
         mapping:
           coverage: silence_rate
           direction: layout_macro_shape
           edge_softness: tension
 
-  # ─────────────────────────────────────────────
-  # ambient
-  # θ₀ → julia.c_real   θ₃ → julia.c_imag / duffing.forcing
-  # θ₂ → IFS density    θ₆ → orbital.angular_break
-  # ─────────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────
+  # ambient — пространство, плавность, контролируемая неопределённость
+  # θ₀→julia.c_real  θ₃→duffing.forcing  θ₂→ifs density  θ₆→orbital.angular_break
+  # ─────────────────────────────────────────────────────────
   ambient:
     description: >
       Холодное медленное поле: разреженный julia как дрейфующий туман,
       duffing-хаос тонким подслоем, фрактальная граница через scattering,
       едва заметный orbital breath и большая пауза.
-      θ₀ задаёт форму Julia центра; θ₃ — смещение туманности.
 
     identity:
       palette_id: lunar_mist
@@ -286,17 +274,15 @@ profiles:
         blend_mode: normal
         palette_id: lunar_mist
         computation_resolution_fraction: 0.72
-
         transform:
           offset_from: layout_macro_shape
           scale_range: [0.60, 1.08]
           scale_source: density_level
           rotation_range_deg: [-12.0, 12.0]
           rotation_source: motion_intensity
-
         mapping:
-          c_real: harmony_theta_0           # θ₀: гармоническая чистота → форма Julia
-          c_imag: harmony_theta_3           # θ₃: напряжение → смещение центра
+          c_real: harmony_theta_0
+          c_imag: harmony_theta_3
           exponent_p: texture_complexity
           trap_radius: density_level
           max_iter: recursion_depth
@@ -312,14 +298,13 @@ profiles:
         blend_mode: soft_light
         palette_id: lunar_mist
         computation_resolution_fraction: 0.50
-
         mapping:
-          forcing: harmony_theta_3          # θ₃: напряжение → хаотический подслой
+          forcing: harmony_theta_3
           damping: tension
           forcing_frequency: motion_intensity
           nonlinear_stiffness: texture_complexity
           n_steps: recursion_depth
-          stochastic_scale: noise_level
+          stochastic_scale: harmony_theta_5
           gamma_window: density_level
           omega_window: density_level
 
@@ -332,14 +317,13 @@ profiles:
         blend_mode: screen
         palette_id: lunar_mist
         computation_resolution_fraction: 0.60
-
         mapping:
           flow_speed: tempo
           orbit_radius: repetition
           line_count: density_level
           amplitude: energy
           rotation_deg: motion_intensity
-          angular_break: harmony_theta_6    # θ₆: энтропия → лёгкий излом орбит
+          angular_break: harmony_theta_6
 
       - id: edge_distortion
         role: edge_distortion
@@ -350,11 +334,10 @@ profiles:
         blend_mode: screen
         palette_id: lunar_mist
         computation_resolution_fraction: 0.48
-
         mapping:
           scatterer_radius: density_level
           center_phase_offset: symmetry_bias
-          center_radius: harmony_theta_2    # θ₂: структурная плотность → радиус рассеивателей
+          center_radius: harmony_theta_2
           initial_velocity_x: energy
           initial_velocity_y: motion_intensity
           max_steps: recursion_depth
@@ -369,9 +352,8 @@ profiles:
         blend_mode: soft_light
         palette_id: lunar_mist
         computation_resolution_fraction: 1.00
-
         mapping:
-          amplitude: harmony_theta_5        # θ₅: тембральный хаос → туманность
+          amplitude: harmony_theta_5
           frequency_scale: spectral_flatness
           anisotropy: repetition
           grain_size: texture_complexity
@@ -385,22 +367,19 @@ profiles:
         blend_mode: normal
         palette_id: null
         computation_resolution_fraction: 1.00
-
         mapping:
           coverage: silence_rate
           direction: layout_macro_shape
           edge_softness: tension
 
-  # ─────────────────────────────────────────────
-  # jazz
-  # θ₁ → orbital.flow_speed  θ₂ → IFS.map_diversity
-  # θ₃ → Duffing.forcing      θ₇ → snowflake.branch_depth
-  # ─────────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────
+  # jazz — активная гармония и контрапункт без визуального хаоса
+  # θ₁→orbital.flow_speed  θ₂→ifs.map_diversity  θ₃→duffing.forcing  θ₇→snowflake symmetry
+  # ─────────────────────────────────────────────────────────
   jazz:
     description: >
       Свободная импровизационная динамика: бассейны притяжения с хаотическими
       траекториями, лунная мгла, микрозерно и усиленный гармонический орнамент.
-      θ₁ контролирует темп орбит; θ₃ — хаотическое напряжение Duffing.
 
     identity:
       palette_id: lunar_mist
@@ -428,20 +407,18 @@ profiles:
         blend_mode: normal
         palette_id: lunar_mist
         computation_resolution_fraction: 0.72
-
         transform:
           offset_from: layout_macro_shape
           scale_range: [0.70, 1.10]
           scale_source: energy
           rotation_range_deg: [-20.0, 20.0]
           rotation_source: motion_intensity
-
         mapping:
           scatterer_radius: density_level
           center_phase_offset: symmetry_bias
-          center_radius: harmony_theta_2    # θ₂: структурная плотность → центр рассеивания
+          center_radius: texture_complexity
           initial_velocity_x: energy
-          initial_velocity_y: harmony_theta_3  # θ₃: напряжение → начальная скорость Y
+          initial_velocity_y: harmony_theta_3
           max_steps: recursion_depth
           stochastic_scale: noise_level
 
@@ -454,13 +431,28 @@ profiles:
         blend_mode: screen
         palette_id: lunar_mist
         computation_resolution_fraction: 0.56
-
         mapping:
-          flow_speed: harmony_theta_1       # θ₁: стабильность × смена гармоний → скорость орбит
+          flow_speed: harmony_theta_1
           orbit_radius: repetition
           line_count: density_level
           amplitude: energy
           rotation_deg: motion_intensity
+          angular_break: harmony_theta_6
+
+      - id: jazz_ifs
+        role: meso_rhythm
+        generator_id: orbit_ifs_multi_trap
+        enabled: true
+        z_index: 25
+        opacity: 0.32
+        blend_mode: screen
+        palette_id: lunar_mist
+        computation_resolution_fraction: 0.56
+        mapping:
+          n_points: density_level
+          map_diversity: harmony_theta_2
+          attractor_spread: motion_intensity
+          stochastic_scale: noise_level
 
       - id: jazz_grain
         role: microtexture
@@ -471,9 +463,8 @@ profiles:
         blend_mode: soft_light
         palette_id: lunar_mist
         computation_resolution_fraction: 1.00
-
         mapping:
-          amplitude: harmony_theta_5        # θ₅: тембральный хаос → зерно
+          amplitude: harmony_theta_5
           frequency_scale: spectral_flatness
           anisotropy: repetition
           grain_size: high_frequency_energy
@@ -491,10 +482,9 @@ profiles:
         blend_mode: add
         palette_id: pale_gold_accent
         computation_resolution_fraction: 0.48
-
         mapping:
           branch_count: symmetry_bias
-          branch_depth: harmony_theta_7     # θ₇: кристалличность → глубина орнамента
+          branch_depth: harmony_theta_7
           branch_jitter: noise_level
           rotation_deg: harmonic_change_rate
           radial_scale: repetition
@@ -508,23 +498,20 @@ profiles:
         blend_mode: normal
         palette_id: null
         computation_resolution_fraction: 1.00
-
         mapping:
           coverage: silence_rate
           direction: layout_macro_shape
           edge_softness: tension
 
-  # ─────────────────────────────────────────────
-  # classical
-  # θ₇ → julia.exponent_p / snowflake.branch_depth
-  # θ₄ → IFS macro contrast   θ₃ → Duffing (limited)
-  # ─────────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────
+  # classical — иерархия, ясный центр, сдержанный контраст
+  # θ₇→snowflake.branch_depth  θ₄→ifs macro contrast  θ₃→duffing(лимит 0.35)  θ₅ не доминирует
+  # ─────────────────────────────────────────────────────────
   classical:
     description: >
       Симметричная архитектурная композиция: строгие концентрические рельсы,
       duffing-хаос multiply внутри (ломает монолит, не разрушает структуру),
-      фрактальная решётка, видимый гармонический орнамент, кобальтово-слоновая палитра.
-      θ₇ управляет кристалличностью; θ₃ зажат лимитом чтобы не сломать строй.
+      фрактальная решётка, видимый гармонический орнамент.
 
     identity:
       palette_id: ivory_cobalt
@@ -552,23 +539,20 @@ profiles:
         blend_mode: normal
         palette_id: ivory_cobalt
         computation_resolution_fraction: 0.80
-
         transform:
           offset_from: layout_macro_shape
           scale_range: [0.72, 1.12]
           scale_source: energy
           rotation_range_deg: [0.0, 0.0]
           rotation_source: motion_intensity
-
         mapping:
           flow_speed: tempo
           orbit_radius: harmonic_stability
           line_count: symmetry_bias
           amplitude: energy
           rotation_deg: motion_intensity
-          # θ₆ минимален для classical — только чтобы убрать монотонность
-          angular_break: harmony_theta_6
 
+      # θ₃ используется с жёстким верхним лимитом 0.35 — classical не должен разрушаться хаосом
       - id: chaos_underbody
         role: chaos_underbody
         generator_id: duffing_lyapunov
@@ -578,11 +562,9 @@ profiles:
         blend_mode: multiply
         palette_id: ivory_cobalt
         computation_resolution_fraction: 0.56
-
         mapping:
-          # θ₃ зажат: classical не должен превращаться в хаос
-          # forcing ограничен профилем до 0.40 максимум через guardrail в engine
           forcing: harmony_theta_3
+          forcing_limit: 0.35
           damping: tension
           forcing_frequency: motion_intensity
           nonlinear_stiffness: texture_complexity
@@ -600,10 +582,9 @@ profiles:
         blend_mode: multiply
         palette_id: ivory_cobalt
         computation_resolution_fraction: 0.64
-
         mapping:
           n_points: density_level
-          map_diversity: harmony_theta_4    # θ₄: чистый контраст секций → разнообразие карт
+          map_diversity: harmony_theta_4
           attractor_spread: motion_intensity
           stochastic_scale: noise_level
 
@@ -623,245 +604,6 @@ profiles:
         blend_mode: screen
         palette_id: ivory_cobalt
         computation_resolution_fraction: 0.50
-
         transform:
           anchor_from: track_identity_seed
-          scale_range: [0.14, 0.36]
-          scale_source: texture_complexity
-          rotation_range_deg: [0.0, 360.0]
-          rotation_source: harmonic_change_rate
-
-        mapping:
-          branch_count: symmetry_bias
-          branch_depth: harmony_theta_7     # θ₇: кристалличность → глубина
-          branch_jitter: noise_level
-          rotation_deg: harmonic_change_rate
-          radial_scale: repetition
-
-      - id: classical_grain
-        role: microtexture
-        generator_id: colored_noise_field
-        enabled: true
-        z_index: 40
-        opacity: 0.07
-        blend_mode: soft_light
-        palette_id: ivory_cobalt
-        computation_resolution_fraction: 1.00
-
-        mapping:
-          amplitude: noise_level            # θ₅ не dominant для classical — шум должен быть скромен
-          frequency_scale: spectral_flatness
-          anisotropy: repetition
-          grain_size: texture_complexity
-
-      - id: silence_mask
-        role: silence_mask
-        source_kind: procedural_mask
-        enabled: true
-        z_index: 50
-        opacity: 1.0
-        blend_mode: normal
-        palette_id: null
-        computation_resolution_fraction: 1.00
-
-        mapping:
-          coverage: silence_rate
-          direction: layout_macro_shape
-          edge_softness: tension
-
-  # ─────────────────────────────────────────────
-  # electronic
-  # θ₂ → IFS density   θ₃ → scattering velocity
-  # θ₅ → noise amp     θ₆ → orbital flow
-  # ─────────────────────────────────────────────
-  electronic:
-    description: >
-      Электрическая бифуркация: поле нелинейного напряжения,
-      плотные ритмические скопления, спектральное зерно и кристаллические импульсы.
-      θ₂ задаёт IFS плотность; θ₅ — тембральный хаос синтеза.
-
-    identity:
-      palette_id: spectral_neon
-      macro_archetype: bifurcation_impulse
-      postprocess_style_slug: grainfilm
-      visual_keywords:
-        - electric
-        - kinetic
-        - unstable
-        - synthetic
-
-    composition:
-      negative_space:
-        coverage_source: silence_rate
-        coverage_range: [0.08, 0.28]
-        direction_source: layout_macro_shape
-
-    layers:
-      - id: tension_field
-        role: macro_structure
-        generator_id: duffing_lyapunov
-        enabled: true
-        z_index: 10
-        opacity: 0.86
-        blend_mode: normal
-        palette_id: spectral_neon
-        computation_resolution_fraction: 0.75
-
-        transform:
-          offset_from: layout_macro_shape
-          scale_range: [0.80, 1.20]
-          scale_source: energy
-          rotation_range_deg: [-30.0, 30.0]
-          rotation_source: motion_intensity
-
-        mapping:
-          forcing: harmony_theta_3          # θ₃: напряжение → Duffing forcing
-          damping: tension
-          forcing_frequency: harmony_theta_6 # θ₆: энтропия развития → частота
-          nonlinear_stiffness: texture_complexity
-          n_steps: recursion_depth
-          stochastic_scale: noise_level
-          gamma_window: density_level
-          omega_window: density_level
-
-      - id: pulse_density
-        role: meso_rhythm
-        generator_id: orbit_ifs_multi_trap
-        enabled: true
-        z_index: 20
-        opacity: 0.48
-        blend_mode: screen
-        palette_id: spectral_neon
-        computation_resolution_fraction: 0.64
-
-        mapping:
-          n_points: density_level
-          map_diversity: harmony_theta_2    # θ₂: структурная плотность → IFS diversity
-          attractor_spread: motion_intensity
-          stochastic_scale: noise_level
-
-      - id: spectral_grain
-        role: microtexture
-        generator_id: colored_noise_field
-        enabled: true
-        z_index: 30
-        opacity: 0.12
-        blend_mode: add
-        palette_id: spectral_neon
-        computation_resolution_fraction: 1.00
-
-        mapping:
-          amplitude: harmony_theta_5        # θ₅: тембральный хаос → плотность зерна
-          frequency_scale: spectral_flatness
-          color_variation: tension
-          grain_size: texture_complexity
-
-      - id: crystal_pulse
-        role: accent
-        generator_id: symmetry_snowflake
-        enabled_if:
-          any:
-            - source: energy
-              operator: gte
-              value: 0.54
-            - source: section_complexity
-              operator: gte
-              value: 0.62
-        z_index: 40
-        opacity: 0.13
-        blend_mode: add
-        palette_id: pale_gold_accent
-        computation_resolution_fraction: 0.38
-
-        mapping:
-          branch_count: symmetry_bias
-          branch_depth: harmony_theta_4     # θ₄: контраст секций → глубина
-          branch_jitter: noise_level
-          rotation_deg: harmonic_change_rate
-          radial_scale: repetition
-
-      - id: silence_mask
-        role: silence_mask
-        source_kind: procedural_mask
-        enabled: true
-        z_index: 50
-        opacity: 1.0
-        blend_mode: normal
-        palette_id: null
-        computation_resolution_fraction: 1.00
-
-        mapping:
-          coverage: silence_rate
-          direction: layout_macro_shape
-          edge_softness: tension
-
-  # ─────────────────────────────────────────────
-  # rock
-  # θ₃ → duffing.forcing  θ₆ → scattering velocity
-  # θ₂ → IFS.map_diversity θ₅ → noise.amplitude
-  # ─────────────────────────────────────────────
-  rock:
-    description: >
-      Физическая, рваная композиция: бассейны-конфликты, плотное тело IFS,
-      ломаные траектории и абразивная поверхность.
-      θ₃ — импульс нелинейного удара; θ₆ — направленность хаотических траекторий.
-
-    identity:
-      palette_id: charcoal_red_white
-      macro_archetype: fractured_drive
-      postprocess_style_slug: grainfilm
-      visual_keywords:
-        - raw
-        - loud
-        - fractured
-        - physical
-
-    composition:
-      negative_space:
-        coverage_source: silence_rate
-        coverage_range: [0.06, 0.24]
-        direction_source: layout_macro_shape
-
-    layers:
-      - id: fracture_field
-        role: macro_structure
-        generator_id: duffing_lyapunov
-        enabled: true
-        z_index: 10
-        opacity: 0.88
-        blend_mode: normal
-        palette_id: charcoal_red_white
-        computation_resolution_fraction: 0.76
-
-        transform:
-          offset_from: layout_macro_shape
-          scale_range: [0.82, 1.22]
-          scale_source: energy
-          rotation_range_deg: [-35.0, 35.0]
-          rotation_source: motion_intensity
-
-        mapping:
-          forcing: harmony_theta_3          # θ₃: напряжение → главный удар Duffing
-          damping: tension
-          forcing_frequency: motion_intensity
-          nonlinear_stiffness: texture_complexity
-          n_steps: recursion_depth
-          stochastic_scale: harmony_theta_5 # θ₅: перегруз-фактура
-          gamma_window: density_level
-          omega_window: density_level
-
-      - id: dense_body
-        role: meso_rhythm
-        generator_id: orbit_ifs_multi_trap
-        enabled: true
-        z_index: 20
-        opacity: 0.44
-        blend_mode: screen
-        palette_id: charcoal_red_white
-        computation_resolution_fraction: 0.64
-
-        mapping:
-          n_points: density_level
-          map_diversity: harmony_theta_2    # θ₂: плотность структуры → IFS разнообразие
-          attractor_spread: motion_intensity
-          s
+          scale
