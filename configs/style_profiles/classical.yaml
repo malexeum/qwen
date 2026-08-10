@@ -1,0 +1,13 @@
+# E1 style profile: classical
+slug: classical
+music_style: classical
+visual_mood: elegant, structured, timeless
+palette: ivory_dark
+contrast: 0.45
+geometry: symmetric
+density: 0.40
+motion_intensity: 0.35
+noise_level: 0.15
+symmetry_bias: 0.80
+complexity_bias: 0.45
+version: "0.3.0"

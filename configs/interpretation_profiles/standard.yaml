@@ -1,0 +1,68 @@
+# Standard interpretation profile
+# Используется в integration-тестах и как fallback в пайплайне.
+# Все mapping_rules — линейные, без нелинейных эффектов.
+slug: standard
+name: Standard
+description: |
+  Линейный маппинг перцептивных осей E1 на визуальные параметры.
+  Используется как базовый профиль для integration-тестов.
+
+axis_weights:
+  energy:             1.0
+  tension:            1.0
+  density:            1.0
+  brightness:         1.0
+  stability:          1.0
+  smoothness:         1.0
+  repetition:         0.8
+  section_complexity: 1.0
+  morphology_guard:   0.5
+
+mapping_rules:
+  symmetry_bias:
+    base: 0.5
+    formula: "base + 0.3 * stability - 0.2 * tension"
+
+  recursion_depth:
+    base: 0.5
+    formula: "base + 0.4 * section_complexity + 0.2 * tension"
+
+  density_level:
+    base: 0.5
+    formula: "base + 0.5 * density - 0.1 * smoothness"
+
+  noise_level:
+    base: 0.35
+    formula: "base + 0.3 * energy - 0.2 * stability"
+
+  motion_intensity:
+    base: 0.5
+    formula: "base + 0.4 * energy + 0.2 * tension"
+
+  texture_complexity:
+    base: 0.5
+    formula: "base + 0.3 * section_complexity + 0.2 * density"
+
+  layout_macro_shape:
+    rules:
+      - when: "section_complexity > 0.6"
+        value: "ABACABA"
+      - when: "section_complexity > 0.4"
+        value: "AABA"
+      - when: "section_complexity > 0.2"
+        value: "ABA_like"
+      - when: "repetition > 0.7"
+        value: "AAAA"
+
+guardrails:
+  - when: "morphology_guard > 0.7"
+    actions:
+      symmetry_bias:
+        min: 0.3
+      texture_complexity:
+        min: 0.4
+  - when: "noise_level > 0.8"
+    actions:
+      noise_level:
+        max: 0.85
+version: "0.3.0"

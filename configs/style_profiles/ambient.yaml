@@ -1,0 +1,13 @@
+# E1 style profile: ambient
+slug: ambient
+music_style: ambient
+visual_mood: calm, spacious, meditative
+palette: ocean_dark
+contrast: 0.30
+geometry: fluid
+density: 0.30
+motion_intensity: 0.25
+noise_level: 0.20
+symmetry_bias: 0.75
+complexity_bias: 0.30
+version: "0.3.0"

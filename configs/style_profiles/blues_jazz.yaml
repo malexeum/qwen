@@ -1,0 +1,13 @@
+# E1 style profile: blues_jazz
+slug: blues_jazz
+music_style: blues_jazz
+visual_mood: warm, gritty, expressive
+palette: sepia_dark
+contrast: 0.65
+geometry: organic
+density: 0.55
+motion_intensity: 0.60
+noise_level: 0.65
+symmetry_bias: 0.52
+complexity_bias: 0.55
+version: "0.3.0"

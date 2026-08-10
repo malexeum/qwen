@@ -1,0 +1,13 @@
+# Fallback style profile
+slug: default
+music_style: mixed
+visual_mood: neutral
+palette: default_dark
+contrast: 0.50
+geometry: mixed
+density: 0.50
+motion_intensity: 0.50
+noise_level: 0.35
+symmetry_bias: 0.60
+complexity_bias: 0.50
+version: "0.3.0"

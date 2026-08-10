@@ -1,0 +1,13 @@
+# E1 style profile: jazz
+slug: jazz
+music_style: jazz
+visual_mood: sophisticated, dynamic, urban
+palette: neon_dark
+contrast: 0.60
+geometry: angular_organic
+density: 0.60
+motion_intensity: 0.70
+noise_level: 0.55
+symmetry_bias: 0.55
+complexity_bias: 0.65
+version: "0.3.0"

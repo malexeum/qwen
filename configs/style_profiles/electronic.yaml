@@ -1,0 +1,13 @@
+# E1 style profile: electronic
+slug: electronic
+music_style: electronic
+visual_mood: energetic, synthetic, futuristic
+palette: neon_dark
+contrast: 0.70
+geometry: geometric
+density: 0.70
+motion_intensity: 0.80
+noise_level: 0.45
+symmetry_bias: 0.50
+complexity_bias: 0.70
+version: "0.3.0"
