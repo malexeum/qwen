@@ -1,13 +1,14 @@
-# E1 style profile: blues_jazz
+# Style Profile: blues_jazz
+# Алиасы: jazz, blues → blues_jazz (через _normalize_style_slug)
 slug: blues_jazz
 music_style: blues_jazz
-visual_mood: warm, gritty, expressive
-palette: sepia_dark
-contrast: 0.65
+visual_mood: soulful, warm, improvisational
+palette: warm_midnight
+contrast: 0.55
 geometry: organic
-density: 0.55
-motion_intensity: 0.60
-noise_level: 0.65
-symmetry_bias: 0.52
-complexity_bias: 0.55
-version: "0.3.0"
+density: 0.50
+motion_intensity: 0.50
+noise_level: 0.45
+symmetry_bias: 0.45
+complexity_bias: 0.60
+version: "0.3.1"

@@ -1,0 +1,14 @@
+# Style Profile: pop
+# E3: pop — самостоятельный профиль, НЕ алиас rock
+slug: pop
+music_style: pop
+visual_mood: bright, polished, accessible
+palette: vivid_light
+contrast: 0.60
+geometry: rounded
+density: 0.55
+motion_intensity: 0.60
+noise_level: 0.30
+symmetry_bias: 0.65
+complexity_bias: 0.50
+version: "0.3.1"
