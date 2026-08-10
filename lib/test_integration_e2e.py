@@ -7,7 +7,7 @@
 Использует только синтетические признаки — реальный аудио-файл не нужен.
 
 Доступные style_profile_slug (configs/visual_composition_profiles.yaml):
-  blues_jazz, electronic, jazz, ambient, classical
+  blues_jazz, electronic
 """
 from __future__ import annotations
 
@@ -65,20 +65,23 @@ _BASE_AUDIO_FEATURES = {
     ],
 }
 
-# Маппинг suggested_music_style → style_profile_slug
-# Соответствует profiles в configs/visual_composition_profiles.yaml
+# Два реальных slug-а из configs/visual_composition_profiles.yaml
+_SLUG_BLUES_JAZZ  = "blues_jazz"
+_SLUG_ELECTRONIC  = "electronic"
+_SLUG_DEFAULT     = _SLUG_BLUES_JAZZ
+
+# Маппинг suggested_music_style → реальный slug
 _SLUG_MAP = {
-    "blues":      "blues_jazz",
-    "jazz":       "jazz",
-    "electronic": "electronic",
-    "ambient":    "ambient",
-    "classical":  "classical",
-    "rock":       "electronic",
-    "pop":        "blues_jazz",
-    "soundtrack": "classical",
-    "mixed":      "blues_jazz",
+    "blues":      _SLUG_BLUES_JAZZ,
+    "jazz":       _SLUG_BLUES_JAZZ,
+    "electronic": _SLUG_ELECTRONIC,
+    "ambient":    _SLUG_BLUES_JAZZ,
+    "classical":  _SLUG_BLUES_JAZZ,
+    "rock":       _SLUG_ELECTRONIC,
+    "pop":        _SLUG_BLUES_JAZZ,
+    "soundtrack": _SLUG_BLUES_JAZZ,
+    "mixed":      _SLUG_BLUES_JAZZ,
 }
-_SLUG_DEFAULT = "blues_jazz"
 
 
 def _make_audio_features(overrides: dict | None = None) -> dict:
@@ -149,14 +152,17 @@ def _make_plan(
     )
 
 
-# ─── 5 стилей, по одному на каждый профиль ────────────────────────────────────
+# ─── Стили для параметризованных тестов (2 реальных профиля) ───────────────────────
 
 STYLES = [
-    ("blues",     {"suggested_music_style": "blues",      "bpm": 110.0, "brightness": 0.08, "repetition_score": 0.90}),
-    ("electronic",{"suggested_music_style": "electronic",  "bpm": 145.0, "energy": 0.30,    "brightness": 0.25, "rhythm_density": 0.65}),
-    ("jazz",      {"suggested_music_style": "jazz",        "bpm": 115.0, "brightness": 0.12, "energy": 0.14}),
-    ("ambient",   {"suggested_music_style": "ambient",     "bpm": 75.0,  "brightness": 0.05, "rhythm_density": 0.35, "energy": 0.08}),
-    ("classical", {"suggested_music_style": "classical",   "bpm": 90.0,  "brightness": 0.07, "energy": 0.09,   "repetition_score": 0.60}),
+    # blues/jazz/ambient/classical → blues_jazz
+    ("blues_jazz/blues",     {"suggested_music_style": "blues",     "bpm": 110.0, "brightness": 0.08, "repetition_score": 0.90}),
+    ("blues_jazz/jazz",      {"suggested_music_style": "jazz",      "bpm": 115.0, "brightness": 0.12, "energy": 0.14}),
+    ("blues_jazz/ambient",   {"suggested_music_style": "ambient",   "bpm": 75.0,  "brightness": 0.05, "rhythm_density": 0.35, "energy": 0.08}),
+    ("blues_jazz/classical", {"suggested_music_style": "classical",  "bpm": 90.0, "brightness": 0.07, "energy": 0.09, "repetition_score": 0.60}),
+    # electronic/rock → electronic
+    ("electronic/electronic", {"suggested_music_style": "electronic", "bpm": 145.0, "energy": 0.30, "brightness": 0.25, "rhythm_density": 0.65}),
+    ("electronic/rock",       {"suggested_music_style": "rock",       "bpm": 135.0, "energy": 0.28, "brightness": 0.22, "rhythm_density": 0.60}),
 ]
 
 
@@ -232,16 +238,15 @@ class TestPipelineStages:
 
 
 class TestMultiStylePipeline:
-    """E2E — все 5 профилей проходят полный цикл перед рендером."""
+    """E2E — оба профиля работают для разных стилей."""
 
-    @pytest.mark.parametrize("style,overrides", STYLES)
-    def test_plan_and_render(self, style, overrides):
+    @pytest.mark.parametrize("label,overrides", STYLES)
+    def test_plan_and_render(self, label, overrides):
         features = _make_audio_features(overrides)
-        plan     = _make_plan(features, audio_hash=f"e2e_{style}_0000",
-                              title=f"{style.capitalize()} Test Track",
-                              artist="E2E Artist")
+        plan     = _make_plan(features, audio_hash=f"e2e_{label.replace('/', '_')}_0000",
+                              title=f"{label} Test Track", artist="E2E Artist")
         result   = execute_plan(plan, save_png=False)
-        assert result.layers_rendered >= 1, f"{style}: ни одного отрендеренного слоя"
+        assert result.layers_rendered >= 1, f"{label}: ни одного отрендеренного слоя"
         assert result.width == 1024 and result.height == 1024
 
 
@@ -268,8 +273,7 @@ class TestEdgeCases:
     def test_silence_track(self):
         """energy=0, rhythm_density=0 — пиплайн не падает."""
         features = _make_audio_features({"energy": 0.0, "rhythm_density": 0.0,
-                                         "brightness": 0.0, "dynamic_range": 0.0,
-                                         "suggested_music_style": "ambient"})
+                                         "brightness": 0.0, "dynamic_range": 0.0})
         plan   = _make_plan(features, audio_hash="silence_hash", title="Silence", artist="None")
         result = execute_plan(plan, save_png=False)
         assert result.width == 1024
