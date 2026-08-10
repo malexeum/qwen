@@ -1,5 +1,5 @@
 schema_version: generator-catalog/v0.3
-catalog_version: 0.3.1
+catalog_version: 0.4.0
 
 rules:
   canonicalize_before_builder: true
@@ -29,11 +29,16 @@ generators:
       - motion_intensity
       - tension
       - energy
+      - harmony_theta_0
+      - harmony_theta_1
+      - harmony_theta_2
+      - harmony_theta_3
+      - harmony_theta_4
+      - harmony_theta_5
+      - harmony_theta_6
+      - harmony_theta_7
     aliases:
       - smooth_geometric_baseline
-    # B1: theta[0]=c_real, theta[1]=c_imag, theta[2]=exponent_p,
-    # theta[3]=trap_radius, theta[4]=trap_center_x, theta[5]=trap_center_y
-    # SimState.max_iter, SimState.stochastic_scale, SimState.domain
     parameters:
       c_real:
         type: float
@@ -123,10 +128,16 @@ generators:
       - texture_complexity
       - repetition
       - symmetry_bias
+      - harmony_theta_0
+      - harmony_theta_1
+      - harmony_theta_2
+      - harmony_theta_3
+      - harmony_theta_4
+      - harmony_theta_5
+      - harmony_theta_6
+      - harmony_theta_7
     aliases:
       - single_parameter_map_baseline
-    # B1: theta используется циклически для 4 IFS-карт
-    # n_points берётся из SimState.extra["n_points"]
     parameters:
       n_points:
         type: integer
@@ -187,10 +198,15 @@ generators:
       - motion_intensity
       - texture_complexity
       - density_level
+      - harmony_theta_0
+      - harmony_theta_1
+      - harmony_theta_2
+      - harmony_theta_3
+      - harmony_theta_4
+      - harmony_theta_5
+      - harmony_theta_6
+      - harmony_theta_7
     aliases: []
-    # B1: theta[0]=damping, theta[1]=linear_stiffness,
-    # theta[2]=nonlinear_stiffness, theta[3]=forcing, theta[4]=forcing_frequency
-    # n_steps -> SimState.extra["n_steps"]
     parameters:
       damping:
         type: float
@@ -283,13 +299,16 @@ generators:
       - noise_level
       - density_level
       - symmetry_bias
+      - harmony_theta_0
+      - harmony_theta_1
+      - harmony_theta_2
+      - harmony_theta_3
+      - harmony_theta_4
+      - harmony_theta_5
+      - harmony_theta_6
+      - harmony_theta_7
     aliases:
       - random_baseline
-    # B1: theta[0]=scatterer_radius, theta[1]=center_phase_offset,
-    # theta[2]=center_radius, theta[3]=initial_velocity_x,
-    # theta[4]=initial_velocity_y
-    # max_steps -> SimState.max_iter
-    # stochastic_scale -> SimState.stochastic_scale
     parameters:
       scatterer_radius:
         type: float
@@ -373,6 +392,14 @@ generators:
       - symmetry_bias
       - energy
       - tension
+      - harmony_theta_0
+      - harmony_theta_1
+      - harmony_theta_2
+      - harmony_theta_3
+      - harmony_theta_4
+      - harmony_theta_5
+      - harmony_theta_6
+      - harmony_theta_7
     aliases: []
     parameters:
       flow_speed:
@@ -425,6 +452,8 @@ generators:
       - high_frequency_energy
       - texture_complexity
       - repetition
+      - harmony_theta_5
+      - harmony_theta_6
     aliases: []
     parameters:
       amplitude:
@@ -474,6 +503,9 @@ generators:
       - texture_complexity
       - harmonic_stability
       - harmonic_change_rate
+      - harmony_theta_0
+      - harmony_theta_4
+      - harmony_theta_7
     aliases: []
     parameters:
       branch_count:
