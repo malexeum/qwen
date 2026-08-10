@@ -14,9 +14,11 @@ if TYPE_CHECKING:
 
 from .palette import resolve_palette, sample_gradient
 
-# Жёсткие потолки для защиты от OOM при ненормированных входных значениях
-_IFS_MAX_POINTS = 1_000_000
-_IFS_MAX_ITER   = 256
+# Жёсткие потолки — защита от OOM и зависания
+_IFS_MAX_POINTS    = 200_000
+_IFS_MAX_ITER      = 256
+_DUFFING_MAX_STEPS = 256   # было неограничено → висело часами
+_SCATTER_MAX_STEPS = 128   # аналогично
 
 
 # ─── Вспомогательные утилиты ──────────────────────────────────────────────────
@@ -39,16 +41,34 @@ def _colorize(t: np.ndarray, palette, opacity: float) -> np.ndarray:
     return np.concatenate([rgb, alpha[..., None]], axis=-1)
 
 
+def _to_int_steps(raw, default_normalized: float, max_val: int, scale: int) -> int:
+    """Нормализует параметр шагов.
+
+    Если raw — float в (0, 1] → интерпретируем как нормированное [0,1].
+    Если raw — int или float > 1 → интерпретируем как абсолютное значение.
+    Всегда зажимаем в [min_steps, max_val].
+    """
+    if raw is None:
+        raw = default_normalized
+    v = float(raw)
+    if 0.0 < v <= 1.0:
+        steps = int(v * scale + 32)
+    else:
+        steps = int(v)          # уже абсолютное значение из plan.json
+    return max(32, min(steps, max_val))
+
+
 # ─── Генераторы ───────────────────────────────────────────────────────────────
 
 def _gen_julia_orbit_trap(W, H, params, rng):
-    c_real = float(params.get("c_real", -0.7))
-    c_imag = float(params.get("c_imag", 0.27))
-    p = float(params.get("exponent_p", 2.0))
-    trap_r = float(params.get("trap_radius", 0.5))
-    max_iter = max(16, int(params.get("max_iter", 64)))
-    stoch = float(params.get("stochastic_scale", 0.0))
-    zoom = float(params.get("domain_zoom", 1.0))
+    c_real   = float(params.get("c_real", -0.7))
+    c_imag   = float(params.get("c_imag", 0.27))
+    p        = float(params.get("exponent_p", 2.0))
+    trap_r   = float(params.get("trap_radius", 0.5))
+    max_iter = max(16, min(int(params.get("max_iter",
+                               params.get("recursion_depth", 64))), 512))
+    stoch    = float(params.get("stochastic_scale", 0.0))
+    zoom     = float(params.get("domain_zoom", 1.0))
 
     xg, yg = _make_grid(W, H)
     xg, yg = _apply_rotation(xg, yg, float(params.get("_rotation_deg", 0.0)))
@@ -59,12 +79,12 @@ def _gen_julia_orbit_trap(W, H, params, rng):
         xg = xg + rng.standard_normal((H, W)).astype(np.float32) * stoch * 0.03
         yg = yg + rng.standard_normal((H, W)).astype(np.float32) * stoch * 0.03
 
-    zr, zi = xg.copy(), yg.copy()
-    c_r = np.full_like(zr, c_real)
-    c_i = np.full_like(zi, c_imag)
-    escape = np.full((H, W), float(max_iter), dtype=np.float32)
-    trapped = np.zeros((H, W), dtype=np.float32)
-    alive = np.ones((H, W), dtype=bool)
+    zr, zi   = xg.copy(), yg.copy()
+    c_r      = np.full_like(zr, c_real)
+    c_i      = np.full_like(zi, c_imag)
+    escape   = np.full((H, W), float(max_iter), dtype=np.float32)
+    trapped  = np.zeros((H, W), dtype=np.float32)
+    alive    = np.ones((H, W), dtype=bool)
 
     for i in range(max_iter):
         r2 = zr * zr + zi * zi
@@ -72,8 +92,8 @@ def _gen_julia_orbit_trap(W, H, params, rng):
             new_r = zr * zr - zi * zi + c_r
             new_i = 2.0 * zr * zi + c_i
         else:
-            mod = np.maximum(r2, 1e-12)
-            ang = np.arctan2(zi, zr) * p
+            mod  = np.maximum(r2, 1e-12)
+            ang  = np.arctan2(zi, zr) * p
             modp = mod ** (p / 2.0)
             new_r = modp * np.cos(ang) + c_r
             new_i = modp * np.sin(ang) + c_i
@@ -82,43 +102,36 @@ def _gen_julia_orbit_trap(W, H, params, rng):
         dist = np.sqrt(zr * zr + zi * zi)
         just_trapped = alive & (dist < trap_r)
         trapped = np.where(just_trapped, float(i) / max_iter, trapped)
-        escaped = alive & (r2 > 4.0)
+        escaped  = alive & (r2 > 4.0)
         smooth_val = float(i) + 1.0 - np.log2(np.log2(np.maximum(r2, 1.01)))
-        escape = np.where(escaped, smooth_val / max_iter, escape)
-        alive = alive & ~escaped
+        escape  = np.where(escaped, smooth_val / max_iter, escape)
+        alive   = alive & ~escaped
 
     t = np.where(trapped > 0, trapped, np.clip(1.0 - escape / max_iter, 0, 1))
     return np.clip(t, 0.0, 1.0)
 
 
 def _gen_orbit_ifs(W, H, params, rng):
-    """IFS orbit trap — density map.
-
-    Чтобы избежать OOM, матрица choice(n_iter, n_points) больше не создаётся целиком
-    — итерации выполняются построчно, выбор преобразования — хеш n_points за раз.
-    Итоговые значения n_points и n_iter ограничены _IFS_MAX_POINTS / _IFS_MAX_ITER.
-    """
-    # Хардкап: входное значение может быть сырым целым или [0,1]-флоатом
     raw_np = params.get("n_points", 0.5)
-    if isinstance(raw_np, float) and 0.0 <= raw_np <= 1.0:
+    if isinstance(raw_np, float) and 0.0 < raw_np <= 1.0:
         n_points = max(1000, int(raw_np * 200_000 + 10_000))
     else:
         n_points = max(1000, int(raw_np))
     n_points = min(n_points, _IFS_MAX_POINTS)
 
-    raw_ni = params.get("n_iter", 0.5)
-    if isinstance(raw_ni, float) and 0.0 <= raw_ni <= 1.0:
+    raw_ni = params.get("n_iter", params.get("max_iter", 0.5))
+    if isinstance(raw_ni, float) and 0.0 < raw_ni <= 1.0:
         n_iter = max(32, int(raw_ni * 64 + 32))
     else:
         n_iter = max(32, int(raw_ni))
     n_iter = min(n_iter, _IFS_MAX_ITER)
 
-    spread = float(params.get("attractor_spread", 0.5))
-    stoch = float(params.get("stochastic_scale", 0.0))
+    spread  = float(params.get("attractor_spread", 0.5))
+    stoch   = float(params.get("stochastic_scale", 0.0))
     rot_deg = float(params.get("_rotation_deg", 0.0))
+    seed    = int(params.get("_seed", 42)) % (2**31)
 
-    seed = int(params.get("_seed", 42)) % (2**31)
-    rng2 = np.random.default_rng(seed)
+    rng2   = np.random.default_rng(seed)
     n_maps = 3
     a = rng2.uniform(-0.6, 0.6, n_maps).astype(np.float32)
     b = rng2.uniform(-0.3, 0.3, n_maps).astype(np.float32)
@@ -130,11 +143,10 @@ def _gen_orbit_ifs(W, H, params, rng):
     xs = np.zeros(n_points, dtype=np.float32)
     ys = np.zeros(n_points, dtype=np.float32)
 
-    # Построчная итерация: choice[n_points] — не (n_iter, n_points)
     for _ in range(n_iter):
         idx = rng2.integers(0, n_maps, size=n_points).astype(np.intp)
-        xa = a[idx] * xs + b[idx] * ys + e[idx]
-        ya = c[idx] * xs + d[idx] * ys + f[idx]
+        xa  = a[idx] * xs + b[idx] * ys + e[idx]
+        ya  = c[idx] * xs + d[idx] * ys + f[idx]
         xs, ys = xa, ya
 
     if stoch > 0:
@@ -148,7 +160,7 @@ def _gen_orbit_ifs(W, H, params, rng):
 
     xi = ((xs2 + 1.0) * 0.5 * W).astype(np.int32)
     yi = ((ys2 + 1.0) * 0.5 * H).astype(np.int32)
-    valid = (xi >= 0) & (xi < W) & (yi >= 0) & (yi < H)
+    valid   = (xi >= 0) & (xi < W) & (yi >= 0) & (yi < H)
     density = np.zeros((H, W), dtype=np.float32)
     np.add.at(density, (yi[valid], xi[valid]), 1.0)
 
@@ -162,18 +174,23 @@ def _gen_orbit_ifs(W, H, params, rng):
 def _gen_duffing(W, H, params, rng):
     forcing = float(params.get("forcing", 0.5))
     damping = 0.1 + float(params.get("damping", 0.5)) * 0.4
-    freq = 0.5 + float(params.get("forcing_frequency", 0.5)) * 1.5
-    stiff = 0.5 + float(params.get("nonlinear_stiffness", 0.5)) * 2.5
-    n_steps = max(64, int(float(params.get("n_steps", 0.5)) * 512 + 64))
-    stoch = float(params.get("stochastic_scale", 0.0))
+    freq    = 0.5 + float(params.get("forcing_frequency", 0.5)) * 1.5
+    stiff   = 0.5 + float(params.get("nonlinear_stiffness", 0.5)) * 2.5
+    stoch   = float(params.get("stochastic_scale", 0.0))
     rot_deg = float(params.get("_rotation_deg", 0.0))
+
+    # n_steps: принимаем и нормированный float[0,1] и абсолютный int
+    # хардкап _DUFFING_MAX_STEPS защищает от зависания
+    n_steps = _to_int_steps(
+        params.get("n_steps"), 0.5, _DUFFING_MAX_STEPS, 512
+    )
 
     xg, yg = _make_grid(W, H)
     xg, yg = _apply_rotation(xg, yg, rot_deg)
 
-    dt = 2 * np.pi / (freq * n_steps)
-    x = xg.copy()
-    v = yg.copy() * 0.5
+    dt  = 2 * np.pi / (freq * n_steps)
+    x   = xg.copy()
+    v   = yg.copy() * 0.5
     lyap = np.zeros((H, W), dtype=np.float32)
 
     for step in range(n_steps):
@@ -181,31 +198,34 @@ def _gen_duffing(W, H, params, rng):
         accel = forcing * np.cos(freq * t_val) - damping * v + x - stiff * x ** 3
         if stoch > 0:
             accel += rng.standard_normal((H, W)).astype(np.float32) * stoch * 0.02
-        v = v + accel * dt
-        x = x + v * dt
+        v    = v + accel * dt
+        x    = x + v * dt
         lyap += np.abs(accel)
 
     lyap /= n_steps
-    lyap = np.log1p(lyap)
-    mx = lyap.max()
+    lyap  = np.log1p(lyap)
+    mx    = lyap.max()
     if mx > 0:
         lyap /= mx
     return lyap.astype(np.float32)
 
 
 def _gen_chaotic_scattering(W, H, params, rng):
-    tension = float(params.get("tension", 0.5))
-    energy = float(params.get("energy", 0.5))
-    perturb = float(params.get("perturbation", 0.0))
-    n_steps = max(32, int(float(params.get("n_steps", 0.5)) * 256 + 32))
-    rot_deg = float(params.get("_rotation_deg", 0.0))
+    tension  = float(params.get("tension", 0.5))
+    energy   = float(params.get("energy", 0.5))
+    perturb  = float(params.get("perturbation", 0.0))
+    rot_deg  = float(params.get("_rotation_deg", 0.0))
+
+    # Принимаем оба ключа: n_steps (старый) и max_steps (из plan.json v0.3)
+    raw_steps = params.get("max_steps", params.get("n_steps", 0.5))
+    n_steps = _to_int_steps(raw_steps, 0.5, _SCATTER_MAX_STEPS, 256)
 
     xg, yg = _make_grid(W, H)
     xg, yg = _apply_rotation(xg, yg, rot_deg)
 
-    seed = int(params.get("_seed", 0)) % (2**31)
-    rng2 = np.random.default_rng(seed)
-    centers = rng2.uniform(-0.5, 0.5, (3, 2)).astype(np.float32)
+    seed  = int(params.get("_seed", 0)) % (2**31)
+    rng2  = np.random.default_rng(seed)
+    centers  = rng2.uniform(-0.5, 0.5, (3, 2)).astype(np.float32)
     strength = (0.3 + tension * 0.4) * (0.5 + energy * 0.5)
 
     x = xg.copy()
@@ -220,14 +240,14 @@ def _gen_chaotic_scattering(W, H, params, rng):
         fx = np.zeros_like(x)
         fy = np.zeros_like(y)
         for cx, cy in centers:
-            dx = x - cx
-            dy = y - cy
-            r2 = dx * dx + dy * dy + 0.04
-            fv = strength / r2
+            dx  = x - cx
+            dy  = y - cy
+            r2  = dx * dx + dy * dy + 0.04
+            fv  = strength / r2
             fx -= fv * dx
             fy -= fv * dy
-        x = x + fx * dt
-        y = y + fy * dt
+        x     = x + fx * dt
+        y     = y + fy * dt
         basin += np.sqrt(fx * fx + fy * fy)
 
     basin = np.log1p(basin / n_steps)
@@ -238,10 +258,10 @@ def _gen_chaotic_scattering(W, H, params, rng):
 
 
 def _gen_orbital_field(W, H, params, rng):
-    energy = float(params.get("energy", 0.5))
+    energy  = float(params.get("energy", 0.5))
     density = float(params.get("density_level", 0.5))
-    motion = float(params.get("motion_intensity", 0.5))
-    freq = 2.0 + density * 6.0
+    motion  = float(params.get("motion_intensity", 0.5))
+    freq    = 2.0 + density * 6.0
 
     xg, yg = _make_grid(W, H)
     xg, yg = _apply_rotation(xg, yg, float(params.get("_rotation_deg", 0.0)))
@@ -250,42 +270,42 @@ def _gen_orbital_field(W, H, params, rng):
              np.cos(freq * xg) * np.sin(freq * yg + motion))
     field = field * (0.5 + energy * 0.5)
     mn, mx = field.min(), field.max()
-    field = (field - mn) / (mx - mn + 1e-9)
+    field  = (field - mn) / (mx - mn + 1e-9)
     return field.astype(np.float32)
 
 
 def _gen_colored_noise(W, H, params, rng):
-    amplitude = float(params.get("amplitude", 0.5))
-    freq_scale = float(params.get("frequency_scale", 0.5))
-    grain = max(1, int(float(params.get("grain_size", 0.5)) * 8 + 1))
+    amplitude   = float(params.get("amplitude", 0.5))
+    freq_scale  = float(params.get("frequency_scale", 0.5))
+    grain       = max(1, int(float(params.get("grain_size", 0.5)) * 8 + 1))
 
     noise = rng.standard_normal((H // grain + 1, W // grain + 1)).astype(np.float32)
     noise = np.repeat(np.repeat(noise, grain, axis=0), grain, axis=1)[:H, :W]
 
-    F = np.fft.rfft2(noise)
+    F       = np.fft.rfft2(noise)
     freqs_y = np.fft.fftfreq(H).astype(np.float32)
     freqs_x = np.fft.rfftfreq(W).astype(np.float32)
-    fy, fx = np.meshgrid(freqs_y, freqs_x, indexing="ij")
-    power = 1.0 / (1.0 + (fy ** 2 + fx ** 2) * (1.0 + freq_scale * 20))
-    F = F * power
-    result = np.fft.irfft2(F, s=(H, W))
-    mn, mx = result.min(), result.max()
-    result = (result - mn) / (mx - mn + 1e-9)
+    fy, fx  = np.meshgrid(freqs_y, freqs_x, indexing="ij")
+    power   = 1.0 / (1.0 + (fy ** 2 + fx ** 2) * (1.0 + freq_scale * 20))
+    F       = F * power
+    result  = np.fft.irfft2(F, s=(H, W))
+    mn, mx  = result.min(), result.max()
+    result  = (result - mn) / (mx - mn + 1e-9)
     return (result * amplitude).astype(np.float32)
 
 
 def _gen_symmetry_snowflake(W, H, params, rng):
     n_branches = max(3, int(float(params.get("branch_count", 0.5)) * 10 + 3))
-    depth = max(1, int(float(params.get("branch_depth", 0.5)) * 5 + 1))
-    jitter = float(params.get("branch_jitter", 0.0))
-    scale = 0.3 + float(params.get("radial_scale", 0.5)) * 0.6
-    rot_deg = float(params.get("rotation_deg", 0.0)) + float(params.get("_rotation_deg", 0.0))
+    depth      = max(1, int(float(params.get("branch_depth", 0.5)) * 5 + 1))
+    jitter     = float(params.get("branch_jitter", 0.0))
+    scale      = 0.3 + float(params.get("radial_scale", 0.5)) * 0.6
+    rot_deg    = float(params.get("rotation_deg", 0.0)) + float(params.get("_rotation_deg", 0.0))
 
     xg, yg = _make_grid(W, H)
     xg, yg = _apply_rotation(xg, yg, rot_deg)
 
-    r = np.sqrt(xg ** 2 + yg ** 2)
-    theta = np.arctan2(yg, xg)
+    r         = np.sqrt(xg ** 2 + yg ** 2)
+    theta     = np.arctan2(yg, xg)
     sym_angle = 2 * np.pi / n_branches
     theta_sym = (theta % sym_angle) - sym_angle / 2
     if jitter > 0:
@@ -293,7 +313,7 @@ def _gen_symmetry_snowflake(W, H, params, rng):
 
     field = np.zeros((H, W), dtype=np.float32)
     for d in range(1, depth + 1):
-        freq = d * n_branches
+        freq   = d * n_branches
         field += np.cos(freq * theta_sym) * np.exp(-r / (scale + 0.01)) / d
 
     field = np.clip(field, 0, None)
@@ -304,18 +324,18 @@ def _gen_symmetry_snowflake(W, H, params, rng):
 
 
 def _gen_silence_mask(W, H, params, rng):
-    coverage = float(params.get("coverage", 0.2))
-    edge_soft = float(params.get("edge_softness", 0.5))
+    coverage   = float(params.get("coverage", 0.2))
+    edge_soft  = float(params.get("edge_softness", 0.5))
 
     xg, yg = _make_grid(W, H)
-    r = np.sqrt(xg ** 2 + yg ** 2)
-    radius = 0.3 + coverage * 0.6
+    r      = np.sqrt(xg ** 2 + yg ** 2)
+    radius   = 0.3 + coverage * 0.6
     softness = 0.1 + edge_soft * 0.4
     mask = 1.0 - np.clip((r - radius) / (softness + 1e-6), 0.0, 1.0)
     return mask.astype(np.float32)
 
 
-# ─── Dispatch ───────────────────────────────────────────────────────────────
+# ─── Dispatch ────────────────────────────────────────────────────────────────
 
 _GENERATOR_DISPATCH = {
     "julia_orbit_trap":          _gen_julia_orbit_trap,
@@ -330,13 +350,7 @@ _GENERATOR_DISPATCH = {
 
 
 def execute_layer(layer, palettes_cfg: dict, W: int, H: int) -> np.ndarray:
-    """Рендер одного LayerSpec → (H, W, 4) float32 RGBA.
-
-    Разрешение берётся из layer.computation_resolution_px (tuple[int,int] | list);
-    если не задано — используется полное W×H.
-    Параметры генератора читаются из layer.sim_state (dict | None).
-    """
-    # ── Разрешение вычисления ───────────────────────────────────────────────────
+    """Рендер одного LayerSpec → (H, W, 4) float32 RGBA."""
     comp_res = getattr(layer, "computation_resolution_px", None)
     if comp_res and len(comp_res) == 2 and comp_res[0] > 0 and comp_res[1] > 0:
         cW = max(32, int(comp_res[0]))
@@ -346,8 +360,7 @@ def execute_layer(layer, palettes_cfg: dict, W: int, H: int) -> np.ndarray:
 
     rng = np.random.default_rng(layer.seed)
 
-    # ── Параметры из sim_state ───────────────────────────────────────────────────
-    sim_state = getattr(layer, "sim_state", None)
+    sim_state  = getattr(layer, "sim_state", None)
     params: dict = dict(sim_state) if sim_state else {}
     params["_seed"] = layer.seed
 
@@ -358,20 +371,17 @@ def execute_layer(layer, palettes_cfg: dict, W: int, H: int) -> np.ndarray:
     else:
         params["_rotation_deg"] = 0.0
 
-    # ── Dispatch ───────────────────────────────────────────────────────────────
     gen_id = layer.generator_id
     if gen_id not in _GENERATOR_DISPATCH:
         return np.zeros((H, W, 4), dtype=np.float32)
 
     field = _GENERATOR_DISPATCH[gen_id](cW, cH, params, rng)
 
-    # ── Апскейл до W×H nearest-neighbor ─────────────────────────────────────────
     if cW != W or cH != H:
         fy = np.round(np.linspace(0, cH - 1, H)).astype(int)
         fx = np.round(np.linspace(0, cW - 1, W)).astype(int)
         field = field[np.ix_(fy, fx)]
 
-    # ── Колоризация ───────────────────────────────────────────────────────────
     palette_id = getattr(layer, "palette_id", None) or "neutral_noir"
     try:
         palette = resolve_palette(palette_id, palettes_cfg)
