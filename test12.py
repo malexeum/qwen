@@ -8,6 +8,7 @@ P5  seed_theta_sensitive   — seed меняется при любом изме�
 P6  mapping_trace          — trace не пустой, содержит стадии base/perceptual/user
 P7  profile_pop            — профиль pop разрешается, не редиректирует в rock
 P8  alias_pop_removed      — старый алиас pop→rock удалён: slug не резолвится в rock
+                             E3-C: jazz теперь canonical профиль, алиас jazz→blues_jazz удалён
 
 Запуск:
     python -m pytest test12.py -v
@@ -326,7 +327,11 @@ class TestP7ProfilePop:
 # ---------------------------------------------------------------------------
 
 class TestP8AliasPopRemoved:
-    """P8: старый алиас pop→rock удалён."""
+    """P8: старый алиас pop→rock удалён.
+    E3-C: jazz теперь canonical самостоятельный профиль.
+           Алиас jazz→blues_jazz удалён из _STYLE_ALIASES.
+           _normalize_style_slug("jazz") → "jazz" (прямо в реестре).
+    """
 
     def test_pop_not_aliased_to_rock_in_normalize(self):
         registry = load_style_profiles()
@@ -349,7 +354,13 @@ class TestP8AliasPopRemoved:
         assert rp.style_profile_slug == "rock"
 
     def test_jazz_alias_still_works(self):
-        """jazz алиас всё ещё работает (blues_jazz не трогали)."""
+        """E3-C: jazz — canonical профиль, не алиас.
+        _normalize_style_slug("jazz") возвращает "jazz" напрямую из реестра.
+        Алиас jazz→blues_jazz удалён; jazz и blues_jazz — разные самостоятельные профили.
+        """
         registry = load_style_profiles()
         result = _normalize_style_slug("jazz", registry)
-        assert result == "blues_jazz"
+        assert result == "jazz", (
+            f"Expected 'jazz' (canonical E3-C profile), got {result!r}. "
+            "jazz→blues_jazz alias was removed per E3-C contract."
+        )
