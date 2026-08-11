@@ -1,5 +1,4 @@
 # Style Profile: blues_jazz
-# Алиасы: jazz, blues → blues_jazz (через _normalize_style_slug)
 slug: blues_jazz
 music_style: blues_jazz
 visual_mood: soulful, warm, improvisational
@@ -11,4 +10,4 @@ motion_intensity: 0.50
 noise_level: 0.45
 symmetry_bias: 0.45
 complexity_bias: 0.60
-version: "0.3.1"
+version: "0.3.2"

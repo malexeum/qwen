@@ -1,5 +1,5 @@
 schema_version: palettes/v0.3
-palette_library_version: 0.3.1
+palette_library_version: 0.3.2
 
 global_rules:
   color_space: sRGB
@@ -111,3 +111,62 @@ palettes:
     saturation_budget: 0.42
     contrast: 1.08
     luminance_gamma: 0.98
+
+  # E3-C: новые палитры для недостающих style-профилей
+
+  # Для blues_jazz: тёплый тёмный фон, янтарно-золотой gradient, телесный акцент
+  warm_midnight:
+    family: warm_dark
+    background_rgba: [14, 9, 5, 255]
+    dominant_stops:
+      - { position: 0.00, color: "#0E0905" }
+      - { position: 0.35, color: "#3D2210" }
+      - { position: 0.68, color: "#8B4F1A" }
+      - { position: 1.00, color: "#D4923A" }
+    accent_color: "#F5C97A"
+    saturation_budget: 0.62
+    contrast: 1.12
+    luminance_gamma: 0.96
+
+  # Для rock / тяжёлых стилей: насыщенный тёмный фон, пурпурно-красный корпус
+  dark_saturated:
+    family: rock_dark
+    background_rgba: [8, 6, 10, 255]
+    dominant_stops:
+      - { position: 0.00, color: "#08060A" }
+      - { position: 0.38, color: "#2E1035" }
+      - { position: 0.68, color: "#7A1E3C" }
+      - { position: 1.00, color: "#C43050" }
+    accent_color: "#FF7090"
+    saturation_budget: 0.80
+    contrast: 1.28
+    luminance_gamma: 0.90
+
+  # Для pop / jazz (светлый): живая светлая база, бирюзово-оранжевый контраст
+  vivid_light:
+    family: pop_light
+    background_rgba: [248, 246, 240, 255]
+    dominant_stops:
+      - { position: 0.00, color: "#F8F6F0" }
+      - { position: 0.40, color: "#5BC8C0" }
+      - { position: 0.72, color: "#F07030" }
+      - { position: 1.00, color: "#1A1A2E" }
+    accent_color: "#FF5520"
+    saturation_budget: 0.78
+    contrast: 1.18
+    luminance_gamma: 1.04
+
+  # Для electronic / neon стилей: ультра-насыщенный неон на почти-чёрном фоне
+  neon_dark:
+    family: neon_dark
+    background_rgba: [4, 3, 12, 255]
+    dominant_stops:
+      - { position: 0.00, color: "#04030C" }
+      - { position: 0.30, color: "#0A0F30" }
+      - { position: 0.58, color: "#00E5B0" }
+      - { position: 0.82, color: "#7B00FF" }
+      - { position: 1.00, color: "#FF2D78" }
+    accent_color: "#00FFCC"
+    saturation_budget: 0.96
+    contrast: 1.35
+    luminance_gamma: 0.85
