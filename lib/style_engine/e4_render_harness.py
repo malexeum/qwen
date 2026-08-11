@@ -27,6 +27,11 @@ Invariants:
       existing PNG on the next run instead of being silently skipped.
     - generator_stack in provenance = journal of builders ACTUALLY called
       by GeneratorRuntime at runtime.  Never a static YAML declaration.
+    - composition_config_hash in provenance = sha256 of the canonical
+      visual_composition_profiles.yaml bytes that were loaded at startup.
+      Proves which composition file drove this render.
+    - Stub mode (e4_stub:numpy_noise) is FORBIDDEN in E4 baseline runs.
+      Pass --allow-stub explicitly for local development only.
 """
 from __future__ import annotations
 
@@ -80,10 +85,14 @@ DEFAULT_PRESET = {
     "motion":     0.5,
 }
 
-# Single-layer composition profile used when no external composition YAML
-# is provided.  The builder is resolved at runtime from the generators
-# module; if no generators module is available the stub path is taken.
-_DEFAULT_COMPOSITION: dict[str, Any] = {
+# Path to canonical composition profiles — source of truth for E4 baseline.
+CANONICAL_COMPOSITION_YAML: Path = (
+    Path(__file__).resolve().parent / "configs" / "visual_composition_profiles.yaml"
+)
+
+# _DEV_COMPOSITION: single-layer fallback for unit tests and local dev only.
+# NEVER used in E4 baseline harness runs.
+_DEV_COMPOSITION: dict[str, Any] = {
     "layers": [
         {
             "id":      "layer_0",
@@ -92,6 +101,59 @@ _DEFAULT_COMPOSITION: dict[str, Any] = {
         }
     ]
 }
+
+
+# ---------------------------------------------------------------------------
+# Composition YAML loading
+# ---------------------------------------------------------------------------
+
+class ValidationError(ValueError):
+    """Raised when a composition profile slug is missing or invalid."""
+
+
+def load_composition_profiles(
+    yaml_path: Path,
+) -> tuple[dict[str, dict], str]:
+    """
+    Load visual_composition_profiles.yaml.
+
+    Returns:
+        profiles  — dict[slug, {palette, layers}]
+        yaml_hash — sha256:<hex> of raw file bytes (for provenance)
+    """
+    with open(yaml_path, "rb") as f:
+        raw = f.read()
+    yaml_hash = f"sha256:{hashlib.sha256(raw).hexdigest()}"
+    data = yaml.safe_load(raw.decode("utf-8"))
+    profiles = data.get("profiles", {})
+    if not profiles:
+        raise ValidationError(
+            f"visual_composition_profiles.yaml has no 'profiles' key: {yaml_path}"
+        )
+    return profiles, yaml_hash
+
+
+def get_composition_for_slug(
+    profiles: dict[str, dict],
+    profile_slug: str,
+) -> dict:
+    """
+    Extract the composition dict for a given style slug.
+
+    Raises ValidationError (not a fallback!) if slug is absent.
+    This is intentional: an unknown slug means the composition contract
+    is broken, not that we should silently fall back to a default.
+    """
+    if profile_slug not in profiles:
+        available = sorted(profiles.keys())
+        raise ValidationError(
+            f"Composition profile slug '{profile_slug}' not found in "
+            f"visual_composition_profiles.yaml. "
+            f"Available: {available}"
+        )
+    entry = profiles[profile_slug]
+    # Return only the layers section as composition_profile dict
+    return {"layers": entry["layers"]}
 
 
 # ---------------------------------------------------------------------------
@@ -156,7 +218,8 @@ def _render_via_runtime(
     render_params,
     fixture: Dict[str, Any],
     output_png: Path,
-    composition_profile: dict | None = None,
+    composition_profile: dict,
+    allow_stub: bool = False,
 ) -> list[str]:
     """
     Calls GeneratorRuntime to produce a PNG at output_png.
@@ -165,19 +228,20 @@ def _render_via_runtime(
     called during this render).  This is the authoritative provenance source;
     the caller must pass it verbatim into write_provenance().
 
-    Falls back to a deterministic numpy-noise stub when lib.generators is
-    unavailable (no GPU / missing dependency).  In stub mode the returned
-    stack is ['e4_stub:numpy_noise'] — clearly labelled, never confused
-    with a real builder call.
+    Stub mode policy:
+      - allow_stub=False (default/baseline): any exception from
+        GeneratorRuntime raises RuntimeError — baseline PNGs must be
+        produced by the real backend, not numpy noise.
+      - allow_stub=True (--allow-stub dev flag): falls back to
+        deterministic numpy noise, labelled ['e4_stub:numpy_noise'].
+        This path must never produce corpus v2 or E5 baseline output.
     """
-    profile = composition_profile or _DEFAULT_COMPOSITION
-
     # Attempt real GeneratorRuntime path
     try:
         layers = _runtime.resolve_stack(
             profile_slug=fixture["profile_slug"],
             render_params=render_params,
-            composition_profile=profile,
+            composition_profile=composition_profile,
         )
         result: RenderResult = _runtime.render(
             layers=layers,
@@ -190,7 +254,6 @@ def _render_via_runtime(
         if _PIL_AVAILABLE:
             import numpy as np
             arr = (result.orbit_map * 255).clip(0, 255).astype("uint8")
-            # orbit_map is (H, W) float32 → RGB by repeating channels
             rgb = np.stack([arr, arr, arr], axis=-1)
             Image.fromarray(rgb, "RGB").save(str(output_png), format="PNG")
         else:
@@ -199,10 +262,17 @@ def _render_via_runtime(
         return result.generator_stack  # <-- actual execution journal
 
     except Exception as exc:
-        # lib.generators not available or builder failed — fall back to stub
+        if not allow_stub:
+            raise RuntimeError(
+                f"GeneratorRuntime failed for fixture '{fixture['id']}' "
+                f"and --allow-stub is not set. "
+                f"Baseline renders must use the real backend. "
+                f"Original error: {exc}"
+            ) from exc
+        # allow_stub=True: graceful dev fallback
         print(
             f"[warn] GeneratorRuntime failed for {fixture['id']}: {exc}; "
-            "using numpy stub",
+            "using numpy stub (--allow-stub mode)",
             file=sys.stderr,
         )
         _write_stub_png(output_png, render_params.variation_seed)
@@ -210,7 +280,11 @@ def _render_via_runtime(
 
 
 def _write_stub_png(output_png: Path, seed: int) -> None:
-    """Deterministic fallback PNG: numpy noise or 1×1 white pixel."""
+    """Deterministic fallback PNG: numpy noise or 1x1 white pixel.
+
+    Used ONLY when --allow-stub is explicitly passed.  Never called
+    in E4 baseline harness runs.
+    """
     try:
         import numpy as np
         from PIL import Image as _Image
@@ -248,7 +322,8 @@ def write_provenance(
     provenance_dir: Path,
     run_git_sha: str,
     elapsed_s: float,
-    generator_stack: list[str],          # <-- actual runtime journal, required
+    generator_stack: list[str],
+    composition_config_hash: str,
     rerender_n: Optional[int] = None,
 ) -> Path:
     profile_slug = fixture["profile_slug"]
@@ -259,7 +334,6 @@ def write_provenance(
     suffix = "" if rerender_n is None else f"_rerender_{rerender_n}"
     prov_path = prov_dir / f"{fixture_id}{suffix}.json"
 
-    # CB-1 contract: use engine canonical JSON hash.
     theta_named = {
         f"harmony_theta_{i}": round(float(v), 6)
         for i, v in enumerate([
@@ -291,24 +365,26 @@ def write_provenance(
     ]
 
     prov = {
-        "fixture_id":         fixture_id,
-        "experiment_id":      EXPERIMENT_ID,
-        "profile_slug":       profile_slug,
-        "git_sha":            run_git_sha,
-        "feature_hash":       fixture.get("feature_hash", "null"),
-        "harmony_theta":      theta_vec,
-        "harmony_theta_hash": theta_hash,
-        "variation_seed":     render_params.variation_seed,
-        "palette_id":         render_params.palette_id,
+        "fixture_id":              fixture_id,
+        "experiment_id":           EXPERIMENT_ID,
+        "profile_slug":            profile_slug,
+        "git_sha":                 run_git_sha,
+        "feature_hash":            fixture.get("feature_hash", "null"),
+        "harmony_theta":           theta_vec,
+        "harmony_theta_hash":      theta_hash,
+        "variation_seed":          render_params.variation_seed,
+        "palette_id":              render_params.palette_id,
         # Authoritative execution journal from GeneratorRuntime.render():
-        "generator_stack":    generator_stack,
-        "mapping_trace":      trace_serialisable,
-        "output_sha256":      output_sha256,
-        "renderer_params":    {"width": RENDER_W, "height": RENDER_H},
-        "perceptual":         dict(fixture.get("perceptual", {})),
-        "render_status":      "rendered",
-        "elapsed_s":          round(elapsed_s, 3),
-        "created_at":         datetime.now(timezone.utc).isoformat(),
+        "generator_stack":         generator_stack,
+        # Hash of the composition YAML that was actually loaded:
+        "composition_config_hash": composition_config_hash,
+        "mapping_trace":           trace_serialisable,
+        "output_sha256":           output_sha256,
+        "renderer_params":         {"width": RENDER_W, "height": RENDER_H},
+        "perceptual":              dict(fixture.get("perceptual", {})),
+        "render_status":           "rendered",
+        "elapsed_s":               round(elapsed_s, 3),
+        "created_at":              datetime.now(timezone.utc).isoformat(),
     }
 
     with open(prov_path, "w", encoding="utf-8") as f:
@@ -360,7 +436,7 @@ def build_contact_sheet(
             draw.text((c * tw + 4, r * th + 4), stem, fill=(255, 255, 100), font=font)
 
     sheet.save(str(output_path), format="PNG")
-    print(f"[ok] contact_sheet → {output_path}")
+    print(f"[ok] contact_sheet -> {output_path}")
 
 
 # ---------------------------------------------------------------------------
@@ -372,7 +448,8 @@ AUDIT_FIELDS = [
     "energy", "tension", "density", "brightness",
     "stability", "smoothness", "repetition", "section_complexity",
     "noise_proxy", "macro_shape_hint",
-    "generator_stack",  # comma-joined list of actual builders
+    "generator_stack",        # comma-joined list of actual builders
+    "composition_config_hash",  # sha256 of the YAML that drove this render
 ]
 
 
@@ -383,18 +460,20 @@ def write_audit_row(
     output_sha256: str,
     elapsed_s: float,
     generator_stack: list[str],
+    composition_config_hash: str,
 ) -> None:
     perc = fixture.get("perceptual", {})
     row = {
-        "fixture_id":       fixture["id"],
-        "profile_slug":     fixture["profile_slug"],
-        "variation_seed":   render_params.variation_seed,
-        "palette_id":       render_params.palette_id,
-        "output_sha256":    output_sha256,
-        "elapsed_s":        round(elapsed_s, 3),
-        "render_status":    "rendered",
-        "created_at":       datetime.now(timezone.utc).isoformat(),
-        "generator_stack":  ",".join(generator_stack),
+        "fixture_id":              fixture["id"],
+        "profile_slug":            fixture["profile_slug"],
+        "variation_seed":          render_params.variation_seed,
+        "palette_id":              render_params.palette_id,
+        "output_sha256":           output_sha256,
+        "elapsed_s":               round(elapsed_s, 3),
+        "render_status":           "rendered",
+        "created_at":              datetime.now(timezone.utc).isoformat(),
+        "generator_stack":         ",".join(generator_stack),
+        "composition_config_hash": composition_config_hash,
     }
     for ax in [
         "energy", "tension", "density", "brightness",
@@ -436,14 +515,19 @@ def main() -> int:
     )
     parser.add_argument(
         "--generators", default=None,
-        help="Python module path for generators (e.g. lib.generators)."
-             "  Kept for CLI compatibility; GeneratorRuntime imports"
-             "  lib.generators directly and does not need this flag.",
+        help="Python module path for generators (e.g. lib.generators). "
+             "Kept for CLI compatibility; GeneratorRuntime imports "
+             "lib.generators directly and does not need this flag.",
     )
     parser.add_argument(
         "--composition", default=None,
-        help="Path to composition profile YAML (optional)."
-             "  If omitted, a single julia_orbit_trap layer is used.",
+        help="Path to alternate composition profile YAML (dev/experiment use). "
+             "If omitted, canonical visual_composition_profiles.yaml is used.",
+    )
+    parser.add_argument(
+        "--allow-stub", action="store_true",
+        help="Allow numpy stub fallback when GeneratorRuntime fails. "
+             "LOCAL DEVELOPMENT ONLY. Never use for corpus v2 or E5 baseline.",
     )
     parser.add_argument(
         "--rerender", action="store_true",
@@ -462,19 +546,30 @@ def main() -> int:
     renders_dir.mkdir(parents=True, exist_ok=True)
     provenance_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load optional composition profile
-    composition_profile: dict | None = None
+    # Load composition profiles — canonical by default, alternate via flag.
+    comp_yaml_path: Path
     if args.composition:
-        comp_path = Path(args.composition)
-        with open(comp_path, "r", encoding="utf-8") as f:
-            composition_profile = yaml.safe_load(f)
-        print(f"[ok] composition profile loaded: {comp_path}")
+        comp_yaml_path = Path(args.composition)
+        print(f"[info] composition   : {comp_yaml_path} (alternate)")
+    else:
+        comp_yaml_path = CANONICAL_COMPOSITION_YAML
+        print(f"[info] composition   : {comp_yaml_path} (canonical)")
 
-    # --generators flag retained for CLI compatibility; log a note.
+    composition_profiles, composition_config_hash = load_composition_profiles(
+        comp_yaml_path
+    )
+    print(f"[info] composition hash: {composition_config_hash[:30]}...")
+
     if args.generators:
         print(
             f"[info] --generators '{args.generators}' noted; "
             "GeneratorRuntime imports lib.generators directly."
+        )
+    if args.allow_stub:
+        print(
+            "[warn] --allow-stub is set. "
+            "Stub renders are NOT valid for corpus v2 or E5 baseline.",
+            file=sys.stderr,
         )
 
     run_git_sha = get_git_sha()
@@ -486,8 +581,8 @@ def main() -> int:
     print(f"[info] output        : {output_dir}")
 
     # Open audit CSV
-    csv_path  = output_dir / "audit_matrix.csv"
-    csv_file  = open(csv_path, "w", newline="", encoding="utf-8")
+    csv_path   = output_dir / "audit_matrix.csv"
+    csv_file   = open(csv_path, "w", newline="", encoding="utf-8")
     csv_writer = csv.DictWriter(csv_file, fieldnames=AUDIT_FIELDS)
     csv_writer.writeheader()
 
@@ -506,6 +601,16 @@ def main() -> int:
 
         print(f"\n[run] {fid} ({profile_slug}) ...", end=" ", flush=True)
         t0 = time.perf_counter()
+
+        # --- Resolve composition for this slug (ValidationError if missing) ---
+        try:
+            composition_profile = get_composition_for_slug(
+                composition_profiles, profile_slug
+            )
+        except ValidationError as exc:
+            print(f"FAIL (composition): {exc}")
+            failed.append((fid, f"composition_error: {exc}"))
+            continue
 
         # --- Resolve RenderParams ---
         try:
@@ -539,24 +644,24 @@ def main() -> int:
             png_paths.append(png_path)
 
             if prov_path_existing.exists():
-                print(f"skip (exists) → {png_path.name}")
+                print(f"skip (exists) -> {png_path.name}")
             else:
-                # PNG survived a prior crashed run; recover provenance.
-                # generator_stack is unknown for this PNG — mark honestly.
                 write_provenance(
                     fixture, render_params, png_path, output_sha256,
                     provenance_dir, run_git_sha, elapsed,
                     generator_stack=["e4_recovered:unknown"],
+                    composition_config_hash=composition_config_hash,
                     rerender_n=None,
                 )
                 print(
                     f"recovered provenance (png existed, provenance missing)"
-                    f" → {png_path.name}"
+                    f" -> {png_path.name}"
                 )
 
             write_audit_row(
                 csv_writer, fixture, render_params, output_sha256, elapsed,
                 generator_stack=["e4_recovered:unknown"],
+                composition_config_hash=composition_config_hash,
             )
             continue
 
@@ -565,49 +670,48 @@ def main() -> int:
             rerender_n = len(existing) + 1
             png_path = renders_dir / f"{fid}_rerender_{rerender_n}.png"
 
-        # _render_via_runtime returns the actual generator_stack journal
         try:
             generator_stack = _render_via_runtime(
-                render_params, fixture, png_path, composition_profile,
+                render_params, fixture, png_path,
+                composition_profile=composition_profile,
+                allow_stub=args.allow_stub,
             )
         except Exception as exc:
             print(f"FAIL (render): {exc}")
             failed.append((fid, f"render_error: {exc}"))
             continue
 
-        # fsync before computing hash (best effort)
         fsync_path(png_path)
 
         output_sha256 = sha256_file(png_path)
         elapsed = time.perf_counter() - t0
         png_paths.append(png_path)
 
-        # --- Write provenance AFTER png is fsynced ---
         prov_path = write_provenance(
             fixture, render_params, png_path, output_sha256,
             provenance_dir, run_git_sha, elapsed,
-            generator_stack=generator_stack,   # actual execution journal
+            generator_stack=generator_stack,
+            composition_config_hash=composition_config_hash,
             rerender_n=rerender_n,
         )
 
         write_audit_row(
             csv_writer, fixture, render_params, output_sha256, elapsed,
             generator_stack=generator_stack,
+            composition_config_hash=composition_config_hash,
         )
         print(
             f"ok ({elapsed*1000:.1f} ms) "
             f"stack={generator_stack} "
-            f"sha={output_sha256[7:19]}... → {prov_path.name}"
+            f"sha={output_sha256[7:19]}... -> {prov_path.name}"
         )
 
     csv_file.close()
 
-    # --- Contact sheet ---
     if not args.dry_run and png_paths:
         contact_path = output_dir / "contact_sheet.png"
         build_contact_sheet(png_paths, contact_path)
 
-    # --- Summary ---
     total   = len(fixtures)
     success = total - len(failed)
     print(f"\n{'='*60}")
@@ -616,7 +720,7 @@ def main() -> int:
         print(f"FAILED ({len(failed)}):")
         for fid, reason in failed:
             print(f"  {fid}: {reason}")
-    print(f"audit_matrix → {csv_path}")
+    print(f"audit_matrix -> {csv_path}")
 
     return 0 if not failed else 1
 

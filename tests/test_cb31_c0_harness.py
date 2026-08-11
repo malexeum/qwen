@@ -1,9 +1,10 @@
 """
 tests/test_cb31_c0_harness.py
 
-C0 gate: verify that e4_render_harness uses GeneratorRuntime as the
-authoritative source of generator_stack, and that layer_id / generator_id
-are correctly propagated into provenance after runtime integration.
+C0/C1 gate: verify that e4_render_harness uses GeneratorRuntime as the
+authoritative source of generator_stack, loads the canonical
+visual_composition_profiles.yaml by default, and that layer_id /
+generator_id are correctly propagated into provenance after integration.
 
 All tests are unit-level: no PNG files are written, no disk I/O beyond
 what resolve_render_params and GeneratorRuntime itself need.
@@ -11,10 +12,11 @@ what resolve_render_params and GeneratorRuntime itself need.
 from __future__ import annotations
 
 import sys
+import hashlib
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
+import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -23,6 +25,14 @@ from lib.style_engine.generator_runtime import (
     GeneratorRuntime,
     ResolvedGeneratorLayer,
     RenderResult,
+    _BUILDER_REGISTRY,
+)
+from lib.style_engine.e4_render_harness import (
+    CANONICAL_COMPOSITION_YAML,
+    ValidationError,
+    load_composition_profiles,
+    get_composition_for_slug,
+    _DEV_COMPOSITION,
 )
 
 
@@ -47,10 +57,10 @@ NEUTRAL_PERCEPTUAL = {
 DEFAULT_PRESET = {
     "id": "c0_test",
     "complexity": 0.5,
-    "symmetry": 0.5,
-    "density": 0.5,
-    "noise": 0.5,
-    "motion": 0.5,
+    "symmetry":   0.5,
+    "density":    0.5,
+    "noise":      0.5,
+    "motion":     0.5,
 }
 
 SINGLE_LAYER_COMPOSITION = {
@@ -177,18 +187,12 @@ class TestLayerIdGeneratorIdInResolvedLayer:
 
 class TestCompositionProfileYAML:
     def test_yaml_builders_are_in_registry(self):
-        """Every builder in visual_composition_profiles.yaml must exist in
-        GeneratorRuntime._BUILDER_REGISTRY."""
-        import yaml
-        yaml_path = (
-            Path(__file__).resolve().parents[1]
-            / "lib/style_engine/configs/visual_composition_profiles.yaml"
+        assert CANONICAL_COMPOSITION_YAML.exists(), (
+            f"Missing canonical YAML: {CANONICAL_COMPOSITION_YAML}"
         )
-        assert yaml_path.exists(), f"Missing: {yaml_path}"
-        with open(yaml_path, encoding="utf-8") as f:
+        with open(CANONICAL_COMPOSITION_YAML, encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
-        from lib.style_engine.generator_runtime import _BUILDER_REGISTRY
         profiles = data.get("profiles", {})
         assert profiles, "visual_composition_profiles.yaml has no profiles"
 
@@ -201,12 +205,7 @@ class TestCompositionProfileYAML:
                 )
 
     def test_all_canonical_slugs_have_composition(self):
-        import yaml
-        yaml_path = (
-            Path(__file__).resolve().parents[1]
-            / "lib/style_engine/configs/visual_composition_profiles.yaml"
-        )
-        with open(yaml_path, encoding="utf-8") as f:
+        with open(CANONICAL_COMPOSITION_YAML, encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
         CANONICAL = {"ambient", "blues_jazz", "jazz", "classical",
@@ -216,13 +215,7 @@ class TestCompositionProfileYAML:
         assert not missing, f"Missing canonical slugs in composition YAML: {missing}"
 
     def test_palette_identity_in_composition_yaml(self):
-        """palette field in composition YAML must match registry contract."""
-        import yaml
-        yaml_path = (
-            Path(__file__).resolve().parents[1]
-            / "lib/style_engine/configs/visual_composition_profiles.yaml"
-        )
-        with open(yaml_path, encoding="utf-8") as f:
+        with open(CANONICAL_COMPOSITION_YAML, encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
         EXPECTED = {
@@ -242,3 +235,101 @@ class TestCompositionProfileYAML:
                 f"Profile '{slug}': expected palette '{expected_palette}', "
                 f"got '{actual}'"
             )
+
+
+# ---------------------------------------------------------------------------
+# TC4 (C1): harness loads canonical composition by default
+# ---------------------------------------------------------------------------
+
+class TestC1CanonicalCompositionLoading:
+
+    def test_harness_loads_canonical_composition_by_default(self):
+        """CANONICAL_COMPOSITION_YAML must point to the real YAML and be loadable."""
+        assert CANONICAL_COMPOSITION_YAML.exists(), (
+            f"CANONICAL_COMPOSITION_YAML does not exist: {CANONICAL_COMPOSITION_YAML}"
+        )
+        profiles, yaml_hash = load_composition_profiles(CANONICAL_COMPOSITION_YAML)
+        assert isinstance(profiles, dict)
+        assert len(profiles) >= 8
+        assert yaml_hash.startswith("sha256:")
+
+    def test_rock_runtime_stack_matches_yaml(self):
+        """Rock profile: chaotic_scattering_basins first, duffing_lyapunov_map second."""
+        profiles, _ = load_composition_profiles(CANONICAL_COMPOSITION_YAML)
+        composition = get_composition_for_slug(profiles, "rock")
+
+        runtime = GeneratorRuntime()
+        render_params = make_render_params("rock")
+        layers = runtime.resolve_stack("rock", render_params, composition)
+        result = runtime.render(layers, seed=render_params.variation_seed, width=64, height=64)
+
+        assert result.generator_stack[0] == "chaotic_scattering_basins", (
+            f"rock layer 0 must be chaotic_scattering_basins, got: {result.generator_stack}"
+        )
+        assert result.generator_stack[1] == "duffing_lyapunov_map", (
+            f"rock layer 1 must be duffing_lyapunov_map, got: {result.generator_stack}"
+        )
+
+    def test_ambient_runtime_stack_matches_yaml(self):
+        """Ambient profile: julia_orbit_trap first, orbit_ifs_multi_trap second."""
+        profiles, _ = load_composition_profiles(CANONICAL_COMPOSITION_YAML)
+        composition = get_composition_for_slug(profiles, "ambient")
+
+        runtime = GeneratorRuntime()
+        render_params = make_render_params("ambient")
+        layers = runtime.resolve_stack("ambient", render_params, composition)
+        result = runtime.render(layers, seed=render_params.variation_seed, width=64, height=64)
+
+        assert result.generator_stack[0] == "julia_orbit_trap", (
+            f"ambient layer 0 must be julia_orbit_trap, got: {result.generator_stack}"
+        )
+        assert result.generator_stack[1] == "orbit_ifs_multi_trap", (
+            f"ambient layer 1 must be orbit_ifs_multi_trap, got: {result.generator_stack}"
+        )
+
+    def test_missing_composition_slug_raises(self):
+        """Unknown slug must raise ValidationError, no default fallback."""
+        profiles, _ = load_composition_profiles(CANONICAL_COMPOSITION_YAML)
+
+        with pytest.raises(ValidationError) as exc_info:
+            get_composition_for_slug(profiles, "nonexistent_genre_xyz")
+
+        assert "nonexistent_genre_xyz" in str(exc_info.value)
+        # Must NOT fall back silently
+        assert "_DEFAULT_COMPOSITION" not in str(exc_info.value)
+
+    def test_provenance_contains_composition_config_hash(self):
+        """composition_config_hash must be sha256 of the actual loaded YAML bytes."""
+        profiles, yaml_hash = load_composition_profiles(CANONICAL_COMPOSITION_YAML)
+
+        # Verify hash is reproducible
+        with open(CANONICAL_COMPOSITION_YAML, "rb") as f:
+            raw = f.read()
+        expected_hash = f"sha256:{hashlib.sha256(raw).hexdigest()}"
+
+        assert yaml_hash == expected_hash, (
+            f"yaml_hash mismatch: got {yaml_hash!r}, expected {expected_hash!r}"
+        )
+        assert len(yaml_hash) == len("sha256:") + 64  # sha256 hex = 64 chars
+
+    def test_rock_and_ambient_stacks_differ(self):
+        """End-to-end: rock and ambient stacks differ in builder identity and order."""
+        profiles, _ = load_composition_profiles(CANONICAL_COMPOSITION_YAML)
+        runtime = GeneratorRuntime()
+
+        rock_composition = get_composition_for_slug(profiles, "rock")
+        rock_params = make_render_params("rock")
+        rock_layers = runtime.resolve_stack("rock", rock_params, rock_composition)
+        rock_result = runtime.render(rock_layers, seed=rock_params.variation_seed, width=64, height=64)
+
+        ambient_composition = get_composition_for_slug(profiles, "ambient")
+        ambient_params = make_render_params("ambient")
+        ambient_layers = runtime.resolve_stack("ambient", ambient_params, ambient_composition)
+        ambient_result = runtime.render(ambient_layers, seed=ambient_params.variation_seed, width=64, height=64)
+
+        assert rock_result.generator_stack != ambient_result.generator_stack, (
+            f"rock and ambient must have different generator stacks. "
+            f"rock={rock_result.generator_stack}, ambient={ambient_result.generator_stack}"
+        )
+        # Rock must start with scattering, ambient with julia
+        assert rock_result.generator_stack[0] != ambient_result.generator_stack[0]
