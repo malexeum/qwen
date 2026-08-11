@@ -8,12 +8,23 @@
 #   noise_proxy — физический сигнал тембрального шума (spectral_flatness log-norm)
 #   harmony_theta_5 — модификатор тембрального хаоса (но не единственный источник)
 #   итог ограничивается в [0, 1] централизованным _clamp01
+#
+# E4-Gate0: morphology_guard подключён к pipeline.
+# morphology_guard = clamp01(0.5*section_complexity + 0.4*tension - 0.3*repetition - 0.3*stability)
+# Физический смысл: высокий guard → высокая морфологическая активность → рост
+#   texture_complexity и recursion_depth, чтобы визуальная сложность
+#   отражала музыкальную непредсказуемость трека.
+# Веса выбраны так, чтобы при максимальном guard (+1.0) прирост не превышал 0.30:
+#   texture_complexity: +morphology_guard * 0.30
+#   recursion_depth:    +morphology_guard * 0.20
+# Это удерживает оба параметра в [0,1] при любом base из [0,1].
 slug: default
 name: Default
 description: >-
   Neutral linear interpretation. Perceptual axes map directly
   to visual parameters without style-specific biases.
   E3-C: noise_level driven by noise_proxy (log-norm spectral_flatness) + harmony_theta_5.
+  E4-Gate0: morphology_guard wired into texture_complexity and recursion_depth.
 axis_weights:
   energy: 1.0
   tension: 1.0
@@ -24,13 +35,14 @@ axis_weights:
   repetition: 1.0
   section_complexity: 1.0
   noise_proxy: 1.0
+  morphology_guard: 1.0
 mapping_rules:
   symmetry_bias:
     base: 0.5
     formula: "base + (stability - 0.5) * 0.3"
   recursion_depth:
     base: 0.5
-    formula: "base + (section_complexity - 0.5) * 0.4"
+    formula: "base + (section_complexity - 0.5) * 0.4 + morphology_guard * 0.20"
   density_level:
     base: 0.5
     formula: "base + (density - 0.5) * 0.5"
@@ -42,7 +54,7 @@ mapping_rules:
     formula: "base + (energy - 0.5) * 0.5"
   texture_complexity:
     base: 0.5
-    formula: "base + (section_complexity - 0.5) * 0.3"
+    formula: "base + (section_complexity - 0.5) * 0.3 + morphology_guard * 0.30"
   layout_macro_shape:
     rules:
       - when: "section_complexity > 0.7"
@@ -52,4 +64,4 @@ mapping_rules:
       - when: "tension > 0.7"
         value: "through_composed"
 guardrails: []
-version: "0.3.2"
+version: "0.4.0"
