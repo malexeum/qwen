@@ -1,0 +1,164 @@
+{
+  "fixture_id": "classical_A",
+  "experiment_id": "e4_reference_render_audit_v1",
+  "profile_slug": "classical",
+  "git_sha": "16b28f961281607e0779c0f436b7b6bf15bbeede",
+  "feature_hash": "sha256:placeholder_classical_A",
+  "harmony_theta": [
+    0.5,
+    0.45,
+    0.55,
+    0.5,
+    0.7,
+    0.65,
+    0.5,
+    0.55
+  ],
+  "harmony_theta_hash": "sha256:7eb2c33d64d48228",
+  "variation_seed": 2188533275,
+  "palette_id": "ivory_cobalt",
+  "generator_stack": [
+    "e4_render_harness"
+  ],
+  "mapping_trace": [
+    {
+      "param": "symmetry_bias",
+      "source": "style_profile",
+      "raw": 0.8,
+      "final": 0.8,
+      "stage": "base"
+    },
+    {
+      "param": "recursion_depth",
+      "source": "style_profile",
+      "raw": 0.45,
+      "final": 0.45,
+      "stage": "base"
+    },
+    {
+      "param": "density_level",
+      "source": "style_profile",
+      "raw": 0.4,
+      "final": 0.4,
+      "stage": "base"
+    },
+    {
+      "param": "noise_level",
+      "source": "style_profile",
+      "raw": 0.15,
+      "final": 0.15,
+      "stage": "base"
+    },
+    {
+      "param": "motion_intensity",
+      "source": "style_profile",
+      "raw": 0.35,
+      "final": 0.35,
+      "stage": "base"
+    },
+    {
+      "param": "texture_complexity",
+      "source": "style_profile",
+      "raw": 0.45,
+      "final": 0.45,
+      "stage": "base"
+    },
+    {
+      "param": "symmetry_bias",
+      "source": "base + (stability - 0.5) * 0.3",
+      "raw": 0.575,
+      "final": 0.575,
+      "stage": "perceptual"
+    },
+    {
+      "param": "recursion_depth",
+      "source": "base + (section_complexity - 0.5) * 0.4",
+      "raw": 0.46,
+      "final": 0.46,
+      "stage": "perceptual"
+    },
+    {
+      "param": "density_level",
+      "source": "base + (density - 0.5) * 0.5",
+      "raw": 0.45,
+      "final": 0.45,
+      "stage": "perceptual"
+    },
+    {
+      "param": "noise_level",
+      "source": "base + noise_proxy * 0.5",
+      "raw": 0.3,
+      "final": 0.3,
+      "stage": "perceptual"
+    },
+    {
+      "param": "motion_intensity",
+      "source": "base + (energy - 0.5) * 0.5",
+      "raw": 0.45,
+      "final": 0.45,
+      "stage": "perceptual"
+    },
+    {
+      "param": "texture_complexity",
+      "source": "base + morphology_guard * 0.3 + (section_complexity - 0.5) * 0.2",
+      "raw": 0.48,
+      "final": 0.48,
+      "stage": "perceptual"
+    },
+    {
+      "param": "symmetry_bias",
+      "source": "user_preset:symmetry_bias",
+      "raw": 0.575,
+      "final": 0.575,
+      "stage": "user"
+    },
+    {
+      "param": "recursion_depth",
+      "source": "user_preset:recursion_depth",
+      "raw": 0.46,
+      "final": 0.46,
+      "stage": "user"
+    },
+    {
+      "param": "density_level",
+      "source": "user_preset:density_level",
+      "raw": 0.45,
+      "final": 0.45,
+      "stage": "user"
+    },
+    {
+      "param": "noise_level",
+      "source": "user_preset:noise_level",
+      "raw": 0.3,
+      "final": 0.3,
+      "stage": "user"
+    },
+    {
+      "param": "motion_intensity",
+      "source": "user_preset:motion_intensity",
+      "raw": 0.45,
+      "final": 0.45,
+      "stage": "user"
+    }
+  ],
+  "output_sha256": "sha256:b03197ca774883325d1766f468f4b57c13751265876dccf0e71066e6359369dc",
+  "renderer_params": {
+    "width": 512,
+    "height": 512
+  },
+  "perceptual": {
+    "energy": 0.4,
+    "tension": 0.3,
+    "density": 0.4,
+    "brightness": 0.55,
+    "stability": 0.75,
+    "smoothness": 0.7,
+    "repetition": 0.5,
+    "section_complexity": 0.4,
+    "macro_shape_hint": "arch",
+    "noise_proxy": 0.1
+  },
+  "render_status": "rendered",
+  "elapsed_s": 0.07,
+  "created_at": "2026-08-11T12:16:58.203827+00:00"
+}
