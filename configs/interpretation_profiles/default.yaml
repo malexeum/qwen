@@ -1,38 +1,87 @@
 # Default interpretation profile
-# Fixes: unknown_interpretation_profile: 'default' (12 FAILED in test12)
-# This is the neutral/fallback profile used when no specific
-# interpretation profile is requested.
+# CB-3.1-A: E3-C noise contract restored + theta-driven formulas added
+#
+# theta axis semantics (E3):
+#   theta_0 = harmonic purity          theta_4 = section contrast
+#   theta_1 = stability x change       theta_5 = timbral chaos      <- noise
+#   theta_2 = structural density       theta_6 = development entropy <- texture
+#   theta_3 = unresolved tension       theta_7 = crystallinity       <- symmetry
+#
+# Generator targets (generator_catalog.yaml):
+#   julia_orbit_trap:     c_real(θ0), c_imag(θ1), exponent_p(θ2), trap_radius(θ3)
+#   orbital_field:        angular_break(θ6), flow_speed(motion_intensity)
+#   colored_noise_field:  amplitude(noise_level), frequency_scale(θ5)
+
 slug: default
 display_name: Default
 description: >-
   Neutral interpretation profile. Applies linear passthrough of perceptual
-  axes with no genre-specific biases. Suitable for smoke tests, unit tests,
-  and as a fallback when no domain profile is specified.
+  axes. CB-3.1-A: E3-C noise contract + theta-driven formulas.
+  Suitable for smoke tests, unit tests, and as a fallback.
+
+theta_mapping_contract: E3-C-CB-3.1-A
 
 mapping_rules:
   symmetry_bias:
     base: 0.5
-    formula: "base + (stability - 0.5) * 0.3"
+    # theta_7 = crystallinity: high theta_7 → higher symmetry
+    formula: "base + (stability - 0.5) * 0.3 + (harmony_theta_7 - 0.5) * 0.20"
+    theta_axes: [harmony_theta_7]
+    generator_target:
+      generator_id: julia_orbit_trap
+      layer_id: macro_structure
+      param: symmetry_bias
 
   recursion_depth:
     base: 0.5
-    formula: "base + (section_complexity - 0.5) * 0.4"
+    # theta_2 = structural density: high theta_2 → deeper fractal recursion
+    formula: "base + (section_complexity - 0.5) * 0.4 + (harmony_theta_2 - 0.5) * 0.20"
+    theta_axes: [harmony_theta_2]
+    generator_target:
+      generator_id: julia_orbit_trap
+      layer_id: macro_structure
+      param: recursion_depth
 
   density_level:
     base: 0.5
-    formula: "base + (density - 0.5) * 0.5"
+    # theta_3 = unresolved tension: high theta_3 → denser chaotic texture
+    formula: "base + (density - 0.5) * 0.5 + (harmony_theta_3 - 0.5) * 0.15"
+    theta_axes: [harmony_theta_3]
+    generator_target:
+      generator_id: orbit_ifs_multi_trap
+      layer_id: density_field
+      param: n_points
 
   noise_level:
     base: 0.25
-    formula: "base + noise_proxy * 0.5"
+    # E3-C contract: centred noise_proxy + theta_5 (timbral chaos)
+    # RESTORED from: base + noise_proxy * 0.5  (non-centred, theta-blind)
+    formula: "base + (noise_proxy - 0.5) * 0.30 + (harmony_theta_5 - 0.5) * 0.25"
+    theta_axes: [harmony_theta_5]
+    generator_target:
+      generator_id: colored_noise_field
+      layer_id: microtexture
+      param: amplitude
 
   motion_intensity:
     base: 0.5
-    formula: "base + (energy - 0.5) * 0.5"
+    # theta_1 = stability x change: low theta_1 → more motion
+    formula: "base + (energy - 0.5) * 0.5 + (0.5 - harmony_theta_1) * 0.15"
+    theta_axes: [harmony_theta_1]
+    generator_target:
+      generator_id: orbital_field
+      layer_id: flow
+      param: flow_speed
 
   texture_complexity:
     base: 0.5
-    formula: "base + morphology_guard * 0.3 + (section_complexity - 0.5) * 0.2"
+    # theta_6 = development entropy: high theta_6 → more complex texture
+    formula: "base + morphology_guard * 0.3 + (section_complexity - 0.5) * 0.2 + (harmony_theta_6 - 0.5) * 0.15"
+    theta_axes: [harmony_theta_6]
+    generator_target:
+      generator_id: julia_orbit_trap
+      layer_id: macro_structure
+      param: texture_complexity
 
   layout_macro_shape:
     rules:
@@ -72,5 +121,19 @@ guardrails:
     actions:
       texture_complexity:
         min: 0.55
+      recursion_depth:
+        min: 0.5
+
+  # CB-3.1-A: theta_5 guardrail — extreme timbral chaos
+  - when: "harmony_theta_5 > 0.85"
+    actions:
+      noise_level:
+        min: 0.55
+
+  # CB-3.1-A: theta_7 guardrail — pure crystalline structures
+  - when: "harmony_theta_7 > 0.85"
+    actions:
+      symmetry_bias:
+        min: 0.65
       recursion_depth:
         min: 0.5

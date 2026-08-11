@@ -1,68 +1,145 @@
 # Standard interpretation profile
-# Используется в integration-тестах и как fallback в пайплайне.
-# Все mapping_rules — линейные, без нелинейных эффектов.
-slug: standard
-name: Standard
-description: |
-  Линейный маппинг перцептивных осей E1 на визуальные параметры.
-  Используется как базовый профиль для integration-тестов.
+# CB-3.1-A: full theta-driven formulas, E3-C noise contract
+#
+# Differs from default: slightly stronger theta influence weights
+# and additional cross-axis interactions.
+#
+# theta axis semantics (E3):
+#   theta_0 = harmonic purity          theta_4 = section contrast
+#   theta_1 = stability x change       theta_5 = timbral chaos      <- noise
+#   theta_2 = structural density       theta_6 = development entropy <- texture
+#   theta_3 = unresolved tension       theta_7 = crystallinity       <- symmetry
 
-axis_weights:
-  energy:             1.0
-  tension:            1.0
-  density:            1.0
-  brightness:         1.0
-  stability:          1.0
-  smoothness:         1.0
-  repetition:         0.8
-  section_complexity: 1.0
-  morphology_guard:   0.5
+slug: standard
+display_name: Standard
+description: >-
+  Standard interpretation profile with full theta-driven parameter mapping.
+  CB-3.1-A compliant. Stronger theta influence than default profile.
+  Use for production renders and regression baseline.
+
+theta_mapping_contract: E3-C-CB-3.1-A
 
 mapping_rules:
   symmetry_bias:
     base: 0.5
-    formula: "base + 0.3 * stability - 0.2 * tension"
+    # theta_7 (crystallinity) + theta_0 (harmonic purity) → structural order
+    formula: "base + (stability - 0.5) * 0.25 + (harmony_theta_7 - 0.5) * 0.25 + (harmony_theta_0 - 0.5) * 0.10"
+    theta_axes: [harmony_theta_7, harmony_theta_0]
+    generator_target:
+      generator_id: julia_orbit_trap
+      layer_id: macro_structure
+      param: symmetry_bias
 
   recursion_depth:
     base: 0.5
-    formula: "base + 0.4 * section_complexity + 0.2 * tension"
+    # theta_2 (structural density) + theta_4 (section contrast) → fractal depth
+    formula: "base + (section_complexity - 0.5) * 0.35 + (harmony_theta_2 - 0.5) * 0.25 + (harmony_theta_4 - 0.5) * 0.10"
+    theta_axes: [harmony_theta_2, harmony_theta_4]
+    generator_target:
+      generator_id: julia_orbit_trap
+      layer_id: macro_structure
+      param: recursion_depth
 
   density_level:
     base: 0.5
-    formula: "base + 0.5 * density - 0.1 * smoothness"
+    # theta_3 (unresolved tension) → chaotic density
+    formula: "base + (density - 0.5) * 0.45 + (harmony_theta_3 - 0.5) * 0.20"
+    theta_axes: [harmony_theta_3]
+    generator_target:
+      generator_id: orbit_ifs_multi_trap
+      layer_id: density_field
+      param: n_points
 
   noise_level:
-    base: 0.35
-    formula: "base + 0.3 * energy - 0.2 * stability"
+    base: 0.25
+    # E3-C contract: centred noise_proxy + theta_5 (timbral chaos)
+    formula: "base + (noise_proxy - 0.5) * 0.30 + (harmony_theta_5 - 0.5) * 0.25"
+    theta_axes: [harmony_theta_5]
+    generator_target:
+      generator_id: colored_noise_field
+      layer_id: microtexture
+      param: amplitude
 
   motion_intensity:
     base: 0.5
-    formula: "base + 0.4 * energy + 0.2 * tension"
+    # theta_1 (stability×change): low = unstable = more motion
+    # theta_4 (section contrast): high contrast → dynamic motion
+    formula: "base + (energy - 0.5) * 0.45 + (0.5 - harmony_theta_1) * 0.20 + (harmony_theta_4 - 0.5) * 0.10"
+    theta_axes: [harmony_theta_1, harmony_theta_4]
+    generator_target:
+      generator_id: orbital_field
+      layer_id: flow
+      param: flow_speed
 
   texture_complexity:
     base: 0.5
-    formula: "base + 0.3 * section_complexity + 0.2 * density"
+    # theta_6 (development entropy) → complex evolving texture
+    formula: "base + morphology_guard * 0.25 + (section_complexity - 0.5) * 0.20 + (harmony_theta_6 - 0.5) * 0.20"
+    theta_axes: [harmony_theta_6]
+    generator_target:
+      generator_id: julia_orbit_trap
+      layer_id: macro_structure
+      param: texture_complexity
 
   layout_macro_shape:
     rules:
-      - when: "section_complexity > 0.6"
-        value: "ABACABA"
-      - when: "section_complexity > 0.4"
-        value: "AABA"
-      - when: "section_complexity > 0.2"
+      - when: "macro_shape_hint == 'surge'"
+        value: "climax_arch"
+      - when: "macro_shape_hint == 'drift'"
+        value: "fade_envelope"
+      - when: "macro_shape_hint == 'loop'"
         value: "ABA_like"
-      - when: "repetition > 0.7"
-        value: "AAAA"
+      - when: "macro_shape_hint == 'meander'"
+        value: "through_composed"
+      - when: "macro_shape_hint == 'drive'"
+        value: "progressive_build"
+      - when: "macro_shape_hint == 'arch'"
+        value: "arch_form"
+      - when: "macro_shape_hint == 'pulse'"
+        value: "ostinato"
+      - when: "True"
+        value: "ABA_like"
 
 guardrails:
-  - when: "morphology_guard > 0.7"
-    actions:
-      symmetry_bias:
-        min: 0.3
-      texture_complexity:
-        min: 0.4
-  - when: "noise_level > 0.8"
+  - when: "noise_proxy > 0.85"
     actions:
       noise_level:
+        min: 0.65
+      texture_complexity:
         max: 0.85
-version: "0.3.0"
+
+  - when: "tension > 0.85 and stability < 0.2"
+    actions:
+      symmetry_bias:
+        max: 0.45
+      motion_intensity:
+        min: 0.65
+
+  - when: "morphology_guard > 0.7"
+    actions:
+      texture_complexity:
+        min: 0.60
+      recursion_depth:
+        min: 0.55
+
+  # theta_5 extreme timbral chaos
+  - when: "harmony_theta_5 > 0.85"
+    actions:
+      noise_level:
+        min: 0.60
+
+  # theta_7 pure crystalline: enforce symmetry floor
+  - when: "harmony_theta_7 > 0.85"
+    actions:
+      symmetry_bias:
+        min: 0.70
+      recursion_depth:
+        min: 0.55
+
+  # theta_3 extreme tension: allow noise and density to rise together
+  - when: "harmony_theta_3 > 0.80"
+    actions:
+      density_level:
+        min: 0.55
+      noise_level:
+        min: 0.45
