@@ -1,0 +1,487 @@
+# E4 Reference Render Audit — Immutable Fixture Manifest
+# INVARIANT: Do NOT modify after first successful render.
+# Changes require a new experiment_id.
+experiment_id: e4_reference_render_audit_v1
+schema_version: "1.0"
+renderer_version: ce9b03bf8e38c5e015e8c47f86b9247a8781edd8
+profile_library_version: "0.4.0"
+palette_library_version: "0.3.2"
+created_at: "2026-08-11T04:19:00Z"
+
+# Fixture naming: <profile_slug>_<tier>
+# Tier A: archetypal  — theta near genre centre, low noise
+# Tier B: boundary    — >= 2 theta axes differ from A by >= 0.25
+# Tier C: stress      — high tension + noise_proxy + section contrast
+
+fixtures:
+
+  # ------------------------------------------------------------------ ambient
+  - id: ambient_A
+    profile_slug: ambient
+    expected_palette: lunar_mist
+    audio_content_hash: null
+    feature_artifact: artifacts/e4/features/ambient_A_features.json
+    feature_hash: "sha256:placeholder_ambient_A"
+    harmony_theta: [0.50, 0.50, 0.50, 0.50, 0.45, 0.55, 0.50, 0.50]
+    harmony_theta_hash: "sha256:theta_ambient_A"
+    variation_seed: 104729
+    perceptual:
+      energy: 0.25
+      tension: 0.15
+      density: 0.30
+      brightness: 0.40
+      stability: 0.80
+      smoothness: 0.85
+      repetition: 0.60
+      section_complexity: 0.20
+      macro_shape_hint: drift
+      noise_proxy: 0.10
+
+  - id: ambient_B
+    profile_slug: ambient
+    expected_palette: lunar_mist
+    audio_content_hash: null
+    feature_artifact: artifacts/e4/features/ambient_B_features.json
+    feature_hash: "sha256:placeholder_ambient_B"
+    harmony_theta: [0.70, 0.25, 0.72, 0.30, 0.20, 0.80, 0.50, 0.50]
+    harmony_theta_hash: "sha256:theta_ambient_B"
+    variation_seed: 209467
+    perceptual:
+      energy: 0.30
+      tension: 0.40
+      density: 0.55
+      brightness: 0.20
+      stability: 0.55
+      smoothness: 0.60
+      repetition: 0.70
+      section_complexity: 0.35
+      macro_shape_hint: drift
+      noise_proxy: 0.25
+
+  - id: ambient_C
+    profile_slug: ambient
+    expected_palette: lunar_mist
+    audio_content_hash: null
+    feature_artifact: artifacts/e4/features/ambient_C_features.json
+    feature_hash: "sha256:placeholder_ambient_C"
+    harmony_theta: [0.85, 0.15, 0.88, 0.12, 0.10, 0.90, 0.60, 0.40]
+    harmony_theta_hash: "sha256:theta_ambient_C"
+    variation_seed: 314219
+    perceptual:
+      energy: 0.35
+      tension: 0.75
+      density: 0.70
+      brightness: 0.15
+      stability: 0.25
+      smoothness: 0.30
+      repetition: 0.80
+      section_complexity: 0.85
+      macro_shape_hint: surge
+      noise_proxy: 0.80
+
+  # --------------------------------------------------------------- blues_jazz
+  - id: blues_jazz_A
+    profile_slug: blues_jazz
+    expected_palette: warm_midnight
+    audio_content_hash: null
+    feature_artifact: artifacts/e4/features/blues_jazz_A_features.json
+    feature_hash: "sha256:placeholder_blues_jazz_A"
+    harmony_theta: [0.55, 0.60, 0.45, 0.55, 0.50, 0.50, 0.65, 0.45]
+    harmony_theta_hash: "sha256:theta_blues_jazz_A"
+    variation_seed: 419861
+    perceptual:
+      energy: 0.45
+      tension: 0.40
+      density: 0.50
+      brightness: 0.45
+      stability: 0.60
+      smoothness: 0.55
+      repetition: 0.40
+      section_complexity: 0.45
+      macro_shape_hint: meander
+      noise_proxy: 0.35
+
+  - id: blues_jazz_B
+    profile_slug: blues_jazz
+    expected_palette: warm_midnight
+    audio_content_hash: null
+    feature_artifact: artifacts/e4/features/blues_jazz_B_features.json
+    feature_hash: "sha256:placeholder_blues_jazz_B"
+    harmony_theta: [0.20, 0.85, 0.22, 0.80, 0.75, 0.25, 0.65, 0.45]
+    harmony_theta_hash: "sha256:theta_blues_jazz_B"
+    variation_seed: 524309
+    perceptual:
+      energy: 0.55
+      tension: 0.65
+      density: 0.40
+      brightness: 0.60
+      stability: 0.35
+      smoothness: 0.40
+      repetition: 0.30
+      section_complexity: 0.60
+      macro_shape_hint: meander
+      noise_proxy: 0.50
+
+  - id: blues_jazz_C
+    profile_slug: blues_jazz
+    expected_palette: warm_midnight
+    audio_content_hash: null
+    feature_artifact: artifacts/e4/features/blues_jazz_C_features.json
+    feature_hash: "sha256:placeholder_blues_jazz_C"
+    harmony_theta: [0.10, 0.90, 0.12, 0.88, 0.85, 0.15, 0.70, 0.30]
+    harmony_theta_hash: "sha256:theta_blues_jazz_C"
+    variation_seed: 628741
+    perceptual:
+      energy: 0.70
+      tension: 0.85
+      density: 0.75
+      brightness: 0.30
+      stability: 0.20
+      smoothness: 0.25
+      repetition: 0.25
+      section_complexity: 0.90
+      macro_shape_hint: surge
+      noise_proxy: 0.85
+
+  # --------------------------------------------------------------- classical
+  - id: classical_A
+    profile_slug: classical
+    expected_palette: ivory_cobalt
+    audio_content_hash: null
+    feature_artifact: artifacts/e4/features/classical_A_features.json
+    feature_hash: "sha256:placeholder_classical_A"
+    harmony_theta: [0.50, 0.45, 0.55, 0.50, 0.70, 0.65, 0.50, 0.55]
+    harmony_theta_hash: "sha256:theta_classical_A"
+    variation_seed: 733183
+    perceptual:
+      energy: 0.40
+      tension: 0.30
+      density: 0.40
+      brightness: 0.55
+      stability: 0.75
+      smoothness: 0.70
+      repetition: 0.50
+      section_complexity: 0.40
+      macro_shape_hint: arch
+      noise_proxy: 0.10
+
+  - id: classical_B
+    profile_slug: classical
+    expected_palette: ivory_cobalt
+    audio_content_hash: null
+    feature_artifact: artifacts/e4/features/classical_B_features.json
+    feature_hash: "sha256:placeholder_classical_B"
+    harmony_theta: [0.75, 0.20, 0.78, 0.25, 0.45, 0.90, 0.50, 0.55]
+    harmony_theta_hash: "sha256:theta_classical_B"
+    variation_seed: 837617
+    perceptual:
+      energy: 0.60
+      tension: 0.55
+      density: 0.35
+      brightness: 0.70
+      stability: 0.50
+      smoothness: 0.45
+      repetition: 0.60
+      section_complexity: 0.55
+      macro_shape_hint: arch
+      noise_proxy: 0.20
+
+  - id: classical_C
+    profile_slug: classical
+    expected_palette: ivory_cobalt
+    audio_content_hash: null
+    feature_artifact: artifacts/e4/features/classical_C_features.json
+    feature_hash: "sha256:placeholder_classical_C"
+    harmony_theta: [0.88, 0.12, 0.85, 0.15, 0.20, 0.95, 0.55, 0.45]
+    harmony_theta_hash: "sha256:theta_classical_C"
+    variation_seed: 942061
+    perceptual:
+      energy: 0.65
+      tension: 0.80
+      density: 0.65
+      brightness: 0.25
+      stability: 0.20
+      smoothness: 0.20
+      repetition: 0.70
+      section_complexity: 0.88
+      macro_shape_hint: surge
+      noise_proxy: 0.78
+
+  # ------------------------------------------------------------- electronic
+  - id: electronic_A
+    profile_slug: electronic
+    expected_palette: neon_dark
+    audio_content_hash: null
+    feature_artifact: artifacts/e4/features/electronic_A_features.json
+    feature_hash: "sha256:placeholder_electronic_A"
+    harmony_theta: [0.60, 0.55, 0.65, 0.50, 0.45, 0.55, 0.70, 0.60]
+    harmony_theta_hash: "sha256:theta_electronic_A"
+    variation_seed: 1046507
+    perceptual:
+      energy: 0.75
+      tension: 0.50
+      density: 0.70
+      brightness: 0.65
+      stability: 0.55
+      smoothness: 0.40
+      repetition: 0.70
+      section_complexity: 0.55
+      macro_shape_hint: pulse
+      noise_proxy: 0.40
+
+  - id: electronic_B
+    profile_slug: electronic
+    expected_palette: neon_dark
+    audio_content_hash: null
+    feature_artifact: artifacts/e4/features/electronic_B_features.json
+    feature_hash: "sha256:placeholder_electronic_B"
+    harmony_theta: [0.85, 0.30, 0.88, 0.25, 0.20, 0.80, 0.70, 0.60]
+    harmony_theta_hash: "sha256:theta_electronic_B"
+    variation_seed: 1150943
+    perceptual:
+      energy: 0.85
+      tension: 0.75
+      density: 0.45
+      brightness: 0.80
+      stability: 0.30
+      smoothness: 0.25
+      repetition: 0.80
+      section_complexity: 0.70
+      macro_shape_hint: pulse
+      noise_proxy: 0.55
+
+  - id: electronic_C
+    profile_slug: electronic
+    expected_palette: neon_dark
+    audio_content_hash: null
+    feature_artifact: artifacts/e4/features/electronic_C_features.json
+    feature_hash: "sha256:placeholder_electronic_C"
+    harmony_theta: [0.95, 0.10, 0.92, 0.08, 0.05, 0.95, 0.75, 0.65]
+    harmony_theta_hash: "sha256:theta_electronic_C"
+    variation_seed: 1255379
+    perceptual:
+      energy: 0.95
+      tension: 0.90
+      density: 0.85
+      brightness: 0.90
+      stability: 0.10
+      smoothness: 0.10
+      repetition: 0.85
+      section_complexity: 0.95
+      macro_shape_hint: surge
+      noise_proxy: 0.90
+
+  # -------------------------------------------------------------------- jazz
+  - id: jazz_A
+    profile_slug: jazz
+    expected_palette: nocturne_amber
+    audio_content_hash: null
+    feature_artifact: artifacts/e4/features/jazz_A_features.json
+    feature_hash: "sha256:placeholder_jazz_A"
+    harmony_theta: [0.55, 0.60, 0.50, 0.55, 0.50, 0.55, 0.65, 0.50]
+    harmony_theta_hash: "sha256:theta_jazz_A"
+    variation_seed: 1359823
+    perceptual:
+      energy: 0.60
+      tension: 0.45
+      density: 0.55
+      brightness: 0.60
+      stability: 0.55
+      smoothness: 0.50
+      repetition: 0.35
+      section_complexity: 0.50
+      macro_shape_hint: meander
+      noise_proxy: 0.30
+
+  - id: jazz_B
+    profile_slug: jazz
+    expected_palette: nocturne_amber
+    audio_content_hash: null
+    feature_artifact: artifacts/e4/features/jazz_B_features.json
+    feature_hash: "sha256:placeholder_jazz_B"
+    harmony_theta: [0.25, 0.85, 0.28, 0.82, 0.75, 0.25, 0.65, 0.50]
+    harmony_theta_hash: "sha256:theta_jazz_B"
+    variation_seed: 1464259
+    perceptual:
+      energy: 0.70
+      tension: 0.70
+      density: 0.40
+      brightness: 0.75
+      stability: 0.35
+      smoothness: 0.35
+      repetition: 0.25
+      section_complexity: 0.65
+      macro_shape_hint: meander
+      noise_proxy: 0.45
+
+  - id: jazz_C
+    profile_slug: jazz
+    expected_palette: nocturne_amber
+    audio_content_hash: null
+    feature_artifact: artifacts/e4/features/jazz_C_features.json
+    feature_hash: "sha256:placeholder_jazz_C"
+    harmony_theta: [0.12, 0.88, 0.10, 0.90, 0.88, 0.12, 0.70, 0.30]
+    harmony_theta_hash: "sha256:theta_jazz_C"
+    variation_seed: 1568699
+    perceptual:
+      energy: 0.80
+      tension: 0.88
+      density: 0.80
+      brightness: 0.35
+      stability: 0.15
+      smoothness: 0.15
+      repetition: 0.20
+      section_complexity: 0.92
+      macro_shape_hint: surge
+      noise_proxy: 0.88
+
+  # --------------------------------------------------------------------- pop
+  - id: pop_A
+    profile_slug: pop
+    expected_palette: vivid_light
+    audio_content_hash: null
+    feature_artifact: artifacts/e4/features/pop_A_features.json
+    feature_hash: "sha256:placeholder_pop_A"
+    harmony_theta: [0.55, 0.50, 0.60, 0.55, 0.55, 0.50, 0.60, 0.55]
+    harmony_theta_hash: "sha256:theta_pop_A"
+    variation_seed: 1673141
+    perceptual:
+      energy: 0.65
+      tension: 0.35
+      density: 0.50
+      brightness: 0.75
+      stability: 0.65
+      smoothness: 0.65
+      repetition: 0.75
+      section_complexity: 0.40
+      macro_shape_hint: loop
+      noise_proxy: 0.20
+
+  - id: pop_B
+    profile_slug: pop
+    expected_palette: vivid_light
+    audio_content_hash: null
+    feature_artifact: artifacts/e4/features/pop_B_features.json
+    feature_hash: "sha256:placeholder_pop_B"
+    harmony_theta: [0.80, 0.25, 0.82, 0.28, 0.30, 0.75, 0.60, 0.55]
+    harmony_theta_hash: "sha256:theta_pop_B"
+    variation_seed: 1777577
+    perceptual:
+      energy: 0.75
+      tension: 0.60
+      density: 0.35
+      brightness: 0.85
+      stability: 0.40
+      smoothness: 0.45
+      repetition: 0.65
+      section_complexity: 0.60
+      macro_shape_hint: loop
+      noise_proxy: 0.38
+
+  - id: pop_C
+    profile_slug: pop
+    expected_palette: vivid_light
+    audio_content_hash: null
+    feature_artifact: artifacts/e4/features/pop_C_features.json
+    feature_hash: "sha256:placeholder_pop_C"
+    harmony_theta: [0.90, 0.10, 0.92, 0.08, 0.12, 0.88, 0.65, 0.35]
+    harmony_theta_hash: "sha256:theta_pop_C"
+    variation_seed: 1882013
+    perceptual:
+      energy: 0.85
+      tension: 0.80
+      density: 0.75
+      brightness: 0.90
+      stability: 0.20
+      smoothness: 0.20
+      repetition: 0.80
+      section_complexity: 0.88
+      macro_shape_hint: surge
+      noise_proxy: 0.82
+
+  # --------------------------------------------------------------------- rock
+  - id: rock_A
+    profile_slug: rock
+    expected_palette: dark_saturated
+    audio_content_hash: null
+    feature_artifact: artifacts/e4/features/rock_A_features.json
+    feature_hash: "sha256:placeholder_rock_A"
+    harmony_theta: [0.65, 0.55, 0.60, 0.50, 0.40, 0.60, 0.55, 0.45]
+    harmony_theta_hash: "sha256:theta_rock_A"
+    variation_seed: 1986451
+    perceptual:
+      energy: 0.80
+      tension: 0.65
+      density: 0.65
+      brightness: 0.45
+      stability: 0.45
+      smoothness: 0.30
+      repetition: 0.55
+      section_complexity: 0.60
+      macro_shape_hint: drive
+      noise_proxy: 0.60
+
+  - id: rock_B
+    profile_slug: rock
+    expected_palette: dark_saturated
+    audio_content_hash: null
+    feature_artifact: artifacts/e4/features/rock_B_features.json
+    feature_hash: "sha256:placeholder_rock_B"
+    harmony_theta: [0.88, 0.20, 0.85, 0.18, 0.15, 0.85, 0.55, 0.45]
+    harmony_theta_hash: "sha256:theta_rock_B"
+    variation_seed: 2090891
+    perceptual:
+      energy: 0.90
+      tension: 0.85
+      density: 0.45
+      brightness: 0.30
+      stability: 0.20
+      smoothness: 0.15
+      repetition: 0.45
+      section_complexity: 0.80
+      macro_shape_hint: drive
+      noise_proxy: 0.75
+
+  - id: rock_C
+    profile_slug: rock
+    expected_palette: dark_saturated
+    audio_content_hash: null
+    feature_artifact: artifacts/e4/features/rock_C_features.json
+    feature_hash: "sha256:placeholder_rock_C"
+    harmony_theta: [0.95, 0.05, 0.95, 0.05, 0.05, 0.95, 0.60, 0.40]
+    harmony_theta_hash: "sha256:theta_rock_C"
+    variation_seed: 2195329
+    perceptual:
+      energy: 0.98
+      tension: 0.95
+      density: 0.88
+      brightness: 0.20
+      stability: 0.05
+      smoothness: 0.05
+      repetition: 0.60
+      section_complexity: 0.98
+      macro_shape_hint: surge
+      noise_proxy: 0.95
+
+  # ------------------------------------------------------ default smoke render
+  - id: default_smoke
+    profile_slug: default
+    expected_palette: neutral_noir
+    audio_content_hash: null
+    feature_artifact: artifacts/e4/features/default_smoke_features.json
+    feature_hash: "sha256:placeholder_default_smoke"
+    harmony_theta: [0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.50]
+    harmony_theta_hash: "sha256:theta_default_smoke"
+    variation_seed: 2299769
+    perceptual:
+      energy: 0.50
+      tension: 0.50
+      density: 0.50
+      brightness: 0.50
+      stability: 0.50
+      smoothness: 0.50
+      repetition: 0.50
+      section_complexity: 0.50
+      macro_shape_hint: neutral
+      noise_proxy: 0.50
+    note: smoke render only, not part of 21 canonical reference renders
