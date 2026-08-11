@@ -1,21 +1,32 @@
-import hashlib
+from __future__ import annotations
 
-def compute_variation_seed(
-    profile_slug: str,
-    feature_sha256: str,
-    canonical_theta_hash: str
+from collections.abc import Mapping
+
+from lib.style_engine.engine import _compute_variation_seed
+
+
+def compute_render_variation_seed(
+    *,
+    project_id: str,
+    analysis_id: str,
+    preset_id: str,
+    style_slug: str,
+    interpretation_slug: str,
+    theta_values: Mapping[str, float],
 ) -> int:
+    """Public adapter for the production StyleEngine render-seed contract.
+
+    The implementation remains owned by ``engine._compute_variation_seed``.
+    This adapter deliberately has no independent hash or seed formula.
     """
-    Детерминированно вычисляет variation seed на основе базовых параметров.
-    Единственный источник истины для seed policy (если ранее не был выделен в отдельный метод).
-    D1 validator вызывает именно эту функцию для проверки expected_variation_seed.
-    """
-    # Собираем все компоненты в единый байтовый payload
-    # Порядок и разделитель '|' фиксированы контрактом.
-    payload = f"{profile_slug}|{feature_sha256}|{canonical_theta_hash}".encode('utf-8')
-    
-    digest = hashlib.sha256(payload).hexdigest()
-    
-    # Превращаем первые 16 hex символов в целое число
-    # Это дает 64-битный integer, безопасный для numpy/random seed
-    return int(digest[:16], 16)
+    return _compute_variation_seed(
+        project_id,
+        analysis_id,
+        preset_id,
+        style_slug,
+        interpretation_slug,
+        dict(theta_values),
+    )
+
+
+__all__ = ["compute_render_variation_seed"]
