@@ -1,13 +1,15 @@
-# E1 style profile: jazz
+# Style Profile: jazz
+# E3-C: canonical independent profile (alias jazz→blues_jazz removed)
+# jazz и blues_jazz — разные стили: jazz более яркий, быстрый, импровизационный
 slug: jazz
 music_style: jazz
-visual_mood: sophisticated, dynamic, urban
-palette: neon_dark
+visual_mood: improvisational, vibrant, syncopated
+palette: nocturne_amber
 contrast: 0.60
-geometry: angular_organic
-density: 0.60
-motion_intensity: 0.70
-noise_level: 0.55
-symmetry_bias: 0.55
-complexity_bias: 0.65
-version: "0.3.0"
+geometry: organic
+density: 0.50
+motion_intensity: 0.65
+noise_level: 0.35
+symmetry_bias: 0.40
+complexity_bias: 0.70
+version: "0.1.0"
