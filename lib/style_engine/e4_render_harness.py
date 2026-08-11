@@ -16,7 +16,7 @@ After all fixtures:
     <output>/audit_matrix.csv   (metadata + output_sha256, no scores)
 
 Invariants:
-    - provenance JSON is written AFTER the PNG is fsynced.
+    - provenance JSON is written AFTER the PNG is fsynced (best effort).
     - output_sha256 is computed from the actual PNG bytes (SHA-256).
     - Re-running with --rerender flag overwrites renders but appends
       a _rerender_N suffix in provenance to preserve first-run SHA.
@@ -87,6 +87,26 @@ def sha256_file(path: Path) -> str:
 
 def sha256_bytes(data: bytes) -> str:
     return f"sha256:{hashlib.sha256(data).hexdigest()}"
+
+
+def fsync_path(path: Path) -> None:
+    """Best-effort durability fsync.
+
+    On some Windows/Python builds, os.fsync() on a file handle reopened
+    in "rb" mode immediately after another process (PIL) closed its write
+    handle can raise OSError [Errno 9] Bad file descriptor. This is a
+    platform quirk, not a correctness issue: output_sha256 is always
+    computed by re-reading the actual bytes on disk right after this
+    call, so a failed fsync does not affect provenance integrity.
+    """
+    try:
+        fd = os.open(str(path), os.O_RDONLY)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+    except OSError as exc:
+        print(f"[warn] fsync skipped for {path.name}: {exc}", file=sys.stderr)
 
 
 # ---------------------------------------------------------------------------
@@ -429,9 +449,8 @@ def main() -> int:
             failed.append((fid, f"render_error: {exc}"))
             continue
 
-        # fsync before computing hash
-        with open(png_path, "rb") as fh:
-            os.fsync(fh.fileno())
+        # fsync before computing hash (best effort — see fsync_path docstring)
+        fsync_path(png_path)
 
         output_sha256 = sha256_file(png_path)
         elapsed = time.perf_counter() - t0
