@@ -1,0 +1,113 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Fixtures Manifest v2",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "base_git_sha",
+    "fixture_count",
+    "canonical_fixture_count",
+    "smoke_fixture_count",
+    "canonicalization",
+    "fixtures"
+  ],
+  "properties": {
+    "schema_version": { "const": "e4-fixture-manifest/v2" },
+    "experiment_id": { "type": "string" },
+    "base_git_sha": { "type": "string" },
+    "profile_library_version": { "type": "string" },
+    "fixture_count": { "const": 22 },
+    "canonical_fixture_count": { "const": 21 },
+    "smoke_fixture_count": { "const": 1 },
+    "canonicalization": {
+      "type": "object",
+      "required": ["encoding", "line_endings", "float_precision", "json_sort_keys"],
+      "properties": {
+        "encoding": { "const": "utf-8" },
+        "line_endings": { "const": "lf" },
+        "float_precision": { "const": 6 },
+        "json_sort_keys": { "const": true },
+        "json_separators": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "fixtures": {
+      "type": "array",
+      "minItems": 22,
+      "maxItems": 22,
+      "items": {
+        "type": "object",
+        "required": [
+          "fixture_id",
+          "profile_slug",
+          "synthetic_fixture",
+          "fixture_role",
+          "feature_artifact_path",
+          "feature_sha256",
+          "canonical_theta",
+          "canonical_theta_hash",
+          "expected_variation_seed"
+        ],
+        "properties": {
+          "fixture_id": { "type": "string" },
+          "profile_slug": { "type": "string" },
+          "synthetic_fixture": { "type": "boolean" },
+          "fixture_role": { "enum": ["canonical", "smoke"] },
+          "audio_path": { "type": ["string", "null"] },
+          "audio_sha256": {
+            "type": ["string", "null"],
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "synthetic_origin": { "type": "string" },
+          "feature_artifact_path": { "type": "string" },
+          "feature_sha256": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "expected_variation_seed": { "type": "integer" },
+          "canonical_theta_hash": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{16,64}$"
+          },
+          "canonical_theta": {
+            "type": "object",
+            "required": [
+              "harmony_theta_0",
+              "harmony_theta_1",
+              "harmony_theta_2",
+              "harmony_theta_3",
+              "harmony_theta_4",
+              "harmony_theta_5",
+              "harmony_theta_6",
+              "harmony_theta_7"
+            ],
+            "properties": {
+              "harmony_theta_0": { "type": "number", "minimum": 0, "maximum": 1 },
+              "harmony_theta_1": { "type": "number", "minimum": 0, "maximum": 1 },
+              "harmony_theta_2": { "type": "number", "minimum": 0, "maximum": 1 },
+              "harmony_theta_3": { "type": "number", "minimum": 0, "maximum": 1 },
+              "harmony_theta_4": { "type": "number", "minimum": 0, "maximum": 1 },
+              "harmony_theta_5": { "type": "number", "minimum": 0, "maximum": 1 },
+              "harmony_theta_6": { "type": "number", "minimum": 0, "maximum": 1 },
+              "harmony_theta_7": { "type": "number", "minimum": 0, "maximum": 1 }
+            },
+            "additionalProperties": false
+          }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "synthetic_fixture": { "const": false } } },
+            "then": { "required": ["audio_path", "audio_sha256"] }
+          },
+          {
+            "if": { "properties": { "synthetic_fixture": { "const": true } } },
+            "then": { "required": ["synthetic_origin"] }
+          }
+        ]
+      }
+    }
+  }
+}
