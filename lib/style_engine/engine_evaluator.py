@@ -5,6 +5,7 @@ import ast
 
 ALLOWED_NAMES = {
     "base",
+    # perceptual core axes
     "energy",
     "tension",
     "density",
@@ -14,7 +15,18 @@ ALLOWED_NAMES = {
     "repetition",
     "section_complexity",
     "macro_shape_hint",
+    # derived axes
     "morphology_guard",
+    "noise_proxy",
+    # E3: harmony theta axes
+    "harmony_theta_0",
+    "harmony_theta_1",
+    "harmony_theta_2",
+    "harmony_theta_3",
+    "harmony_theta_4",
+    "harmony_theta_5",
+    "harmony_theta_6",
+    "harmony_theta_7",
 }
 
 ALLOWED_NODES = (
@@ -34,6 +46,12 @@ ALLOWED_NODES = (
     "LtE",
     "Gt",
     "GtE",
+    "Add",
+    "Sub",
+    "Mult",
+    "Div",
+    "USub",
+    "UAdd",
 )
 
 
