@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import math
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -32,12 +33,15 @@ _THETA_DEFAULT = 0.5  # нейтральное значение при отсу�
 # ---------------------------------------------------------------------------
 # Таблица алиасов slug-ов (применяется ДО проверки реестра)
 # ---------------------------------------------------------------------------
-# E3: pop — самостоятельный профиль, алиас pop→rock удалён.
-# jazz/blues всегда → blues_jazz, даже если появится jazz.yaml в configs.
+# E3-C:
+#   - jazz удалён как алиас: jazz — самостоятельный canonical профиль
+#   - cinematic удалён: dangling alias (soundtrack не существует)
+#   - blues/blues_jazz → blues_jazz сохранены
+#   - electro/techno/electronic_music → electronic сохранены
+#   - Каждый destination обязан присутствовать в реестре; иначе → ValidationError
 _STYLE_ALIASES: Dict[str, str] = {
-    "jazz":             "blues_jazz",
     "blues":            "blues_jazz",
-    "cinematic":        "soundtrack",
+    "blues_jazz":       "blues_jazz",   # идемпотентный
     "techno":           "electronic",
     "electro":          "electronic",
     "electronic_music": "electronic",
@@ -111,6 +115,52 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
         return float(default)
 
 
+def _log_normalize(raw: float, eps: float = 1e-6, scale: float = 0.05) -> float:
+    """
+    Log-нормировка spectral_flatness → noise_proxy ∈ [0, 1].
+
+    spectral_flatness в E1 лежит в диапазоне ~[0, 0.05].
+    log10(x + eps) отображает этот диапазон примерно в [-6, -1.3],
+    затем линейно нормируется в [0, 1].
+
+    scale: ожидаемый практический максимум spectral_flatness.
+    При raw >= scale → 1.0; при raw ≈ 0 → 0.0.
+    """
+    if raw is None:
+        return 0.0
+    raw = max(0.0, float(raw))
+    log_val   = math.log10(raw + eps)
+    log_min   = math.log10(eps)            # ~-6.0
+    log_max   = math.log10(scale + eps)    # ~-1.3 при scale=0.05
+    if log_max <= log_min:
+        return 0.0
+    normalized = (log_val - log_min) / (log_max - log_min)
+    return _clamp01(normalized)
+
+
+def _prepare_noise_proxy(perceptual: Dict[str, Any]) -> float:
+    """
+    Вычисляет noise_proxy — нормализованный proxy тембрального шума.
+
+    Источник: perceptual["noise_proxy"] (если уже вычислен upstream)
+      или perceptual["spectral_flatness"] через log-нормировку.
+
+    Контракт E3-C:
+      - noise_proxy — единственный входной сигнал шума для formula noise_level
+      - density и tension не участвуют в target noise_level
+      - harmony_theta_5 — дополнительный модификатор тембрального хаоса
+    """
+    # Приоритет 1: уже нормированный proxy, переданный upstream (E1-bridge)
+    if "noise_proxy" in perceptual and perceptual["noise_proxy"] is not None:
+        return _clamp01(float(perceptual["noise_proxy"]))
+    # Приоритет 2: raw spectral_flatness → log-нормировка
+    sf = perceptual.get("spectral_flatness", None)
+    if sf is not None:
+        return _log_normalize(float(sf))
+    # Fallback: нейтральное значение
+    return 0.5
+
+
 def _compute_variation_seed(
     project_id: str,
     analysis_id: str,
@@ -143,17 +193,33 @@ def _normalize_style_slug(
     style_registry: Dict[str, StyleProfile],
 ) -> str:
     """
-    Нормализует slug стиля:
-    1. Применяет таблицу алиасов _STYLE_ALIASES (ДО проверки реестра).
-       Это гарантирует, что jazz → blues_jazz даже если jazz.yaml появится в configs.
-    2. Если после маппинга slug есть в реестре — возвращает его.
-    3. Иначе возвращает оригинальный slug (engine выбросит ValueError).
+    Нормализует slug стиля.
+
+    Порядок:
+      1. Применяет таблицу алиасов _STYLE_ALIASES (ДО проверки реестра).
+         Если alias destination отсутствует в реестре — бросает ValidationError.
+         Это предотвращает dangling aliases.
+      2. Если slug уже в реестре — возвращает как есть.
+      3. Иначе возвращает оригинальный slug (engine выбросит ValueError).
+
+    E3-C контракт:
+      - jazz НЕ является алиасом blues_jazz; jazz — canonical профиль.
+      - cinematic НЕ является алиасом soundtrack (soundtrack отсутствует в реестре).
     """
     slug = (style_profile_slug or "default").strip()
+    slug_lower = slug.lower()
 
     # Шаг 1: применяем алиасы (приоритет выше реестра)
-    canonical = _STYLE_ALIASES.get(slug.lower())
+    canonical = _STYLE_ALIASES.get(slug_lower)
     if canonical is not None:
+        # Dangling alias guard: destination обязан существовать в реестре
+        if canonical not in style_registry:
+            available = sorted(style_registry.keys())
+            raise ValueError(
+                f"dangling_alias: '{slug}' → '{canonical}' "
+                f"but '{canonical}' not in style registry. "
+                f"Available canonical profiles: {available}"
+            )
         return canonical
 
     # Шаг 2: slug уже в реестре — возвращаем как есть
@@ -254,7 +320,8 @@ def resolve_render_params(
 
     perceptual: dict с осями (energy, tension, density, brightness, stability,
       smoothness, repetition, section_complexity, macro_shape_hint) +
-      E3: harmony_theta_0..7.
+      E3: harmony_theta_0..7 +
+      E3-C: noise_proxy (log-нормированная spectral_flatness, [0,1]).
 
     user_preset: dict со слайдерами (complexity, symmetry, density, noise, motion).
 
@@ -312,22 +379,26 @@ def resolve_render_params(
     # -----------------------------------------------------------------------
     # Perceptual axes (классические)
     # -----------------------------------------------------------------------
-    energy           = _safe_float(perceptual.get("energy",           0.0))
-    tension          = _safe_float(perceptual.get("tension",          0.0))
-    density_axis     = _safe_float(perceptual.get("density",          0.0))
-    brightness       = _safe_float(perceptual.get("brightness",       0.0))
-    stability        = _safe_float(perceptual.get("stability",        0.0))
-    smoothness       = _safe_float(perceptual.get("smoothness",       0.0))
-    repetition       = _safe_float(perceptual.get("repetition",       0.0))
+    energy             = _safe_float(perceptual.get("energy",           0.0))
+    tension            = _safe_float(perceptual.get("tension",          0.0))
+    density_axis       = _safe_float(perceptual.get("density",          0.0))
+    brightness         = _safe_float(perceptual.get("brightness",       0.0))
+    stability          = _safe_float(perceptual.get("stability",        0.0))
+    smoothness         = _safe_float(perceptual.get("smoothness",       0.0))
+    repetition         = _safe_float(perceptual.get("repetition",       0.0))
     section_complexity = _safe_float(perceptual.get("section_complexity", 0.0))
-    macro_shape_hint = perceptual.get("macro_shape_hint", "unknown") or "unknown"
+    macro_shape_hint   = perceptual.get("macro_shape_hint", "unknown") or "unknown"
+
+    # E3-C: noise_proxy — log-нормированная spectral_flatness, независимая ось шума.
+    # НЕ является density; density — плотность событий/текстуры, не тембральная шумность.
+    noise_proxy = _prepare_noise_proxy(perceptual)
 
     # E3: извлекаем θ-оси
     theta_values = _extract_theta_axes(perceptual, strict=strict_theta)
 
     morphology_guard = _compute_morphology_guard(perceptual)
 
-    # Полный axes-словарь: классика + θ + derived
+    # Полный axes-словарь: классика + noise_proxy + θ + derived
     axes: Dict[str, Any] = {
         "energy":             energy,
         "tension":            tension,
@@ -339,6 +410,8 @@ def resolve_render_params(
         "section_complexity": section_complexity,
         "macro_shape_hint":   macro_shape_hint,
         "morphology_guard":   morphology_guard,
+        # E3-C: шумовой proxy (log-norm spectral_flatness)
+        "noise_proxy":        noise_proxy,
         # E3: theta axes
         **theta_values,
     }

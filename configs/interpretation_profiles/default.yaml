@@ -1,10 +1,19 @@
 # Interpretation Profile: default
 # Нейтральный профиль — линейное отображение perceptual → visual axes
+#
+# E3-C: noise_level теперь зависит от noise_proxy + harmony_theta_5.
+# noise_proxy = log_normalize(spectral_flatness) — независимая входная ось [0,1].
+# density и tension НЕ участвуют в target noise_level (устранена ложная причинность).
+# Формула: base + (noise_proxy - 0.5) * 0.30 + (harmony_theta_5 - 0.5) * 0.25
+#   noise_proxy — физический сигнал тембрального шума (spectral_flatness log-norm)
+#   harmony_theta_5 — модификатор тембрального хаоса (но не единственный источник)
+#   итог ограничивается в [0, 1] централизованным _clamp01
 slug: default
 name: Default
 description: >-
   Neutral linear interpretation. Perceptual axes map directly
   to visual parameters without style-specific biases.
+  E3-C: noise_level driven by noise_proxy (log-norm spectral_flatness) + harmony_theta_5.
 axis_weights:
   energy: 1.0
   tension: 1.0
@@ -14,6 +23,7 @@ axis_weights:
   smoothness: 1.0
   repetition: 1.0
   section_complexity: 1.0
+  noise_proxy: 1.0
 mapping_rules:
   symmetry_bias:
     base: 0.5
@@ -26,7 +36,7 @@ mapping_rules:
     formula: "base + (density - 0.5) * 0.5"
   noise_level:
     base: 0.5
-    formula: "base + (tension - 0.5) * 0.4"
+    formula: "base + (noise_proxy - 0.5) * 0.30 + (harmony_theta_5 - 0.5) * 0.25"
   motion_intensity:
     base: 0.5
     formula: "base + (energy - 0.5) * 0.5"
@@ -42,4 +52,4 @@ mapping_rules:
       - when: "tension > 0.7"
         value: "through_composed"
 guardrails: []
-version: "0.3.1"
+version: "0.3.2"
