@@ -23,7 +23,7 @@ fixtures:
     feature_artifact: artifacts/e4/features/ambient_A_features.json
     feature_hash: "sha256:placeholder_ambient_A"
     harmony_theta: [0.50, 0.50, 0.50, 0.50, 0.45, 0.55, 0.50, 0.50]
-    harmony_theta_hash: "sha256:theta_ambient_A"
+    harmony_theta_hash: "sha256:05efc6982d007ea5"
     variation_seed: 104729
     perceptual:
       energy: 0.25
@@ -44,7 +44,7 @@ fixtures:
     feature_artifact: artifacts/e4/features/ambient_B_features.json
     feature_hash: "sha256:placeholder_ambient_B"
     harmony_theta: [0.70, 0.25, 0.72, 0.30, 0.20, 0.80, 0.50, 0.50]
-    harmony_theta_hash: "sha256:theta_ambient_B"
+    harmony_theta_hash: "sha256:ce9f11e049dcad95"
     variation_seed: 209467
     perceptual:
       energy: 0.30
@@ -65,7 +65,7 @@ fixtures:
     feature_artifact: artifacts/e4/features/ambient_C_features.json
     feature_hash: "sha256:placeholder_ambient_C"
     harmony_theta: [0.85, 0.15, 0.88, 0.12, 0.10, 0.90, 0.60, 0.40]
-    harmony_theta_hash: "sha256:theta_ambient_C"
+    harmony_theta_hash: "sha256:a133b0e4f826429a"
     variation_seed: 314219
     perceptual:
       energy: 0.35
@@ -87,7 +87,7 @@ fixtures:
     feature_artifact: artifacts/e4/features/blues_jazz_A_features.json
     feature_hash: "sha256:placeholder_blues_jazz_A"
     harmony_theta: [0.55, 0.60, 0.45, 0.55, 0.50, 0.50, 0.65, 0.45]
-    harmony_theta_hash: "sha256:theta_blues_jazz_A"
+    harmony_theta_hash: "sha256:400d447e78ab1738"
     variation_seed: 419861
     perceptual:
       energy: 0.45
@@ -108,7 +108,7 @@ fixtures:
     feature_artifact: artifacts/e4/features/blues_jazz_B_features.json
     feature_hash: "sha256:placeholder_blues_jazz_B"
     harmony_theta: [0.20, 0.85, 0.22, 0.80, 0.75, 0.25, 0.65, 0.45]
-    harmony_theta_hash: "sha256:theta_blues_jazz_B"
+    harmony_theta_hash: "sha256:9acd3b7eadd4eeb6"
     variation_seed: 524309
     perceptual:
       energy: 0.55
@@ -129,7 +129,7 @@ fixtures:
     feature_artifact: artifacts/e4/features/blues_jazz_C_features.json
     feature_hash: "sha256:placeholder_blues_jazz_C"
     harmony_theta: [0.10, 0.90, 0.12, 0.88, 0.85, 0.15, 0.70, 0.30]
-    harmony_theta_hash: "sha256:theta_blues_jazz_C"
+    harmony_theta_hash: "sha256:f034fe184477f512"
     variation_seed: 628741
     perceptual:
       energy: 0.70
@@ -151,7 +151,7 @@ fixtures:
     feature_artifact: artifacts/e4/features/classical_A_features.json
     feature_hash: "sha256:placeholder_classical_A"
     harmony_theta: [0.50, 0.45, 0.55, 0.50, 0.70, 0.65, 0.50, 0.55]
-    harmony_theta_hash: "sha256:theta_classical_A"
+    harmony_theta_hash: "sha256:7eb2c33d64d48228"
     variation_seed: 733183
     perceptual:
       energy: 0.40
@@ -172,7 +172,7 @@ fixtures:
     feature_artifact: artifacts/e4/features/classical_B_features.json
     feature_hash: "sha256:placeholder_classical_B"
     harmony_theta: [0.75, 0.20, 0.78, 0.25, 0.45, 0.90, 0.50, 0.55]
-    harmony_theta_hash: "sha256:theta_classical_B"
+    harmony_theta_hash: "sha256:2e367c7d74ac50de"
     variation_seed: 837617
     perceptual:
       energy: 0.60
@@ -193,7 +193,7 @@ fixtures:
     feature_artifact: artifacts/e4/features/classical_C_features.json
     feature_hash: "sha256:placeholder_classical_C"
     harmony_theta: [0.88, 0.12, 0.85, 0.15, 0.20, 0.95, 0.55, 0.45]
-    harmony_theta_hash: "sha256:theta_classical_C"
+    harmony_theta_hash: "sha256:7912dc30d423de9b"
     variation_seed: 942061
     perceptual:
       energy: 0.65
@@ -215,7 +215,7 @@ fixtures:
     feature_artifact: artifacts/e4/features/electronic_A_features.json
     feature_hash: "sha256:placeholder_electronic_A"
     harmony_theta: [0.60, 0.55, 0.65, 0.50, 0.45, 0.55, 0.70, 0.60]
-    harmony_theta_hash: "sha256:theta_electronic_A"
+    harmony_theta_hash: "sha256:e9740d609b1d1f20"
     variation_seed: 1046507
     perceptual:
       energy: 0.75
@@ -236,7 +236,7 @@ fixtures:
     feature_artifact: artifacts/e4/features/electronic_B_features.json
     feature_hash: "sha256:placeholder_electronic_B"
     harmony_theta: [0.85, 0.30, 0.88, 0.25, 0.20, 0.80, 0.70, 0.60]
-    harmony_theta_hash: "sha256:theta_electronic_B"
+    harmony_theta_hash: "sha256:73d21216b43b76c9"
     variation_seed: 1150943
     perceptual:
       energy: 0.85
@@ -257,7 +257,7 @@ fixtures:
     feature_artifact: artifacts/e4/features/electronic_C_features.json
     feature_hash: "sha256:placeholder_electronic_C"
     harmony_theta: [0.95, 0.10, 0.92, 0.08, 0.05, 0.95, 0.75, 0.65]
-    harmony_theta_hash: "sha256:theta_electronic_C"
+    harmony_theta_hash: "sha256:85de4340039930ed"
     variation_seed: 1255379
     perceptual:
       energy: 0.95
@@ -279,7 +279,7 @@ fixtures:
     feature_artifact: artifacts/e4/features/jazz_A_features.json
     feature_hash: "sha256:placeholder_jazz_A"
     harmony_theta: [0.55, 0.60, 0.50, 0.55, 0.50, 0.55, 0.65, 0.50]
-    harmony_theta_hash: "sha256:theta_jazz_A"
+    harmony_theta_hash: "sha256:fbe7cdcd527502e9"
     variation_seed: 1359823
     perceptual:
       energy: 0.60
@@ -300,7 +300,7 @@ fixtures:
     feature_artifact: artifacts/e4/features/jazz_B_features.json
     feature_hash: "sha256:placeholder_jazz_B"
     harmony_theta: [0.25, 0.85, 0.28, 0.82, 0.75, 0.25, 0.65, 0.50]
-    harmony_theta_hash: "sha256:theta_jazz_B"
+    harmony_theta_hash: "sha256:46d73c302b96f4a0"
     variation_seed: 1464259
     perceptual:
       energy: 0.70
@@ -321,7 +321,7 @@ fixtures:
     feature_artifact: artifacts/e4/features/jazz_C_features.json
     feature_hash: "sha256:placeholder_jazz_C"
     harmony_theta: [0.12, 0.88, 0.10, 0.90, 0.88, 0.12, 0.70, 0.30]
-    harmony_theta_hash: "sha256:theta_jazz_C"
+    harmony_theta_hash: "sha256:501de02e65e1de3a"
     variation_seed: 1568699
     perceptual:
       energy: 0.80
@@ -343,7 +343,7 @@ fixtures:
     feature_artifact: artifacts/e4/features/pop_A_features.json
     feature_hash: "sha256:placeholder_pop_A"
     harmony_theta: [0.55, 0.50, 0.60, 0.55, 0.55, 0.50, 0.60, 0.55]
-    harmony_theta_hash: "sha256:theta_pop_A"
+    harmony_theta_hash: "sha256:9a6f28868b1c72d1"
     variation_seed: 1673141
     perceptual:
       energy: 0.65
@@ -364,7 +364,7 @@ fixtures:
     feature_artifact: artifacts/e4/features/pop_B_features.json
     feature_hash: "sha256:placeholder_pop_B"
     harmony_theta: [0.80, 0.25, 0.82, 0.28, 0.30, 0.75, 0.60, 0.55]
-    harmony_theta_hash: "sha256:theta_pop_B"
+    harmony_theta_hash: "sha256:b1584b7f235af04c"
     variation_seed: 1777577
     perceptual:
       energy: 0.75
@@ -385,7 +385,7 @@ fixtures:
     feature_artifact: artifacts/e4/features/pop_C_features.json
     feature_hash: "sha256:placeholder_pop_C"
     harmony_theta: [0.90, 0.10, 0.92, 0.08, 0.12, 0.88, 0.65, 0.35]
-    harmony_theta_hash: "sha256:theta_pop_C"
+    harmony_theta_hash: "sha256:84337120b3676d3b"
     variation_seed: 1882013
     perceptual:
       energy: 0.85
@@ -407,7 +407,7 @@ fixtures:
     feature_artifact: artifacts/e4/features/rock_A_features.json
     feature_hash: "sha256:placeholder_rock_A"
     harmony_theta: [0.65, 0.55, 0.60, 0.50, 0.40, 0.60, 0.55, 0.45]
-    harmony_theta_hash: "sha256:theta_rock_A"
+    harmony_theta_hash: "sha256:a26c64b95245cca6"
     variation_seed: 1986451
     perceptual:
       energy: 0.80
@@ -428,7 +428,7 @@ fixtures:
     feature_artifact: artifacts/e4/features/rock_B_features.json
     feature_hash: "sha256:placeholder_rock_B"
     harmony_theta: [0.88, 0.20, 0.85, 0.18, 0.15, 0.85, 0.55, 0.45]
-    harmony_theta_hash: "sha256:theta_rock_B"
+    harmony_theta_hash: "sha256:c5f2a0ade7382e15"
     variation_seed: 2090891
     perceptual:
       energy: 0.90
@@ -449,7 +449,7 @@ fixtures:
     feature_artifact: artifacts/e4/features/rock_C_features.json
     feature_hash: "sha256:placeholder_rock_C"
     harmony_theta: [0.95, 0.05, 0.95, 0.05, 0.05, 0.95, 0.60, 0.40]
-    harmony_theta_hash: "sha256:theta_rock_C"
+    harmony_theta_hash: "sha256:04ab73856c6b002b"
     variation_seed: 2195329
     perceptual:
       energy: 0.98
@@ -471,7 +471,7 @@ fixtures:
     feature_artifact: artifacts/e4/features/default_smoke_features.json
     feature_hash: "sha256:placeholder_default_smoke"
     harmony_theta: [0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.50]
-    harmony_theta_hash: "sha256:theta_default_smoke"
+    harmony_theta_hash: "sha256:b0379b72a0477d22"
     variation_seed: 2299769
     perceptual:
       energy: 0.50
