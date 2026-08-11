@@ -1,0 +1,192 @@
+{
+  "fixture_id": "electronic_C",
+  "experiment_id": "e4_reference_render_audit_v1",
+  "profile_slug": "electronic",
+  "git_sha": "0d45ef4ddfebe1fb56cde16eb627bde9aa462131",
+  "feature_hash": "sha256:placeholder_electronic_C",
+  "harmony_theta": [
+    0.95,
+    0.1,
+    0.92,
+    0.08,
+    0.05,
+    0.95,
+    0.75,
+    0.65
+  ],
+  "harmony_theta_hash": "sha256:db58d054a40301ed",
+  "variation_seed": 3210457911,
+  "palette_id": "neon_dark_bright",
+  "generator_stack": [
+    "e4_render_harness"
+  ],
+  "mapping_trace": [
+    {
+      "param": "symmetry_bias",
+      "source": "style_profile",
+      "raw": 0.5,
+      "final": 0.5,
+      "stage": "base"
+    },
+    {
+      "param": "recursion_depth",
+      "source": "style_profile",
+      "raw": 0.7,
+      "final": 0.7,
+      "stage": "base"
+    },
+    {
+      "param": "density_level",
+      "source": "style_profile",
+      "raw": 0.7,
+      "final": 0.7,
+      "stage": "base"
+    },
+    {
+      "param": "noise_level",
+      "source": "style_profile",
+      "raw": 0.45,
+      "final": 0.45,
+      "stage": "base"
+    },
+    {
+      "param": "motion_intensity",
+      "source": "style_profile",
+      "raw": 0.8,
+      "final": 0.8,
+      "stage": "base"
+    },
+    {
+      "param": "texture_complexity",
+      "source": "style_profile",
+      "raw": 0.7,
+      "final": 0.7,
+      "stage": "base"
+    },
+    {
+      "param": "symmetry_bias",
+      "source": "base + (stability - 0.5) * 0.3",
+      "raw": 0.38,
+      "final": 0.38,
+      "stage": "perceptual"
+    },
+    {
+      "param": "recursion_depth",
+      "source": "base + (section_complexity - 0.5) * 0.4",
+      "raw": 0.6799999999999999,
+      "final": 0.6799999999999999,
+      "stage": "perceptual"
+    },
+    {
+      "param": "density_level",
+      "source": "base + (density - 0.5) * 0.5",
+      "raw": 0.675,
+      "final": 0.675,
+      "stage": "perceptual"
+    },
+    {
+      "param": "noise_level",
+      "source": "base + noise_proxy * 0.5",
+      "raw": 0.7,
+      "final": 0.7,
+      "stage": "perceptual"
+    },
+    {
+      "param": "motion_intensity",
+      "source": "base + (energy - 0.5) * 0.5",
+      "raw": 0.725,
+      "final": 0.725,
+      "stage": "perceptual"
+    },
+    {
+      "param": "texture_complexity",
+      "source": "base + morphology_guard * 0.3 + (section_complexity - 0.5) * 0.2",
+      "raw": 0.755,
+      "final": 0.755,
+      "stage": "perceptual"
+    },
+    {
+      "param": "symmetry_bias",
+      "source": "user_preset:symmetry_bias",
+      "raw": 0.38,
+      "final": 0.38,
+      "stage": "user"
+    },
+    {
+      "param": "recursion_depth",
+      "source": "user_preset:recursion_depth",
+      "raw": 0.6799999999999999,
+      "final": 0.6799999999999999,
+      "stage": "user"
+    },
+    {
+      "param": "density_level",
+      "source": "user_preset:density_level",
+      "raw": 0.675,
+      "final": 0.675,
+      "stage": "user"
+    },
+    {
+      "param": "noise_level",
+      "source": "user_preset:noise_level",
+      "raw": 0.7,
+      "final": 0.7,
+      "stage": "user"
+    },
+    {
+      "param": "motion_intensity",
+      "source": "user_preset:motion_intensity",
+      "raw": 0.725,
+      "final": 0.725,
+      "stage": "user"
+    },
+    {
+      "param": "noise_level",
+      "source": "guardrail:noise_proxy > 0.85",
+      "raw": 0.7,
+      "final": 0.7,
+      "stage": "guardrail"
+    },
+    {
+      "param": "texture_complexity",
+      "source": "guardrail:noise_proxy > 0.85",
+      "raw": 0.755,
+      "final": 0.755,
+      "stage": "guardrail"
+    },
+    {
+      "param": "symmetry_bias",
+      "source": "guardrail:tension > 0.85 and stability < 0.2",
+      "raw": 0.38,
+      "final": 0.38,
+      "stage": "guardrail"
+    },
+    {
+      "param": "motion_intensity",
+      "source": "guardrail:tension > 0.85 and stability < 0.2",
+      "raw": 0.725,
+      "final": 0.725,
+      "stage": "guardrail"
+    }
+  ],
+  "output_sha256": "sha256:fd267dc56527554aa70656d7f1e87af5e49e7f93b76e86ca373efe1e6b3e0441",
+  "renderer_params": {
+    "width": 512,
+    "height": 512
+  },
+  "perceptual": {
+    "energy": 0.95,
+    "tension": 0.9,
+    "density": 0.85,
+    "brightness": 0.9,
+    "stability": 0.1,
+    "smoothness": 0.1,
+    "repetition": 0.85,
+    "section_complexity": 0.95,
+    "macro_shape_hint": "surge",
+    "noise_proxy": 0.9
+  },
+  "render_status": "rendered",
+  "elapsed_s": 0.063,
+  "created_at": "2026-08-11T10:58:48.762103+00:00"
+}

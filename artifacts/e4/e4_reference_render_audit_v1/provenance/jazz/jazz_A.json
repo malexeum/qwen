@@ -1,0 +1,164 @@
+{
+  "fixture_id": "jazz_A",
+  "experiment_id": "e4_reference_render_audit_v1",
+  "profile_slug": "jazz",
+  "git_sha": "0d45ef4ddfebe1fb56cde16eb627bde9aa462131",
+  "feature_hash": "sha256:placeholder_jazz_A",
+  "harmony_theta": [
+    0.55,
+    0.6,
+    0.5,
+    0.55,
+    0.5,
+    0.55,
+    0.65,
+    0.5
+  ],
+  "harmony_theta_hash": "sha256:5d197c4a59ea573b",
+  "variation_seed": 4186758082,
+  "palette_id": "nocturne_amber",
+  "generator_stack": [
+    "e4_render_harness"
+  ],
+  "mapping_trace": [
+    {
+      "param": "symmetry_bias",
+      "source": "style_profile",
+      "raw": 0.3,
+      "final": 0.3,
+      "stage": "base"
+    },
+    {
+      "param": "recursion_depth",
+      "source": "style_profile",
+      "raw": 0.72,
+      "final": 0.72,
+      "stage": "base"
+    },
+    {
+      "param": "density_level",
+      "source": "style_profile",
+      "raw": 0.58,
+      "final": 0.58,
+      "stage": "base"
+    },
+    {
+      "param": "noise_level",
+      "source": "style_profile",
+      "raw": 0.35,
+      "final": 0.35,
+      "stage": "base"
+    },
+    {
+      "param": "motion_intensity",
+      "source": "style_profile",
+      "raw": 0.55,
+      "final": 0.55,
+      "stage": "base"
+    },
+    {
+      "param": "texture_complexity",
+      "source": "style_profile",
+      "raw": 0.72,
+      "final": 0.72,
+      "stage": "base"
+    },
+    {
+      "param": "symmetry_bias",
+      "source": "base + (stability - 0.5) * 0.3",
+      "raw": 0.515,
+      "final": 0.515,
+      "stage": "perceptual"
+    },
+    {
+      "param": "recursion_depth",
+      "source": "base + (section_complexity - 0.5) * 0.4",
+      "raw": 0.5,
+      "final": 0.5,
+      "stage": "perceptual"
+    },
+    {
+      "param": "density_level",
+      "source": "base + (density - 0.5) * 0.5",
+      "raw": 0.525,
+      "final": 0.525,
+      "stage": "perceptual"
+    },
+    {
+      "param": "noise_level",
+      "source": "base + noise_proxy * 0.5",
+      "raw": 0.4,
+      "final": 0.4,
+      "stage": "perceptual"
+    },
+    {
+      "param": "motion_intensity",
+      "source": "base + (energy - 0.5) * 0.5",
+      "raw": 0.55,
+      "final": 0.55,
+      "stage": "perceptual"
+    },
+    {
+      "param": "texture_complexity",
+      "source": "base + morphology_guard * 0.3 + (section_complexity - 0.5) * 0.2",
+      "raw": 0.548,
+      "final": 0.548,
+      "stage": "perceptual"
+    },
+    {
+      "param": "symmetry_bias",
+      "source": "user_preset:symmetry_bias",
+      "raw": 0.515,
+      "final": 0.515,
+      "stage": "user"
+    },
+    {
+      "param": "recursion_depth",
+      "source": "user_preset:recursion_depth",
+      "raw": 0.5,
+      "final": 0.5,
+      "stage": "user"
+    },
+    {
+      "param": "density_level",
+      "source": "user_preset:density_level",
+      "raw": 0.525,
+      "final": 0.525,
+      "stage": "user"
+    },
+    {
+      "param": "noise_level",
+      "source": "user_preset:noise_level",
+      "raw": 0.4,
+      "final": 0.4,
+      "stage": "user"
+    },
+    {
+      "param": "motion_intensity",
+      "source": "user_preset:motion_intensity",
+      "raw": 0.55,
+      "final": 0.55,
+      "stage": "user"
+    }
+  ],
+  "output_sha256": "sha256:077b3a6c04f3402f9092633a9270cbee368cef55a8246f565de857aadbf89815",
+  "renderer_params": {
+    "width": 512,
+    "height": 512
+  },
+  "perceptual": {
+    "energy": 0.6,
+    "tension": 0.45,
+    "density": 0.55,
+    "brightness": 0.6,
+    "stability": 0.55,
+    "smoothness": 0.5,
+    "repetition": 0.35,
+    "section_complexity": 0.5,
+    "macro_shape_hint": "meander",
+    "noise_proxy": 0.3
+  },
+  "render_status": "rendered",
+  "elapsed_s": 0.062,
+  "created_at": "2026-08-11T10:58:48.826385+00:00"
+}
