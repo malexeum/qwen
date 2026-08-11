@@ -1,0 +1,16 @@
+# ambient.yaml — canonical ambient профиль
+# Schema: top-level fields only
+slug: ambient
+display_name: "Ambient"
+description: "Спокойный, просторный, медитативный. Долгие затухания, размытые тембры."
+
+palette: lunar_mist
+contrast: 0.30
+geometry: fluid
+density: 0.30
+motion_intensity: 0.25
+noise_level: 0.20
+symmetry_bias: 0.75
+complexity_bias: 0.30
+
+aliases: []

@@ -1,16 +1,16 @@
-# rock.yaml
+# rock.yaml — canonical rock профиль
+# Schema: top-level fields only
 slug: rock
 display_name: "Rock"
-description: "Высокая энергия, электрогитары, жёсткие атаки, плотная середина."
-base_params:
-  complexity: 0.7
-  symmetry: 0.4
-  density: 0.8
-  noise: 0.5
-  motion: 0.75
-  brightness: 0.6
-  tension: 0.75
-  energy: 0.85
-  stability: 0.5
-  smoothness: 0.3
+description: "Тяжёлый, насыщенный, высококонтрастный. Дисторшн, агрессия, ритмическая сила."
+
+palette: dark_saturated
+contrast: 0.75
+geometry: fractal
+density: 0.65
+motion_intensity: 0.70
+noise_level: 0.55
+symmetry_bias: 0.35
+complexity_bias: 0.68
+
 aliases: []

@@ -1,0 +1,16 @@
+# electronic.yaml — canonical electronic профиль
+# Schema: top-level fields only
+slug: electronic
+display_name: "Electronic"
+description: "Синтетический, точный, насыщенный текстурами. Сетки, паттерны, машинный ритм."
+
+palette: neon_dark
+contrast: 0.70
+geometry: grid
+density: 0.60
+motion_intensity: 0.68
+noise_level: 0.35
+symmetry_bias: 0.55
+complexity_bias: 0.65
+
+aliases: []

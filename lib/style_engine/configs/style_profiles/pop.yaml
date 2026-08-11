@@ -1,16 +1,16 @@
-# pop.yaml
+# pop.yaml — canonical pop профиль
+# Schema: top-level fields only
 slug: pop
 display_name: "Pop"
-description: "Яркость, компрессия, хуковые структуры, verse-chorus форма."
-base_params:
-  complexity: 0.5
-  symmetry: 0.65
-  density: 0.6
-  noise: 0.25
-  motion: 0.55
-  brightness: 0.8
-  tension: 0.45
-  energy: 0.7
-  stability: 0.65
-  smoothness: 0.6
+description: "Яркий, доступный, высокоэнергетический. Чёткие структуры, запоминающиеся паттерны."
+
+palette: vivid_light
+contrast: 0.65
+geometry: grid
+density: 0.55
+motion_intensity: 0.65
+noise_level: 0.20
+symmetry_bias: 0.65
+complexity_bias: 0.45
+
 aliases: []

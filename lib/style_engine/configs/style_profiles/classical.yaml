@@ -1,0 +1,16 @@
+# classical.yaml — canonical classical профиль
+# Schema: top-level fields only
+slug: classical
+display_name: "Classical"
+description: "Структурированный, гармонически прозрачный. Чёткая форма, контрапункт, баланс."
+
+palette: ivory_cobalt
+contrast: 0.55
+geometry: grid
+density: 0.45
+motion_intensity: 0.40
+noise_level: 0.15
+symmetry_bias: 0.70
+complexity_bias: 0.55
+
+aliases: []

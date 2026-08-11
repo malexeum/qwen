@@ -1,16 +1,16 @@
 # jazz.yaml — canonical jazz профиль (НЕ алиас blues_jazz)
+# Schema: top-level fields only (base_params legacy removed)
 slug: jazz
 display_name: "Jazz"
 description: "Импровизация, хроматика, свинговый грув. Самостоятельный профиль."
-base_params:
-  complexity: 0.7
-  symmetry: 0.35
-  density: 0.5
-  noise: 0.4
-  motion: 0.6
-  brightness: 0.6
-  tension: 0.55
-  energy: 0.6
-  stability: 0.45
-  smoothness: 0.5
+
+palette: nocturne_amber
+contrast: 0.55
+geometry: organic
+density: 0.58
+motion_intensity: 0.60
+noise_level: 0.40
+symmetry_bias: 0.35
+complexity_bias: 0.70
+
 aliases: []
