@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import math
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 from lib.style_engine.config_loader import (
     InterpretationProfile,
@@ -17,7 +18,7 @@ from lib.style_engine.engine_evaluator import _safe_eval_bool, _safe_eval_expr
 # Константы
 # ---------------------------------------------------------------------------
 
-THETA_AXES: List[str] = [
+THETA_AXES: Tuple[str, ...] = (
     "harmony_theta_0",  # гармоническая чистота
     "harmony_theta_1",  # стабильность × смена
     "harmony_theta_2",  # структурная плотность
@@ -26,7 +27,7 @@ THETA_AXES: List[str] = [
     "harmony_theta_5",  # тембральный хаос
     "harmony_theta_6",  # энтропия развития
     "harmony_theta_7",  # кристалличность
-]
+)
 
 _THETA_DEFAULT = 0.5  # нейтральное значение при отсутствии оси в perceptual
 
@@ -48,6 +49,17 @@ _STYLE_ALIASES: Dict[str, str] = {
     "space":            "ambient",
     "mixed":            "default",
 }
+
+
+# ---------------------------------------------------------------------------
+# Исключения
+# ---------------------------------------------------------------------------
+
+class ValidationError(ValueError):
+    """
+    Raised when a theta axis is missing or an unsupported key is found
+    and strict validation is enabled.
+    """
 
 
 # ---------------------------------------------------------------------------
@@ -161,6 +173,57 @@ def _prepare_noise_proxy(perceptual: Dict[str, Any]) -> float:
     return 0.5
 
 
+def compute_theta_hash(theta: Mapping[str, float], strict: bool = True) -> str:
+    """
+    Canonical named θ-hash — публичная функция (CB-1 contract).
+
+    Алгоритм (ТЗ §2.2):
+      1. Извлекаем ровно 8 именованных осей из THETA_AXES.
+      2. Округляем каждое значение до 6 десятичных знаков.
+      3. Сериализуем в canonical JSON (sort_keys=True, compact separators).
+      4. SHA-256 → первые 16 hex-символов.
+
+    Гарантии:
+      - input dict в любом порядке → одинаковый hash.
+      - перестановка значений между осями → другой hash.
+      - изменение любой оси на ±0.000001 → другой hash.
+
+    strict=True (default):
+      - missing axis → ValidationError с именем оси.
+      - unsupported key → ValidationError с именем ключа.
+    strict=False:
+      - missing axis подставляет _THETA_DEFAULT; лишние ключи игнорируются.
+
+    Float precision policy: round(float(v), 6) — ровно 6 знаков после запятой.
+    """
+    if strict:
+        known = set(THETA_AXES)
+        for key in theta:
+            if key not in known:
+                raise ValidationError(
+                    f"theta_hash: unsupported axis key '{key}'. "
+                    f"Allowed axes: {list(THETA_AXES)}"
+                )
+        for axis in THETA_AXES:
+            if axis not in theta:
+                raise ValidationError(
+                    f"theta_hash: missing required axis '{axis}'."
+                )
+
+    payload = {
+        axis: round(float(theta[axis]) if axis in theta else _THETA_DEFAULT, 6)
+        for axis in THETA_AXES
+    }
+    canonical = json.dumps(payload, ensure_ascii=True, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:16]
+
+
+# Keep private alias for internal callers (backward compat)
+def _compute_theta_hash(theta_values: Dict[str, float]) -> str:
+    """Internal alias → compute_theta_hash(strict=False) for legacy callers."""
+    return compute_theta_hash(theta_values, strict=False)
+
+
 def _compute_variation_seed(
     project_id: str,
     analysis_id: str,
@@ -169,23 +232,23 @@ def _compute_variation_seed(
     interp_slug: str,
     theta_values: Dict[str, float],
 ) -> int:
-    """SHA-256-based seed, включает theta_hash — уникален при любом изменении θ."""
-    theta_str = "|".join(
-        f"{k}={theta_values.get(k, _THETA_DEFAULT):.6f}"
-        for k in THETA_AXES
+    """
+    SHA-256-based variation seed.
+
+    CB-1: theta contribution uses same canonical JSON scheme as compute_theta_hash
+    so that seed и hash are derived from identical serialisation — prevents
+    divergence between hash contract and seed contract.
+    """
+    theta_payload = {
+        axis: round(float(theta_values.get(axis, _THETA_DEFAULT)), 6)
+        for axis in THETA_AXES
+    }
+    theta_canonical = json.dumps(
+        theta_payload, ensure_ascii=True, sort_keys=True, separators=(",", ":")
     )
-    raw = f"{project_id}|{analysis_id}|{preset_id}|{style_slug}|{interp_slug}|{theta_str}"
+    raw = f"{project_id}|{analysis_id}|{preset_id}|{style_slug}|{interp_slug}|{theta_canonical}"
     digest = hashlib.sha256(raw.encode()).digest()
     return int.from_bytes(digest[:4], "big")
-
-
-def _compute_theta_hash(theta_values: Dict[str, float]) -> str:
-    """Короткий hex-хэш θ-вектора для seed_policy.harmony_theta_hash."""
-    theta_str = "|".join(
-        f"{k}={theta_values.get(k, _THETA_DEFAULT):.6f}"
-        for k in THETA_AXES
-    )
-    return hashlib.sha256(theta_str.encode()).hexdigest()[:16]
 
 
 def _normalize_style_slug(
@@ -215,7 +278,7 @@ def _normalize_style_slug(
         # Dangling alias guard: destination обязан существовать в реестре
         if canonical not in style_registry:
             available = sorted(style_registry.keys())
-            raise ValueError(
+            raise ValidationError(
                 f"dangling_alias: '{slug}' → '{canonical}' "
                 f"but '{canonical}' not in style registry. "
                 f"Available canonical profiles: {available}"
@@ -526,7 +589,7 @@ def resolve_render_params(
     texture_complexity = _mutable["texture_complexity"]
 
     # -----------------------------------------------------------------------
-    # Variation seed (включает theta_hash — E3)
+    # Variation seed (CB-1: canonical JSON theta payload)
     # -----------------------------------------------------------------------
     preset_id = str(user_preset.get("id", "preset"))
     variation_seed = _compute_variation_seed(
