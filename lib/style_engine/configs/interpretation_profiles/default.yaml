@@ -1,39 +1,110 @@
 # default.yaml — базовый interpretation profile
+# CB-3.1-A0: мигрирован на formula-формат с θ-driven rules.
+#
+# Контракт нейтральности (обязательный для каждой формулы):
+#   если все theta-оси = 0.5, формула возвращает ровно base — нет дополнительного bias.
+#   это гарантируется тем, что все слагаемые символы — (theta_N - 0.5) * weight.
 slug: default
 display_name: "Default"
-description: "Нейтральный профиль интерпретации. Используется для smoke-тестов и базового resolve."
+description: >
+  Нейтральный профиль интерпретации. Используется для smoke-тестов и базового resolve.
+  CB-3.1-A0: полные theta-driven формулы.
+
 mapping_rules:
-  complexity:
-    sources:
-      - {key: section_complexity, weight: 0.6}
-      - {key: repetition,         weight: -0.2}
-      - {key: density,            weight: 0.2}
-  symmetry:
-    sources:
-      - {key: stability,  weight: 0.5}
-      - {key: repetition, weight: 0.3}
-  density:
-    sources:
-      - {key: density,   weight: 0.7}
-      - {key: energy,    weight: 0.2}
-  noise:
-    sources:
-      - {key: tension,    weight: 0.5}
-      - {key: energy,     weight: 0.3}
-  motion:
-    sources:
-      - {key: energy,    weight: 0.5}
-      - {key: smoothness, weight: -0.2}
-  brightness:
-    sources:
-      - {key: brightness, weight: 0.8}
-guardrails:
-  complexity:  [0.0, 1.0]
-  symmetry:    [0.0, 1.0]
-  density:     [0.0, 1.0]
-  noise:       [0.0, 1.0]
-  motion:      [0.0, 1.0]
-  brightness:  [0.0, 1.0]
+
+  # ------------------------------------------------------------------
+  # symmetry_bias
+  # θ₀ (гармоническая чистота)  → усиливает симметрию
+  # stability                    → усиливает симметрию
+  # θ₇ (crystallinity)          → дополнительно усиливает симметрию
+  # ------------------------------------------------------------------
+  symmetry_bias:
+    base: 0.5
+    formula: >-
+      base
+      + (stability - 0.5) * 0.30
+      + (harmony_theta_0 - 0.5) * 0.20
+      + (harmony_theta_7 - 0.5) * 0.15
+
+  # ------------------------------------------------------------------
+  # recursion_depth
+  # section_complexity → усиливает рекурсию
+  # θ₂ (structural density)   → дополнительно усиливает рекурсию
+  # ------------------------------------------------------------------
+  recursion_depth:
+    base: 0.5
+    formula: >-
+      base
+      + (section_complexity - 0.5) * 0.40
+      + (harmony_theta_2 - 0.5) * 0.25
+
+  # ------------------------------------------------------------------
+  # density_level
+  # density                    → основной вклад
+  # θ₃ (unresolved tension)   → дополнительный вклад напряжения
+  # ------------------------------------------------------------------
+  density_level:
+    base: 0.5
+    formula: >-
+      base
+      + (density - 0.5) * 0.50
+      + (harmony_theta_3 - 0.5) * 0.20
+
+  # ------------------------------------------------------------------
+  # noise_level
+  # Контракт E3-C: noise_proxy — единственный источник. density/tension НЕ включать.
+  # noise_proxy                → log-norm spectral_flatness
+  # θ₅ (timbral chaos)        → дополнительный хаос
+  # ------------------------------------------------------------------
+  noise_level:
+    base: 0.5
+    formula: >-
+      base
+      + (noise_proxy - 0.5) * 0.30
+      + (harmony_theta_5 - 0.5) * 0.25
+
+  # ------------------------------------------------------------------
+  # motion_intensity
+  # energy                     → основной вклад
+  # θ₆ (development entropy)   → дополнительный стимул (stability×change)
+  # ------------------------------------------------------------------
+  motion_intensity:
+    base: 0.5
+    formula: >-
+      base
+      + (energy - 0.5) * 0.50
+      + (harmony_theta_6 - 0.5) * 0.20
+
+  # ------------------------------------------------------------------
+  # texture_complexity
+  # morphology_guard           → риск потери идентичности
+  # section_complexity         → контрибюция структурной насыщенности
+  # θ₂ (structural density)   → усиливает текстурную сложность
+  # θ₅ (timbral chaos)        → вносит шумовую текстурность
+  # ------------------------------------------------------------------
+  texture_complexity:
+    base: 0.5
+    formula: >-
+      base
+      + morphology_guard * 0.30
+      + (section_complexity - 0.5) * 0.20
+      + (harmony_theta_2 - 0.5) * 0.20
+      + (harmony_theta_5 - 0.5) * 0.15
+
+  # ------------------------------------------------------------------
+  # layout_macro_shape
+  # ------------------------------------------------------------------
+  layout_macro_shape:
+    rules:
+      - when: "energy > 0.7 and section_complexity > 0.6"
+        value: "ABAC_like"
+      - when: "repetition > 0.7 and stability > 0.6"
+        value: "strophic"
+      - when: "energy < 0.3 and smoothness > 0.6"
+        value: "through_composed"
+
+guardrails: []
+
 theta_defaults:
   harmony_theta_0: 0.5
   harmony_theta_1: 0.5
