@@ -1,13 +1,26 @@
-# Style Profile: blues_jazz
+# Blues Jazz — canonical style profile
+# IMPORTANT: blues_jazz is NOT a superset of jazz.
+# Alias contract: blues → blues_jazz (engine.py _STYLE_ALIASES)
+# Artistic character: blues-rooted, pentatonic, call-response,
+# soulful repetition. Distinct from jazz (modal/chromatic/improvisational).
 slug: blues_jazz
-music_style: blues_jazz
-visual_mood: soulful, warm, improvisational
-palette: warm_midnight
-contrast: 0.55
-geometry: organic
-density: 0.50
-motion_intensity: 0.50
-noise_level: 0.45
-symmetry_bias: 0.45
-complexity_bias: 0.60
-version: "0.3.2"
+display_name: Blues Jazz
+family: blues_jazz
+
+# Visual base parameters
+symmetry_bias: 0.40        # loose symmetry — call/response pairing
+complexity_bias: 0.55      # moderate — pentatonic clarity over harmonic density
+density: 0.52              # medium — space and breath are essential
+noise_level: 0.48          # warm grit — tube amp warmth, string buzz, vocal rasp
+motion_intensity: 0.50     # steady blues groove — not urgent, not languid
+
+palette: warm_midnight     # ochre/rust/brown on near-black — juke joint warmth
+
+layout_hint: meander       # blues form: 12-bar return, call-response arc
+
+# Theta centre-of-mass for archetypal blues_jazz
+# theta_0 (harmonic purity): medium — blue notes, bent pitches
+# theta_1 (stability × change): medium — predictable blues form
+# theta_4 (section contrast): low-medium — gradual builds, not sharp cuts
+# theta_5 (timbral chaos): medium — grit without disintegration
+theta_archetype: [0.45, 0.55, 0.42, 0.55, 0.38, 0.50, 0.52, 0.48]

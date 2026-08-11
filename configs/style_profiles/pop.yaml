@@ -1,14 +1,24 @@
-# Style Profile: pop
-# E3-C: canonical profile — not an alias of rock
+# Pop — canonical style profile
+# E4 contract: pop is an independent canonical profile.
+# Artistic character: bright, catchy, high repetition, optimistic tension arc.
+# Distinct from rock (dark/driven) and jazz (improvisational/modal).
 slug: pop
-music_style: pop
-visual_mood: bright, playful, catchy
-palette: vivid_light
-contrast: 0.65
-geometry: smooth
-density: 0.50
-motion_intensity: 0.70
-noise_level: 0.25
-symmetry_bias: 0.60
-complexity_bias: 0.45
-version: "0.1.0"
+display_name: Pop
+family: pop
+
+# Visual base parameters
+symmetry_bias: 0.65        # symmetric, balanced — hook-friendly visual rhythm
+complexity_bias: 0.42      # moderate complexity — accessible, not overwhelming
+density: 0.55              # medium density — clear foreground/background separation
+noise_level: 0.28          # clean production — minimal noise
+motion_intensity: 0.60     # energetic but controlled — verse/chorus dynamic
+
+palette: vivid_light       # bright primaries, high saturation, optimistic
+
+layout_hint: loop          # circular return to hook — ABA strong
+
+# Theta centre-of-mass for archetypal pop
+# theta_0 (harmonic purity): high — diatonic, consonant
+# theta_1 (stability × change): medium-high — predictable changes
+# theta_6 (developmental entropy): medium — controlled build
+theta_archetype: [0.72, 0.60, 0.65, 0.35, 0.55, 0.25, 0.55, 0.58]

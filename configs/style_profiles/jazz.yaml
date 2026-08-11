@@ -1,15 +1,26 @@
-# Style Profile: jazz
-# E3-C: canonical independent profile (alias jazz→blues_jazz removed)
-# jazz и blues_jazz — разные стили: jazz более яркий, быстрый, импровизационный
+# Jazz — canonical style profile (E3-C restored)
+# IMPORTANT: jazz is NOT an alias for blues_jazz.
+# E3-C contract: jazz → jazz (canonical), blues_jazz → blues_jazz (canonical)
+# They are artistically distinct: jazz = modal/chromatic/improvisational,
+# blues_jazz = blues-rooted, pentatonic, call-response structure.
 slug: jazz
-music_style: jazz
-visual_mood: improvisational, vibrant, syncopated
-palette: nocturne_amber
-contrast: 0.60
-geometry: organic
-density: 0.50
-motion_intensity: 0.65
-noise_level: 0.35
-symmetry_bias: 0.40
-complexity_bias: 0.70
-version: "0.1.0"
+display_name: Jazz
+family: jazz
+
+# Visual base parameters
+symmetry_bias: 0.30        # highly asymmetric — improvisation over structure
+complexity_bias: 0.72      # complex chord voicings, polyrhythm, extended harmony
+density: 0.58              # medium-high — interplay of multiple voices
+noise_level: 0.35          # relatively clean but with breath, brush, room tone
+motion_intensity: 0.55     # fluid, rubato — not metronomic
+
+palette: nocturne_amber    # warm amber on deep blue-black — late night club
+
+layout_hint: meander       # non-linear development, motif transformation
+
+# Theta centre-of-mass for archetypal jazz
+# theta_0 (harmonic purity): medium — chromatic passing tones
+# theta_2 (structural density): medium-high — complex voicings
+# theta_3 (unresolved tension): medium-high — tritone subs, sus chords
+# theta_6 (developmental entropy): high — improvisation increases entropy
+theta_archetype: [0.48, 0.52, 0.62, 0.60, 0.45, 0.42, 0.70, 0.40]

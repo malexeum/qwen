@@ -1,14 +1,24 @@
-# Style Profile: rock
-# E3-C: canonical profile — not an alias
+# Rock — canonical style profile
+# E4 contract: rock is an independent canonical profile, not an alias.
+# Artistic character: high energy, driven rhythmic tension, saturated dark palette.
+# Distinct from pop (bright/repetitive) and blues_jazz (warm/improvisational).
 slug: rock
-music_style: rock
-visual_mood: intense, raw, energetic
-palette: dark_saturated
-contrast: 0.80
-geometry: angular_organic
-density: 0.65
-motion_intensity: 0.75
-noise_level: 0.70
-symmetry_bias: 0.35
-complexity_bias: 0.65
-version: "0.1.0"
+display_name: Rock
+family: rock
+
+# Visual base parameters (all [0, 1])
+symmetry_bias: 0.38        # asymmetric — raw energy, not decorative order
+complexity_bias: 0.68      # dense riff structures, layered arrangement
+density: 0.70              # high event density — guitars, drums, bass simultaneously
+noise_level: 0.62          # distortion, fuzz, harmonic saturation
+motion_intensity: 0.78     # driving forward motion, strong transients
+
+palette: dark_saturated    # deep reds, charcoal, electric highlights
+
+layout_hint: drive         # forward propulsion macro-shape
+
+# Theta centre-of-mass for archetypal rock (informational only, not enforced)
+# theta_0 (harmonic purity): low — power chords, parallel 5ths
+# theta_3 (unresolved tension): high — dominant pedal, sustained dissonance
+# theta_5 (timbral chaos): high — amp overdrive, pick noise
+theta_archetype: [0.30, 0.55, 0.45, 0.72, 0.38, 0.70, 0.58, 0.42]
