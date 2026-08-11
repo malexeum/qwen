@@ -1,0 +1,23 @@
+{
+  "fixture_id": "ambient_C",
+  "experiment_id": "e4_reference_render_audit_v1",
+  "profile_slug": "ambient",
+  "git_sha": "9f6080ebb22486d087c55f505d823e2634e6baae",
+  "feature_hash": "sha256:placeholder_ambient_C",
+  "harmony_theta": [0.85, 0.15, 0.88, 0.12, 0.10, 0.90, 0.60, 0.40],
+  "harmony_theta_hash": "sha256:theta_ambient_C",
+  "variation_seed": 314219,
+  "palette_id": "lunar_mist",
+  "generator_stack": ["PENDING_RENDER"],
+  "mapping_trace": ["PENDING_RENDER"],
+  "output_sha256": "PENDING_RENDER",
+  "renderer_params": {"width": 512, "height": 512},
+  "perceptual": {
+    "energy": 0.35, "tension": 0.75, "density": 0.70,
+    "brightness": 0.15, "stability": 0.25, "smoothness": 0.30,
+    "repetition": 0.80, "section_complexity": 0.85,
+    "macro_shape_hint": "surge", "noise_proxy": 0.80
+  },
+  "render_status": "pre_render",
+  "created_at": "2026-08-11T04:19:00Z"
+}
