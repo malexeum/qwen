@@ -1,0 +1,95 @@
+# visual_composition_profiles.yaml
+#
+# Canonical composition profiles: genre slug → ordered layer stack.
+# Each layer specifies:
+#   id      — stable layer_id logged in provenance and MappingTraceEntry
+#   builder — must exist in GeneratorRuntime._BUILDER_REGISTRY
+#   weight  — relative blend weight (equal weights = arithmetic mean)
+#
+# Invariants:
+#   - builder names here must match keys in _BUILDER_REGISTRY exactly
+#   - layer id must be unique within a profile
+#   - changing order of layers changes blend; treat as a breaking change
+#   - do NOT add builders not present in lib/generators.py
+#
+# Available builders (from lib/generators.py + _BUILDER_REGISTRY):
+#   julia_orbit_trap
+#   orbit_ifs_multi_trap
+#   duffing_lyapunov_map
+#   chaotic_scattering_basins
+
+profiles:
+
+  ambient:
+    palette: lunar_mist
+    layers:
+      - id: ambient_layer_0
+        builder: julia_orbit_trap
+        weight: 0.7
+      - id: ambient_layer_1
+        builder: orbit_ifs_multi_trap
+        weight: 0.3
+
+  blues_jazz:
+    palette: warm_midnight
+    layers:
+      - id: blues_jazz_layer_0
+        builder: julia_orbit_trap
+        weight: 0.5
+      - id: blues_jazz_layer_1
+        builder: duffing_lyapunov_map
+        weight: 0.5
+
+  jazz:
+    palette: nocturne_amber
+    layers:
+      - id: jazz_layer_0
+        builder: julia_orbit_trap
+        weight: 0.6
+      - id: jazz_layer_1
+        builder: orbit_ifs_multi_trap
+        weight: 0.4
+
+  classical:
+    palette: ivory_cobalt
+    layers:
+      - id: classical_layer_0
+        builder: julia_orbit_trap
+        weight: 1.0
+
+  electronic:
+    palette: neon_dark
+    layers:
+      - id: electronic_layer_0
+        builder: duffing_lyapunov_map
+        weight: 0.5
+      - id: electronic_layer_1
+        builder: chaotic_scattering_basins
+        weight: 0.5
+
+  rock:
+    palette: dark_saturated
+    layers:
+      - id: rock_layer_0
+        builder: chaotic_scattering_basins
+        weight: 0.6
+      - id: rock_layer_1
+        builder: duffing_lyapunov_map
+        weight: 0.4
+
+  pop:
+    palette: vivid_light
+    layers:
+      - id: pop_layer_0
+        builder: julia_orbit_trap
+        weight: 0.7
+      - id: pop_layer_1
+        builder: orbit_ifs_multi_trap
+        weight: 0.3
+
+  default:
+    palette: neutral_noir
+    layers:
+      - id: default_layer_0
+        builder: julia_orbit_trap
+        weight: 1.0
