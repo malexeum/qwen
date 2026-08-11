@@ -1,0 +1,20 @@
+# default.yaml — нейтральный fallback style profile
+# Не является алиасом. Не фиксирует θ-вектор.
+# Схема: top-level поля согласно StyleProfile.__init__ (config_loader.py v0.3.2)
+# Числовые поля: 0.5 (нейтральный инвариант при perceptual=0.5, theta=0.5)
+
+slug: default
+display_name: "Default"
+description: "Нейтральный fallback профиль. Без художественного bias."
+music_style: default
+visual_mood: neutral
+palette: neutral_noir
+contrast: 0.50
+geometry: balanced
+density: 0.50
+motion_intensity: 0.50
+noise_level: 0.50
+symmetry_bias: 0.50
+complexity_bias: 0.50
+version: "0.3.2"
+aliases: []
