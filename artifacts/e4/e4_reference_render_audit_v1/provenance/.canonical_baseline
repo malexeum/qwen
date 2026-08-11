@@ -1,0 +1,7 @@
+# Canonical baseline marker
+# Generated: 2026-08-11
+# Algorithm: CB-1 fix — engine.compute_theta_hash (canonical JSON)
+#
+# Canonical provenance files are named: {fixture_id}_rerender_1.json
+# Files named {fixture_id}.json (no suffix) are SUPERSEDED and will be removed.
+# Do not use bare {fixture_id}.json as reference — use *_rerender_1.json.
