@@ -57,7 +57,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from lib.style_engine.engine import resolve_render_params  # noqa: E402
+from lib.style_engine.engine import compute_theta_hash, resolve_render_params  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -199,6 +199,23 @@ def write_provenance(
     suffix = "" if rerender_n is None else f"_rerender_{rerender_n}"
     prov_path = prov_dir / f"{fixture_id}{suffix}.json"
 
+    # CB-1 contract: use engine canonical JSON hash, NOT pipe-joined vector.
+    # This guarantees harmony_theta_hash in provenance == engine.compute_theta_hash.
+    theta_named = {
+        f"harmony_theta_{i}": round(float(v), 6)
+        for i, v in enumerate([
+            render_params.harmony_theta_0,
+            render_params.harmony_theta_1,
+            render_params.harmony_theta_2,
+            render_params.harmony_theta_3,
+            render_params.harmony_theta_4,
+            render_params.harmony_theta_5,
+            render_params.harmony_theta_6,
+            render_params.harmony_theta_7,
+        ])
+    }
+    theta_hash = f"sha256:{compute_theta_hash(theta_named, strict=False)}"
+
     theta_vec = [
         render_params.harmony_theta_0,
         render_params.harmony_theta_1,
@@ -209,31 +226,29 @@ def write_provenance(
         render_params.harmony_theta_6,
         render_params.harmony_theta_7,
     ]
-    theta_str = "|".join(f"{v:.6f}" for v in theta_vec)
-    theta_hash = f"sha256:{hashlib.sha256(theta_str.encode()).hexdigest()[:16]}"
 
     trace_serialisable = [
         dataclasses.asdict(t) for t in render_params.mapping_trace
     ]
 
     prov = {
-        "fixture_id":       fixture_id,
-        "experiment_id":    EXPERIMENT_ID,
-        "profile_slug":     profile_slug,
-        "git_sha":          run_git_sha,
-        "feature_hash":     fixture.get("feature_hash", "null"),
-        "harmony_theta":    theta_vec,
+        "fixture_id":         fixture_id,
+        "experiment_id":      EXPERIMENT_ID,
+        "profile_slug":       profile_slug,
+        "git_sha":            run_git_sha,
+        "feature_hash":       fixture.get("feature_hash", "null"),
+        "harmony_theta":      theta_vec,
         "harmony_theta_hash": theta_hash,
-        "variation_seed":   render_params.variation_seed,
-        "palette_id":       render_params.palette_id,
-        "generator_stack":  ["e4_render_harness:stub" if not _PIL_AVAILABLE else "e4_render_harness"],
-        "mapping_trace":    trace_serialisable,
-        "output_sha256":    output_sha256,
-        "renderer_params":  {"width": RENDER_W, "height": RENDER_H},
-        "perceptual":       dict(fixture.get("perceptual", {})),
-        "render_status":    "rendered",
-        "elapsed_s":        round(elapsed_s, 3),
-        "created_at":       datetime.now(timezone.utc).isoformat(),
+        "variation_seed":     render_params.variation_seed,
+        "palette_id":         render_params.palette_id,
+        "generator_stack":    ["e4_render_harness:stub" if not _PIL_AVAILABLE else "e4_render_harness"],
+        "mapping_trace":      trace_serialisable,
+        "output_sha256":      output_sha256,
+        "renderer_params":    {"width": RENDER_W, "height": RENDER_H},
+        "perceptual":         dict(fixture.get("perceptual", {})),
+        "render_status":      "rendered",
+        "elapsed_s":          round(elapsed_s, 3),
+        "created_at":         datetime.now(timezone.utc).isoformat(),
     }
 
     with open(prov_path, "w", encoding="utf-8") as f:
