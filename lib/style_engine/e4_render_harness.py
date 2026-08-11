@@ -21,6 +21,10 @@ Invariants:
     - Re-running with --rerender flag overwrites renders but appends
       a _rerender_N suffix in provenance to preserve first-run SHA.
     - Fixtures are deterministic: same seed + same RenderParams → same PNG.
+    - Run B is idempotent/resumable: if a PNG exists but its provenance
+      is missing (e.g. a prior run crashed between render and
+      write_provenance), the provenance is (re)written from the
+      existing PNG on the next run instead of being silently skipped.
 """
 from __future__ import annotations
 
@@ -119,6 +123,10 @@ def load_manifest(manifest_path: Path) -> Dict[str, Any]:
     if not fixtures:
         raise ValueError(f"Empty fixture list in {manifest_path}")
     return data
+
+
+def provenance_path_for(provenance_dir: Path, fixture: Dict[str, Any]) -> Path:
+    return provenance_dir / fixture["profile_slug"] / f"{fixture['id']}.json"
 
 
 # ---------------------------------------------------------------------------
@@ -429,11 +437,26 @@ def main() -> int:
         # --- Render PNG ---
         png_path = renders_dir / f"{fid}.png"
         rerender_n = None
+        prov_path_existing = provenance_path_for(provenance_dir, fixture)
+
         if png_path.exists() and not args.rerender:
-            print(f"skip (exists) → {png_path.name}")
             output_sha256 = sha256_file(png_path)
             elapsed = time.perf_counter() - t0
             png_paths.append(png_path)
+
+            if prov_path_existing.exists():
+                print(f"skip (exists) → {png_path.name}")
+            else:
+                # PNG survived from a prior run that crashed before
+                # provenance was written (e.g. the pre-fsync-fix crash).
+                # Recompute RenderParams-derived provenance now so the
+                # audit stays resumable/idempotent.
+                write_provenance(
+                    fixture, render_params, png_path, output_sha256,
+                    provenance_dir, run_git_sha, elapsed, rerender_n=None,
+                )
+                print(f"recovered provenance (png existed, provenance missing) → {png_path.name}")
+
             write_audit_row(csv_writer, fixture, render_params, output_sha256, elapsed)
             continue
 
