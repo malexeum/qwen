@@ -1,0 +1,45 @@
+# default.yaml — базовый interpretation profile
+slug: default
+display_name: "Default"
+description: "Нейтральный профиль интерпретации. Используется для smoke-тестов и базового resolve."
+mapping_rules:
+  complexity:
+    sources:
+      - {key: section_complexity, weight: 0.6}
+      - {key: repetition,         weight: -0.2}
+      - {key: density,            weight: 0.2}
+  symmetry:
+    sources:
+      - {key: stability,  weight: 0.5}
+      - {key: repetition, weight: 0.3}
+  density:
+    sources:
+      - {key: density,   weight: 0.7}
+      - {key: energy,    weight: 0.2}
+  noise:
+    sources:
+      - {key: tension,    weight: 0.5}
+      - {key: energy,     weight: 0.3}
+  motion:
+    sources:
+      - {key: energy,    weight: 0.5}
+      - {key: smoothness, weight: -0.2}
+  brightness:
+    sources:
+      - {key: brightness, weight: 0.8}
+guardrails:
+  complexity:  [0.0, 1.0]
+  symmetry:    [0.0, 1.0]
+  density:     [0.0, 1.0]
+  noise:       [0.0, 1.0]
+  motion:      [0.0, 1.0]
+  brightness:  [0.0, 1.0]
+theta_defaults:
+  harmony_theta_0: 0.5
+  harmony_theta_1: 0.5
+  harmony_theta_2: 0.5
+  harmony_theta_3: 0.5
+  harmony_theta_4: 0.5
+  harmony_theta_5: 0.5
+  harmony_theta_6: 0.5
+  harmony_theta_7: 0.5

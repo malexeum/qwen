@@ -1,0 +1,16 @@
+# rock.yaml
+slug: rock
+display_name: "Rock"
+description: "Высокая энергия, электрогитары, жёсткие атаки, плотная середина."
+base_params:
+  complexity: 0.7
+  symmetry: 0.4
+  density: 0.8
+  noise: 0.5
+  motion: 0.75
+  brightness: 0.6
+  tension: 0.75
+  energy: 0.85
+  stability: 0.5
+  smoothness: 0.3
+aliases: []
