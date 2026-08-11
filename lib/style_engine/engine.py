@@ -34,15 +34,9 @@ _THETA_DEFAULT = 0.5  # нейтральное значение при отсу�
 # ---------------------------------------------------------------------------
 # Таблица алиасов slug-ов (применяется ДО проверки реестра)
 # ---------------------------------------------------------------------------
-# E3-C:
-#   - jazz удалён как алиас: jazz — самостоятельный canonical профиль
-#   - cinematic удалён: dangling alias (soundtrack не существует)
-#   - blues/blues_jazz → blues_jazz сохранены
-#   - electro/techno/electronic_music → electronic сохранены
-#   - Каждый destination обязан присутствовать в реестре; иначе → ValidationError
 _STYLE_ALIASES: Dict[str, str] = {
     "blues":            "blues_jazz",
-    "blues_jazz":       "blues_jazz",   # идемпотентный
+    "blues_jazz":       "blues_jazz",
     "techno":           "electronic",
     "electro":          "electronic",
     "electronic_music": "electronic",
@@ -68,12 +62,40 @@ class ValidationError(ValueError):
 
 @dataclass
 class MappingTraceEntry:
-    """Одна запись трассировки: какой параметр, из какого источника, финальное значение."""
+    """
+    Одна запись трассировки: какой параметр, из какого источника, финальное значение.
+
+    CB-3.1-A1: расширена полями провенанса θ-осей и генераторного слоя.
+
+    Поля:
+      param         — имя визуального параметра (symmetry_bias и т.д.)
+      source        — формула-строка или 'base' / 'guardrail' / 'user_preset:<name>'
+      raw           — значение до clamp01
+      final         — значение после clamp01
+      stage         — 'base' | 'perceptual' | 'user' | 'guardrail'
+
+      source_axes   — список θ-осей и perceptual-осей, участвовавших в формуле
+      formula       — точная formula-строка из YAML (None если stage=base/user/guardrail)
+      input_values  — снимок значений всех осей из source_axes на момент вычисления
+      layer_id      — 'interpretation' для StyleEngine-entries; реальный layer при composition
+      generator_id  — None для StyleEngine; реальный generator_id при composition render
+    """
     param: str
-    source: str       # имя оси-источника или 'formula' / 'base' / 'guardrail'
-    raw: float        # значение до clamp
-    final: float      # значение после clamp01
-    stage: str        # 'base' | 'perceptual' | 'user' | 'guardrail'
+    source: str
+    raw: float
+    final: float
+    stage: str
+
+    # CB-3.1-A1: поля θ-провенанса
+    source_axes: List[str] = field(default_factory=list)
+    formula: Optional[str] = None
+    input_values: Dict[str, float] = field(default_factory=dict)
+
+    # CB-3.1-A1: поля генераторного провенанса
+    # На этапе A1 допустимо layer_id='interpretation', generator_id=None.
+    # При реальном composition render оба поля должны быть заполнены (шаг B).
+    layer_id: Optional[str] = None
+    generator_id: Optional[str] = None
 
 
 @dataclass
@@ -130,20 +152,13 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
 def _log_normalize(raw: float, eps: float = 1e-6, scale: float = 0.05) -> float:
     """
     Log-нормировка spectral_flatness → noise_proxy ∈ [0, 1].
-
-    spectral_flatness в E1 лежит в диапазоне ~[0, 0.05].
-    log10(x + eps) отображает этот диапазон примерно в [-6, -1.3],
-    затем линейно нормируется в [0, 1].
-
-    scale: ожидаемый практический максимум spectral_flatness.
-    При raw >= scale → 1.0; при raw ≈ 0 → 0.0.
     """
     if raw is None:
         return 0.0
     raw = max(0.0, float(raw))
     log_val   = math.log10(raw + eps)
-    log_min   = math.log10(eps)            # ~-6.0
-    log_max   = math.log10(scale + eps)    # ~-1.3 при scale=0.05
+    log_min   = math.log10(eps)
+    log_max   = math.log10(scale + eps)
     if log_max <= log_min:
         return 0.0
     normalized = (log_val - log_min) / (log_max - log_min)
@@ -154,47 +169,22 @@ def _prepare_noise_proxy(perceptual: Dict[str, Any]) -> float:
     """
     Вычисляет noise_proxy — нормализованный proxy тембрального шума.
 
-    Источник: perceptual["noise_proxy"] (если уже вычислен upstream)
-      или perceptual["spectral_flatness"] через log-нормировку.
-
     Контракт E3-C:
       - noise_proxy — единственный входной сигнал шума для formula noise_level
       - density и tension не участвуют в target noise_level
       - harmony_theta_5 — дополнительный модификатор тембрального хаоса
     """
-    # Приоритет 1: уже нормированный proxy, переданный upstream (E1-bridge)
     if "noise_proxy" in perceptual and perceptual["noise_proxy"] is not None:
         return _clamp01(float(perceptual["noise_proxy"]))
-    # Приоритет 2: raw spectral_flatness → log-нормировка
     sf = perceptual.get("spectral_flatness", None)
     if sf is not None:
         return _log_normalize(float(sf))
-    # Fallback: нейтральное значение
     return 0.5
 
 
 def compute_theta_hash(theta: Mapping[str, float], strict: bool = True) -> str:
     """
     Canonical named θ-hash — публичная функция (CB-1 contract).
-
-    Алгоритм (ТЗ §2.2):
-      1. Извлекаем ровно 8 именованных осей из THETA_AXES.
-      2. Округляем каждое значение до 6 десятичных знаков.
-      3. Сериализуем в canonical JSON (sort_keys=True, compact separators).
-      4. SHA-256 → первые 16 hex-символов.
-
-    Гарантии:
-      - input dict в любом порядке → одинаковый hash.
-      - перестановка значений между осями → другой hash.
-      - изменение любой оси на ±0.000001 → другой hash.
-
-    strict=True (default):
-      - missing axis → ValidationError с именем оси.
-      - unsupported key → ValidationError с именем ключа.
-    strict=False:
-      - missing axis подставляет _THETA_DEFAULT; лишние ключи игнорируются.
-
-    Float precision policy: round(float(v), 6) — ровно 6 знаков после запятой.
     """
     if strict:
         known = set(THETA_AXES)
@@ -218,7 +208,6 @@ def compute_theta_hash(theta: Mapping[str, float], strict: bool = True) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:16]
 
 
-# Keep private alias for internal callers (backward compat)
 def _compute_theta_hash(theta_values: Dict[str, float]) -> str:
     """Internal alias → compute_theta_hash(strict=False) for legacy callers."""
     return compute_theta_hash(theta_values, strict=False)
@@ -232,13 +221,7 @@ def _compute_variation_seed(
     interp_slug: str,
     theta_values: Dict[str, float],
 ) -> int:
-    """
-    SHA-256-based variation seed.
-
-    CB-1: theta contribution uses same canonical JSON scheme as compute_theta_hash
-    so that seed и hash are derived from identical serialisation — prevents
-    divergence between hash contract and seed contract.
-    """
+    """SHA-256-based variation seed (CB-1 contract)."""
     theta_payload = {
         axis: round(float(theta_values.get(axis, _THETA_DEFAULT)), 6)
         for axis in THETA_AXES
@@ -255,27 +238,11 @@ def _normalize_style_slug(
     style_profile_slug: str,
     style_registry: Dict[str, StyleProfile],
 ) -> str:
-    """
-    Нормализует slug стиля.
-
-    Порядок:
-      1. Применяет таблицу алиасов _STYLE_ALIASES (ДО проверки реестра).
-         Если alias destination отсутствует в реестре — бросает ValidationError.
-         Это предотвращает dangling aliases.
-      2. Если slug уже в реестре — возвращает как есть.
-      3. Иначе возвращает оригинальный slug (engine выбросит ValueError).
-
-    E3-C контракт:
-      - jazz НЕ является алиасом blues_jazz; jazz — canonical профиль.
-      - cinematic НЕ является алиасом soundtrack (soundtrack отсутствует в реестре).
-    """
     slug = (style_profile_slug or "default").strip()
     slug_lower = slug.lower()
 
-    # Шаг 1: применяем алиасы (приоритет выше реестра)
     canonical = _STYLE_ALIASES.get(slug_lower)
     if canonical is not None:
-        # Dangling alias guard: destination обязан существовать в реестре
         if canonical not in style_registry:
             available = sorted(style_registry.keys())
             raise ValidationError(
@@ -285,18 +252,13 @@ def _normalize_style_slug(
             )
         return canonical
 
-    # Шаг 2: slug уже в реестре — возвращаем как есть
     if slug in style_registry:
         return slug
 
-    # Шаг 3: неизвестный slug — возвращаем как есть, engine выбросит ValueError
     return slug
 
 
 def _derive_palette_id(base_palette: str, brightness: float) -> str:
-    """
-    Legacy-логика выбора палитры: suffix _bright/_dark относительно базового palette.
-    """
     base_palette = (base_palette or "default_dark").strip()
     if brightness > 0.60:
         return f"{base_palette}_bright"
@@ -306,10 +268,6 @@ def _derive_palette_id(base_palette: str, brightness: float) -> str:
 
 
 def _compute_morphology_guard(perceptual: Dict[str, float]) -> float:
-    """
-    Derived axis: morphology_guard.
-    Отражает риск потери музыкальной идентичности при слишком гладкой морфологии.
-    """
     section_complexity = _safe_float(perceptual.get("section_complexity", 0.0))
     tension = _safe_float(perceptual.get("tension", 0.0))
     repetition = _safe_float(perceptual.get("repetition", 0.0))
@@ -323,13 +281,6 @@ def _extract_theta_axes(
     perceptual: Dict[str, Any],
     strict: bool = True,
 ) -> Dict[str, float]:
-    """
-    Извлекает harmony_theta_0..7 из perceptual.
-
-    strict=True (production): если ось объявлена в THETA_AXES но отсутствует
-    в perceptual — молча подставляет _THETA_DEFAULT (нейтрально).
-    Если значение присутствует но не конвертируется в float — бросает ValueError.
-    """
     result: Dict[str, float] = {}
     for axis in THETA_AXES:
         raw = perceptual.get(axis, None)
@@ -352,10 +303,6 @@ def _validate_mapping_source(
     param_name: str,
     layer_id: str = "",
 ) -> None:
-    """
-    E3: заменяет silent-zero на явную ошибку.
-    Бросает ValueError если source не найден в axes.
-    """
     if source not in axes:
         ctx = f" (layer={layer_id})" if layer_id else ""
         raise ValueError(
@@ -363,6 +310,40 @@ def _validate_mapping_source(
             f"source='{source}'{ctx} not in axes. "
             f"Available: {sorted(axes.keys())}"
         )
+
+
+def _extract_formula_axes(formula: str, axes: Dict[str, Any]) -> List[str]:
+    """
+    CB-3.1-A1: определяет список осей из axes, реально упомянутых в formula-строке.
+
+    Простой текстовый поиск по именам: если имя оси встречается как подстрока
+    формулы — ось считается использованной. Достаточно для провенанса θ-осей;
+    не требует AST-парсинга.
+    """
+    found = []
+    for axis_name in axes:
+        if axis_name in formula:
+            found.append(axis_name)
+    return sorted(found)
+
+
+def _snapshot_input_values(
+    axis_names: List[str],
+    axes: Dict[str, Any],
+) -> Dict[str, float]:
+    """
+    CB-3.1-A1: снимок числовых значений перечисленных осей на момент вычисления.
+    Нечисловые значения (macro_shape_hint и т.п.) пропускаются.
+    """
+    result: Dict[str, float] = {}
+    for name in axis_names:
+        val = axes.get(name)
+        if val is not None:
+            try:
+                result[name] = round(float(val), 6)
+            except (TypeError, ValueError):
+                pass
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -381,26 +362,82 @@ def resolve_render_params(
     """
     Главный визуальный resolver в declarative-режиме.
 
-    perceptual: dict с осями (energy, tension, density, brightness, stability,
-      smoothness, repetition, section_complexity, macro_shape_hint) +
-      E3: harmony_theta_0..7 +
-      E3-C: noise_proxy (log-нормированная spectral_flatness, [0,1]).
-
-    user_preset: dict со слайдерами (complexity, symmetry, density, noise, motion).
-
-    strict_theta=True: неизвестный mapping source → ValueError вместо silent-zero.
-
-    Логика:
-      1) Base layer из StyleProfile.
-      2) Perceptual layer из InterpretationProfile.mapping_rules.
-      3) User layer из UserPreset.
-      4) Guardrails из InterpretationProfile.guardrails.
+    CB-3.1-A1: каждый MappingTraceEntry несёт полный θ-провенанс:
+      source_axes, formula, input_values, layer_id='interpretation', generator_id=None.
     """
 
     trace: List[MappingTraceEntry] = []
 
-    def _trace(param: str, source: str, raw: float, final: float, stage: str) -> None:
-        trace.append(MappingTraceEntry(param=param, source=source, raw=raw, final=final, stage=stage))
+    def _trace_base(param: str, val: float) -> None:
+        """Stage=base: StyleProfile → нет формулы, нет θ-осей."""
+        trace.append(MappingTraceEntry(
+            param=param,
+            source="style_profile",
+            raw=val,
+            final=val,
+            stage="base",
+            source_axes=[],
+            formula=None,
+            input_values={},
+            layer_id="interpretation",
+            generator_id=None,
+        ))
+
+    def _trace_formula(
+        param: str,
+        formula_str: str,
+        raw: float,
+        final: float,
+        axes: Dict[str, Any],
+    ) -> None:
+        """
+        CB-3.1-A1: stage=perceptual с полным θ-провенансом.
+        Автоматически извлекает source_axes и input_values из axes-словаря.
+        """
+        used_axes = _extract_formula_axes(formula_str, axes) if formula_str else []
+        snap = _snapshot_input_values(used_axes, axes)
+        trace.append(MappingTraceEntry(
+            param=param,
+            source=formula_str or "base",
+            raw=raw,
+            final=final,
+            stage="perceptual",
+            source_axes=used_axes,
+            formula=formula_str if formula_str else None,
+            input_values=snap,
+            layer_id="interpretation",
+            generator_id=None,
+        ))
+
+    def _trace_user(param: str, raw: float, final: float, preset_key: str) -> None:
+        """Stage=user: UserPreset bias."""
+        trace.append(MappingTraceEntry(
+            param=param,
+            source=f"user_preset:{preset_key}",
+            raw=raw,
+            final=final,
+            stage="user",
+            source_axes=[],
+            formula=None,
+            input_values={},
+            layer_id="interpretation",
+            generator_id=None,
+        ))
+
+    def _trace_guardrail(param: str, val: float, when_expr: str) -> None:
+        """Stage=guardrail."""
+        trace.append(MappingTraceEntry(
+            param=param,
+            source=f"guardrail:{when_expr}",
+            raw=val,
+            final=val,
+            stage="guardrail",
+            source_axes=[],
+            formula=None,
+            input_values={},
+            layer_id="interpretation",
+            generator_id=None,
+        ))
 
     # -----------------------------------------------------------------------
     # Загрузка реестров
@@ -437,7 +474,7 @@ def resolve_render_params(
         ("motion_intensity", base_motion),
         ("texture_complexity", base_texture),
     ]:
-        _trace(pname, "style_profile", pval, pval, "base")
+        _trace_base(pname, pval)
 
     # -----------------------------------------------------------------------
     # Perceptual axes (классические)
@@ -452,13 +489,8 @@ def resolve_render_params(
     section_complexity = _safe_float(perceptual.get("section_complexity", 0.0))
     macro_shape_hint   = perceptual.get("macro_shape_hint", "unknown") or "unknown"
 
-    # E3-C: noise_proxy — log-нормированная spectral_flatness, независимая ось шума.
-    # НЕ является density; density — плотность событий/текстуры, не тембральная шумность.
     noise_proxy = _prepare_noise_proxy(perceptual)
-
-    # E3: извлекаем θ-оси
     theta_values = _extract_theta_axes(perceptual, strict=strict_theta)
-
     morphology_guard = _compute_morphology_guard(perceptual)
 
     # Полный axes-словарь: классика + noise_proxy + θ + derived
@@ -473,9 +505,7 @@ def resolve_render_params(
         "section_complexity": section_complexity,
         "macro_shape_hint":   macro_shape_hint,
         "morphology_guard":   morphology_guard,
-        # E3-C: шумовой proxy (log-norm spectral_flatness)
         "noise_proxy":        noise_proxy,
-        # E3: theta axes
         **theta_values,
     }
 
@@ -494,7 +524,8 @@ def resolve_render_params(
         else:
             raw_val = base
         final = _clamp01(raw_val)
-        _trace(name, expr or "base", raw_val, final, "perceptual")
+        # CB-3.1-A1: trace с полным θ-провенансом
+        _trace_formula(name, expr, raw_val, final, {"base": base, **axes})
         return final
 
     symmetry_bias      = _eval_param("symmetry_bias",     base_symmetry)
@@ -517,7 +548,6 @@ def resolve_render_params(
     if layout_macro_shape == "unknown":
         layout_macro_shape = "ABA_like"
 
-    # Palette
     palette_id    = _derive_palette_id(base_palette, brightness)
     stochastic_term = _clamp01(base_stochastic)
 
@@ -530,17 +560,17 @@ def resolve_render_params(
     preset_noise      = _safe_float(user_preset.get("noise",      0.5), 0.5)
     preset_motion     = _safe_float(user_preset.get("motion",     0.5), 0.5)
 
-    def _apply_preset(cur: float, preset_val: float, name: str) -> float:
+    def _apply_preset(cur: float, preset_val: float, name: str, preset_key: str) -> float:
         raw = cur + (preset_val - 0.5) * 0.5
         final = _clamp01(raw)
-        _trace(name, f"user_preset:{name}", raw, final, "user")
+        _trace_user(name, raw, final, preset_key)
         return final
 
-    symmetry_bias      = _apply_preset(symmetry_bias,      preset_symmetry,   "symmetry_bias")
-    recursion_depth    = _apply_preset(recursion_depth,    preset_complexity, "recursion_depth")
-    density_level      = _apply_preset(density_level,      preset_density,    "density_level")
-    noise_level        = _apply_preset(noise_level,        preset_noise,      "noise_level")
-    motion_intensity   = _apply_preset(motion_intensity,   preset_motion,     "motion_intensity")
+    symmetry_bias      = _apply_preset(symmetry_bias,      preset_symmetry,   "symmetry_bias",      "symmetry")
+    recursion_depth    = _apply_preset(recursion_depth,    preset_complexity, "recursion_depth",    "complexity")
+    density_level      = _apply_preset(density_level,      preset_density,    "density_level",      "density")
+    noise_level        = _apply_preset(noise_level,        preset_noise,      "noise_level",        "noise")
+    motion_intensity   = _apply_preset(motion_intensity,   preset_motion,     "motion_intensity",   "motion")
 
     # -----------------------------------------------------------------------
     # 4. Guardrails
@@ -579,7 +609,7 @@ def resolve_render_params(
                 val = min(val, action.max)
             val = _clamp01(val)
             _mutable[param_name] = val
-            _trace(param_name, f"guardrail:{gr.when}", val, val, "guardrail")
+            _trace_guardrail(param_name, val, gr.when)
 
     symmetry_bias      = _mutable["symmetry_bias"]
     recursion_depth    = _mutable["recursion_depth"]
