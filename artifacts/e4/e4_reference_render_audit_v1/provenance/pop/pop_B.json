@@ -1,0 +1,23 @@
+{
+  "fixture_id": "pop_B",
+  "experiment_id": "e4_reference_render_audit_v1",
+  "profile_slug": "pop",
+  "git_sha": "9f6080ebb22486d087c55f505d823e2634e6baae",
+  "feature_hash": "sha256:placeholder_pop_B",
+  "harmony_theta": [0.80, 0.25, 0.82, 0.28, 0.30, 0.75, 0.60, 0.55],
+  "harmony_theta_hash": "sha256:theta_pop_B",
+  "variation_seed": 1777577,
+  "palette_id": "vivid_light",
+  "generator_stack": ["PENDING_RENDER"],
+  "mapping_trace": ["PENDING_RENDER"],
+  "output_sha256": "PENDING_RENDER",
+  "renderer_params": {"width": 512, "height": 512},
+  "perceptual": {
+    "energy": 0.75, "tension": 0.60, "density": 0.35,
+    "brightness": 0.85, "stability": 0.40, "smoothness": 0.45,
+    "repetition": 0.65, "section_complexity": 0.60,
+    "macro_shape_hint": "loop", "noise_proxy": 0.38
+  },
+  "render_status": "pre_render",
+  "created_at": "2026-08-11T04:19:00Z"
+}
