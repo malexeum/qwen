@@ -1,0 +1,123 @@
+# standard.yaml — стандартный interpretation profile
+# CB-3.1-corrective: создан как канонический эквивалент default.yaml.
+#
+# КОНТРАКТ θ-МАППИНГА (канонический, зафиксирован 2026-08-11):
+#
+#   target             theta-оси          веса
+#   ─────────────────────────────────────────────────────────
+#   symmetry_bias      θ₀, θ₇             0.20, 0.15
+#   recursion_depth    θ₂                 0.25
+#   density_level      θ₃                 0.20
+#   noise_level        θ₅                 0.25          ← E3-C: noise_proxy only
+#   motion_intensity   θ₆                 0.20
+#   texture_complexity θ₂, θ₅             0.20, 0.15    ← θ₆ НЕ входит
+#
+# Нейтральность: при всех theta=0.5 каждый (theta_N - 0.5)*w = 0 → результат = base.
+# standard.yaml намеренно идентичен default.yaml по формулам.
+# Различие будет введено позднее через style_overrides (Step B).
+slug: standard
+display_name: "Standard"
+description: >
+  Стандартный профиль интерпретации. Формулы идентичны default.yaml.
+  Расхождение от default вводится через style_overrides на уровне Step B.
+  CB-3.1-corrective: канонический θ-контракт зафиксирован.
+
+mapping_rules:
+
+  # ------------------------------------------------------------------
+  # symmetry_bias
+  # θ₀ (гармоническая чистота)  w=0.20  → усиливает симметрию
+  # θ₇ (crystallinity)          w=0.15  → кристалличность → симметрия
+  # stability                   w=0.30  → классический физический признак
+  # ------------------------------------------------------------------
+  symmetry_bias:
+    base: 0.5
+    formula: >-
+      base
+      + (stability - 0.5) * 0.30
+      + (harmony_theta_0 - 0.5) * 0.20
+      + (harmony_theta_7 - 0.5) * 0.15
+
+  # ------------------------------------------------------------------
+  # recursion_depth
+  # θ₂ (structural density)  w=0.25
+  # ------------------------------------------------------------------
+  recursion_depth:
+    base: 0.5
+    formula: >-
+      base
+      + (section_complexity - 0.5) * 0.40
+      + (harmony_theta_2 - 0.5) * 0.25
+
+  # ------------------------------------------------------------------
+  # density_level
+  # θ₃ (unresolved tension)  w=0.20
+  # ------------------------------------------------------------------
+  density_level:
+    base: 0.5
+    formula: >-
+      base
+      + (density - 0.5) * 0.50
+      + (harmony_theta_3 - 0.5) * 0.20
+
+  # ------------------------------------------------------------------
+  # noise_level
+  # Контракт E3-C: noise_proxy — единственный источник. density/tension НЕ включать.
+  # θ₅ (timbral chaos)  w=0.25
+  # ------------------------------------------------------------------
+  noise_level:
+    base: 0.5
+    formula: >-
+      base
+      + (noise_proxy - 0.5) * 0.30
+      + (harmony_theta_5 - 0.5) * 0.25
+
+  # ------------------------------------------------------------------
+  # motion_intensity
+  # θ₆ (development entropy)  w=0.20
+  # ------------------------------------------------------------------
+  motion_intensity:
+    base: 0.5
+    formula: >-
+      base
+      + (energy - 0.5) * 0.50
+      + (harmony_theta_6 - 0.5) * 0.20
+
+  # ------------------------------------------------------------------
+  # texture_complexity
+  # θ₂ (structural density)  w=0.20
+  # θ₅ (timbral chaos)       w=0.15
+  # θ₆ НЕ входит — «развитие во времени» ≠ «фактурная сложность»
+  # ------------------------------------------------------------------
+  texture_complexity:
+    base: 0.5
+    formula: >-
+      base
+      + morphology_guard * 0.30
+      + (section_complexity - 0.5) * 0.20
+      + (harmony_theta_2 - 0.5) * 0.20
+      + (harmony_theta_5 - 0.5) * 0.15
+
+  # ------------------------------------------------------------------
+  # layout_macro_shape
+  # ------------------------------------------------------------------
+  layout_macro_shape:
+    rules:
+      - when: "energy > 0.7 and section_complexity > 0.6"
+        value: "ABAC_like"
+      - when: "repetition > 0.7 and stability > 0.6"
+        value: "strophic"
+      - when: "energy < 0.3 and smoothness > 0.6"
+        value: "through_composed"
+
+guardrails: []
+
+theta_defaults:
+  harmony_theta_0: 0.5
+  harmony_theta_1: 0.5
+  harmony_theta_2: 0.5
+  harmony_theta_3: 0.5
+  harmony_theta_4: 0.5
+  harmony_theta_5: 0.5
+  harmony_theta_6: 0.5
+  harmony_theta_7: 0.5
