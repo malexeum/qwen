@@ -1,8 +1,9 @@
 # E1 style profile: classical
+# E4-gate0: palette slug patched ivory_dark → ivory_cobalt (was missing from registry)
 slug: classical
 music_style: classical
 visual_mood: elegant, structured, timeless
-palette: ivory_dark
+palette: ivory_cobalt
 contrast: 0.45
 geometry: symmetric
 density: 0.40
@@ -10,4 +11,4 @@ motion_intensity: 0.35
 noise_level: 0.15
 symmetry_bias: 0.80
 complexity_bias: 0.45
-version: "0.3.0"
+version: "0.3.1"

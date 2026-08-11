@@ -1,8 +1,9 @@
 # E1 style profile: ambient
+# E4-gate0: palette slug patched ocean_dark → lunar_mist (was missing from registry)
 slug: ambient
 music_style: ambient
 visual_mood: calm, spacious, meditative
-palette: ocean_dark
+palette: lunar_mist
 contrast: 0.30
 geometry: fluid
 density: 0.30
@@ -10,4 +11,4 @@ motion_intensity: 0.25
 noise_level: 0.20
 symmetry_bias: 0.75
 complexity_bias: 0.30
-version: "0.3.0"
+version: "0.3.1"
