@@ -6,6 +6,7 @@ env/
 
 # Python bytecode and caches
 __pycache__/
+.pytest_cache/
 *.py[cod]
 
 # Local configuration and credentials
@@ -22,8 +23,8 @@ logs/
 storage/
 tmp/
 
-# Local exploratory tests and backups
-tests/
+# аудио
+tests/audio/*.mp3
 backup_qwen_local/
 
 # Logs and temporary files
@@ -43,3 +44,10 @@ backup_qwen_local/
 # E4 render PNGs — reproducible, not tracked
 # contact_sheet.png is tracked (visual summary)
 artifacts/e4/e4_reference_render_audit_v1/renders/
+
+# External audio corpus; audio bytes are not stored in this repository
+tests/audio/*.mp3
+tests/audio/*.wav
+tests/audio/*.flac
+tests/audio/*.ogg
+tests/audio/*.m4a
