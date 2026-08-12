@@ -172,7 +172,8 @@ class TestFormulaRoundtrip:
     """
 
     @pytest.fixture(scope="class")
-    def yaml_data(self):
+    @classmethod
+    def yaml_data(cls):
         yaml_path = INTERPRETATION_PROFILES_DIR / "default.yaml"
         assert yaml_path.exists(), f"default.yaml not found at {yaml_path}"
         with open(yaml_path, "r", encoding="utf-8") as f:
@@ -180,12 +181,14 @@ class TestFormulaRoundtrip:
         return data, str(yaml_path)
 
     @pytest.fixture(scope="class")
-    def resolved_profile(self):
+    @classmethod
+    def resolved_profile(cls):
         profiles = load_interpretation_profiles()
         return profiles["default"]
 
     @pytest.fixture(scope="class")
-    def resolved_rp(self):
+    @classmethod
+    def resolved_rp(cls):
         return _resolve(_neutral_perceptual())
 
     @pytest.mark.parametrize("param", list(THETA_CONTRACT.keys()))
