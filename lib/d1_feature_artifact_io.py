@@ -74,10 +74,7 @@ def atomic_write_bytes(target: Path, content: bytes, *, overwrite: bool) -> bool
         else:
             os.link(temp_path, target)
         return _fsync_parent_directory(target)
-    except Exception:
-        temp_path.unlink(missing_ok=True)
-        raise
-    else:
+    finally:
         temp_path.unlink(missing_ok=True)
 
 
