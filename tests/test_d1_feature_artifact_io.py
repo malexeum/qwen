@@ -3,7 +3,7 @@ import json
 import pytest
 
 from lib.canonicalization import canonical_feature_hash
-from lib.d1_feature_artifact_io import write_feature_artifact
+from lib.d1_feature_artifact_io import atomic_write_bytes, write_feature_artifact
 from lib.d1_feature_artifacts import build_d1_feature_artifact
 from lib.d1_feature_manifest import build_feature_manifest, canonical_manifest_bytes, feature_relative_path, write_feature_manifest
 
@@ -43,6 +43,22 @@ def test_feature_overwrite_is_forbidden(tmp_path):
         write_feature_artifact(tmp_path, value)
 
 
+def test_immutable_publish_race_preserves_winner_and_removes_temp_file(tmp_path, monkeypatch):
+    target = tmp_path / "features" / "fixture_A.json"
+    target.parent.mkdir()
+    import lib.d1_feature_artifact_io as io
+
+    def competing_publish(source, destination):
+        destination.write_bytes(b"winner")
+        raise FileExistsError("competing immutable writer won")
+
+    monkeypatch.setattr(io.os, "link", competing_publish)
+    with pytest.raises(FileExistsError, match="competing immutable writer won"):
+        atomic_write_bytes(target, b"candidate", overwrite=False)
+    assert target.read_bytes() == b"winner"
+    assert not list(tmp_path.rglob(".*.tmp"))
+
+
 def test_manifest_is_deterministic_rebuild_and_uses_lf(tmp_path):
     first, second = artifact("fixture_A"), artifact("fixture_B")
     assert canonical_manifest_bytes([second, first]) == canonical_manifest_bytes([first, second])
@@ -65,15 +81,15 @@ def test_unsafe_analysis_id_is_rejected(analysis_id):
         feature_relative_path(analysis_id)
 
 
-def test_failed_replace_leaves_no_temp_file(tmp_path, monkeypatch):
-    value = artifact()
+def test_failed_manifest_replace_leaves_no_temp_file(tmp_path, monkeypatch):
     import lib.d1_feature_artifact_io as io
 
     def fail_replace(source, target):
         raise OSError("injected replace failure")
 
     monkeypatch.setattr(io.os, "replace", fail_replace)
+    target = tmp_path / "manifest.json"
     with pytest.raises(OSError):
-        write_feature_artifact(tmp_path, value)
+        atomic_write_bytes(target, b"{}\n", overwrite=True)
     assert not list(tmp_path.rglob(".*.tmp"))
-    assert not (tmp_path / "features" / "fixture_A.json").exists()
+    assert not target.exists()

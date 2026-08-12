@@ -63,19 +63,22 @@ def _fsync_parent_directory(path: Path) -> bool:
 
 def atomic_write_bytes(target: Path, content: bytes, *, overwrite: bool) -> bool:
     target.parent.mkdir(parents=True, exist_ok=True)
-    if target.exists() and not overwrite:
-        raise FileExistsError(f"immutable target already exists: {target}")
     temp_path = target.with_name(f".{target.name}.{secrets.token_hex(8)}.tmp")
     try:
         with open(temp_path, "xb") as handle:
             handle.write(content)
             handle.flush()
             os.fsync(handle.fileno())
-        os.replace(temp_path, target)
+        if overwrite:
+            os.replace(temp_path, target)
+        else:
+            os.link(temp_path, target)
         return _fsync_parent_directory(target)
     except Exception:
         temp_path.unlink(missing_ok=True)
         raise
+    else:
+        temp_path.unlink(missing_ok=True)
 
 
 def write_feature_artifact(root: Path, artifact: D1FeatureArtifact) -> Path:
