@@ -1,0 +1,46 @@
+schema_version: e4a_fixtures_manifest/v1
+experiment_id: e4a_planned_provenance_contract_v1
+total_fixtures: 22
+lifecycle_status: planned
+source_manifests:
+  - artifacts/e4/fixtures_manifest.yaml
+  - artifacts/e4/fixtures_manifest_v2.yaml
+historical_render_sets:
+  - artifacts/e4/e4_reference_render_audit_v1
+historical_render_sets_are_reference_baselines: false
+fixture_defaults: &planned
+  interpretation_profile_slug: default
+  preset_id: default
+  lifecycle_status: planned
+  audio_content_sha256: null
+  feature_artifact_path: null
+  feature_sha256: null
+  canonical_theta_hash_short: null
+  canonical_theta_sha256: null
+  variation_seed: null
+  canonical_render_params_sha256: null
+  output_sha256: null
+  audit_scores: null
+fixtures:
+  - {<<: *planned, id: ambient_A, tier: A, fixture_category: canonical, style_profile_slug: ambient, expected_palette: lunar_mist}
+  - {<<: *planned, id: ambient_B, tier: B, fixture_category: canonical, style_profile_slug: ambient, expected_palette: lunar_mist}
+  - {<<: *planned, id: ambient_C, tier: C, fixture_category: canonical, style_profile_slug: ambient, expected_palette: lunar_mist}
+  - {<<: *planned, id: blues_jazz_A, tier: A, fixture_category: canonical, style_profile_slug: blues_jazz, expected_palette: warm_midnight}
+  - {<<: *planned, id: blues_jazz_B, tier: B, fixture_category: canonical, style_profile_slug: blues_jazz, expected_palette: warm_midnight}
+  - {<<: *planned, id: blues_jazz_C, tier: C, fixture_category: canonical, style_profile_slug: blues_jazz, expected_palette: warm_midnight}
+  - {<<: *planned, id: classical_A, tier: A, fixture_category: canonical, style_profile_slug: classical, expected_palette: ivory_cobalt}
+  - {<<: *planned, id: classical_B, tier: B, fixture_category: canonical, style_profile_slug: classical, expected_palette: ivory_cobalt}
+  - {<<: *planned, id: classical_C, tier: C, fixture_category: canonical, style_profile_slug: classical, expected_palette: ivory_cobalt}
+  - {<<: *planned, id: electronic_A, tier: A, fixture_category: canonical, style_profile_slug: electronic, expected_palette: neon_dark}
+  - {<<: *planned, id: electronic_B, tier: B, fixture_category: canonical, style_profile_slug: electronic, expected_palette: neon_dark}
+  - {<<: *planned, id: electronic_C, tier: C, fixture_category: canonical, style_profile_slug: electronic, expected_palette: neon_dark}
+  - {<<: *planned, id: jazz_A, tier: A, fixture_category: canonical, style_profile_slug: jazz, expected_palette: nocturne_amber}
+  - {<<: *planned, id: jazz_B, tier: B, fixture_category: canonical, style_profile_slug: jazz, expected_palette: nocturne_amber}
+  - {<<: *planned, id: jazz_C, tier: C, fixture_category: canonical, style_profile_slug: jazz, expected_palette: nocturne_amber}
+  - {<<: *planned, id: pop_A, tier: A, fixture_category: canonical, style_profile_slug: pop, expected_palette: vivid_light}
+  - {<<: *planned, id: pop_B, tier: B, fixture_category: canonical, style_profile_slug: pop, expected_palette: vivid_light}
+  - {<<: *planned, id: pop_C, tier: C, fixture_category: canonical, style_profile_slug: pop, expected_palette: vivid_light}
+  - {<<: *planned, id: rock_A, tier: A, fixture_category: canonical, style_profile_slug: rock, expected_palette: dark_saturated}
+  - {<<: *planned, id: rock_B, tier: B, fixture_category: canonical, style_profile_slug: rock, expected_palette: dark_saturated}
+  - {<<: *planned, id: rock_C, tier: C, fixture_category: canonical, style_profile_slug: rock, expected_palette: dark_saturated}
+  - {<<: *planned, id: default_smoke, tier: smoke, fixture_category: smoke, style_profile_slug: default, expected_palette: neutral_noir}
