@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import json
 import os
 import secrets
 from pathlib import Path
 from typing import Any
 
-from lib.canonicalization import canonical_feature_hash, canonical_json_bytes
+from lib.canonicalization import canonical_feature_hash
 from lib.d1_feature_artifacts import D1FeatureArtifact
 
 
@@ -28,7 +29,13 @@ def feature_envelope(artifact: D1FeatureArtifact) -> dict[str, Any]:
 
 
 def canonical_feature_envelope_bytes(artifact: D1FeatureArtifact) -> bytes:
-    encoded = canonical_json_bytes(feature_envelope(artifact)) + b"\n"
+    encoded = json.dumps(
+        feature_envelope(artifact),
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8") + b"\n"
     if b"\r" in encoded:
         raise RuntimeError("canonical envelope must use LF only")
     return encoded

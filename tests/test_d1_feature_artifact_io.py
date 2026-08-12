@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from lib.canonicalization import canonical_feature_hash
 from lib.d1_feature_artifact_io import write_feature_artifact
 from lib.d1_feature_artifacts import build_d1_feature_artifact
 from lib.d1_feature_manifest import build_feature_manifest, canonical_manifest_bytes, feature_relative_path, write_feature_manifest
@@ -22,6 +23,8 @@ def test_feature_write_read_and_lf_output(tmp_path):
     assert path.relative_to(tmp_path).as_posix() == "features/fixture_A.json"
     assert envelope["feature_sha256"] == value.feature_sha256
     assert envelope["semantic_payload"] == value.semantic_payload()
+    assert canonical_feature_hash(envelope["semantic_payload"]) == envelope["feature_sha256"]
+    assert isinstance(envelope["semantic_payload"]["named_theta"]["harmony_theta_0"], float)
     assert b"\r" not in path.read_bytes()
     assert not list(tmp_path.rglob(".*.tmp"))
 
