@@ -1,4 +1,5 @@
 import json
+from types import MappingProxyType
 
 import pytest
 
@@ -58,6 +59,37 @@ def test_forged_or_mutated_artifact_is_rejected(tmp_path):
     object.__setattr__(value, "feature_sha256", "sha256:" + "0" * 64)
     with pytest.raises(ValueError):
         write_feature_artifact(tmp_path, value)
+
+
+def test_tampered_theta_hash_is_rejected_before_publish(tmp_path):
+    value = artifact()
+    object.__setattr__(value, "canonical_theta_hash", "sha256:" + "0" * 64)
+
+    with pytest.raises(ValueError, match="canonical_theta_hash"):
+        write_feature_artifact(tmp_path, value)
+
+    assert not list(tmp_path.rglob("*.json"))
+    assert not list(tmp_path.rglob(".*.tmp"))
+
+
+def test_tampered_theta_and_recomputed_feature_hash_but_stale_theta_hash_is_rejected(
+    tmp_path,
+):
+    value = artifact()
+    theta = dict(value.named_theta)
+    theta["harmony_theta_0"] = 0.123456
+    object.__setattr__(value, "named_theta", MappingProxyType(theta))
+    object.__setattr__(
+        value,
+        "feature_sha256",
+        canonical_feature_hash(value.semantic_payload()),
+    )
+
+    with pytest.raises(ValueError, match="canonical_theta_hash"):
+        write_feature_artifact(tmp_path, value)
+
+    assert not list(tmp_path.rglob("*.json"))
+    assert not list(tmp_path.rglob(".*.tmp"))
 
 
 def test_feature_overwrite_is_forbidden(tmp_path):

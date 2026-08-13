@@ -6,17 +6,22 @@ import secrets
 from pathlib import Path
 from typing import Any
 
-from lib.canonicalization import canonical_feature_hash
+from lib.canonicalization import canonical_feature_hash, canonical_theta_hash
 from lib.d1_feature_artifacts import D1FeatureArtifact
 
 
 def validate_feature_artifact(artifact: D1FeatureArtifact) -> None:
+    expected_theta_hash = canonical_theta_hash(artifact.named_theta)
+    if artifact.canonical_theta_hash != expected_theta_hash:
+        raise ValueError("canonical_theta_hash does not match named_theta")
+
     payload = artifact.semantic_payload()
+    if "git_sha" in payload or "feature_sha256" in payload:
+        raise ValueError("semantic payload must not contain envelope provenance")
+
     actual_hash = canonical_feature_hash(payload)
     if actual_hash != artifact.feature_sha256:
         raise ValueError("feature_sha256 does not match the canonical semantic payload")
-    if "feature_sha256" in payload or "git_sha" in payload:
-        raise ValueError("semantic payload contains envelope-only fields")
 
 
 def feature_envelope(artifact: D1FeatureArtifact) -> dict[str, Any]:
