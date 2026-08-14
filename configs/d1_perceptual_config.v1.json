@@ -19,37 +19,32 @@
   "measurement_backend": {
     "module": "lib.audio_analysis.analysis",
     "function": "analyze_audio_file",
-    "sample_rate_hz": 44100,
-    "mono": true,
-    "n_fft": 2048,
-    "hop_length": 512
+    "implementation_contract": "e1_fix3_fixed_44100hz_mono_nfft2048_hop512"
   },
   "mapping": {
     "symmetry_bias": {
-      "formula": "clip01(symmetry_bias)"
+      "formula_id": "symmetry_bias_identity_clip01"
     },
     "tension": {
-      "formula": "clip01(dynamic_range / 30.0)",
-      "unit": "dB"
+      "formula_id": "dynamic_range_div_30_clip01"
     },
     "harmonic_stability": {
-      "formula": "clip01(mfcc_variance_norm)"
+      "formula_id": "mfcc_variance_identity_clip01"
     },
     "harmonic_change_rate": {
-      "formula": "clip01(harmonic_change_rate_hz / 2.0)",
-      "unit": "s^-1"
+      "formula_id": "harmonic_change_rate_div_2_clip01"
     },
     "texture_complexity": {
-      "formula": "clip01(0.50 * spectral_flatness + 0.30 * spectral_centroid_norm + 0.20 * onset_rate_norm)"
+      "formula_id": "flatness_centroid_onset_weighted_v1"
     },
     "recursion_depth": {
-      "formula": "clip01(0.50 * spectral_centroid_norm + 0.30 * tension + 0.20 * spectral_flatness)"
+      "formula_id": "centroid_tension_flatness_weighted_v1"
     },
     "section_complexity": {
-      "formula": "clip01(section_complexity)"
+      "formula_id": "section_complexity_identity_clip01"
     },
     "noise_level": {
-      "formula": "clip01(noise_level)"
+      "formula_id": "noise_level_identity_clip01"
     }
   },
   "rounding": {

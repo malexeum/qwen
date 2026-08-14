@@ -1,217 +1,392 @@
-import importlib.util
+from __future__ import annotations
+
+import hashlib
 import json
 from pathlib import Path
 
 import pytest
 
+import tools.d1_extract as extractor
 
-MODULE_PATH = Path(__file__).resolve().parents[1] / "tools" / "d1_extract.py"
-SPEC = importlib.util.spec_from_file_location("d1_extract", MODULE_PATH)
-assert SPEC is not None and SPEC.loader is not None
-extractor = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(extractor)
 
+EXPECTED_MEASUREMENT_BACKEND = {
+    "module": "lib.audio_analysis.analysis",
+    "function": "analyze_audio_file",
+    "implementation_contract": "e1_fix3_fixed_44100hz_mono_nfft2048_hop512",
+}
+
+EXPECTED_FORMULA_IDS = {
+    "symmetry_bias": "symmetry_bias_identity_clip01",
+    "tension": "dynamic_range_div_30_clip01",
+    "harmonic_stability": "mfcc_variance_identity_clip01",
+    "harmonic_change_rate": "harmonic_change_rate_div_2_clip01",
+    "texture_complexity": "flatness_centroid_onset_weighted_v1",
+    "recursion_depth": "centroid_tension_flatness_weighted_v1",
+    "section_complexity": "section_complexity_identity_clip01",
+    "noise_level": "noise_level_identity_clip01",
+}
 
 RAW = {
     "duration_sec": 12.5,
     "symmetry_bias": 0.8123456,
     "dynamic_range": 12.345678,
     "mfcc_variance_norm": 0.3456789,
-    "harmonic_change_rate_hz": 0.7654321,
+    "harmonic_change_rate_hz": 0.9876543,
     "spectral_flatness": 0.2345678,
     "spectral_centroid_norm": 0.4567891,
-    "onset_rate_norm": 0.5678912,
-    "section_complexity": 0.6789123,
-    "noise_level": 0.7891234,
+    "onset_rate_norm": 0.6789123,
+    "section_complexity": 0.5678912,
+    "noise_level": 0.1234567,
 }
 
 
-def write_config(path: Path, *, version: str = extractor.ANALYSIS_CONFIG_VERSION):
-    payload = {
+def valid_config() -> dict:
+    return {
         "adapter_name": extractor.ADAPTER_NAME,
         "adapter_version": extractor.ADAPTER_VERSION,
-        "analysis_config_version": version,
+        "analysis_config_version": extractor.ANALYSIS_CONFIG_VERSION,
         "canonical_axes": list(extractor.CANONICAL_AXES),
-        "rounding": {"mode": "ROUND_HALF_EVEN", "decimal_places": 6},
-        "mapping": {axis: {"formula": axis} for axis in extractor.CANONICAL_AXES},
+        "decoder_policy": {
+            "backend": "ffmpeg",
+            "require_exact_version": True,
+        },
+        "measurement_backend": dict(EXPECTED_MEASUREMENT_BACKEND),
+        "mapping": {
+            axis: {"formula_id": formula_id}
+            for axis, formula_id in EXPECTED_FORMULA_IDS.items()
+        },
+        "rounding": {
+            "mode": "ROUND_HALF_EVEN",
+            "decimal_places": 6,
+        },
     }
-    path.write_text(json.dumps(payload), encoding="utf-8")
 
 
-def write_inventory(path: Path, *, locator: str, byte_size: int, sha256: str):
-    payload = {
-        "schema_version": extractor.INVENTORY_SCHEMA_VERSION,
-        "root": "tests/audio",
-        "entries": [
-            {
-                "path": locator,
-                "byte_size": byte_size,
-                "sha256": sha256,
-                "suffix": ".mp3",
-            }
-        ],
-    }
-    path.write_text(json.dumps(payload), encoding="utf-8")
-
-
-def approved_source(tmp_path: Path):
-    repo_root = tmp_path / "repo"
-    source = repo_root / "tests" / "audio" / "fixture.mp3"
-    source.parent.mkdir(parents=True)
-    source.write_bytes(b"approved synthetic MP3 bytes")
-    locator = "tests/audio/fixture.mp3"
-    source_hash = extractor._sha256_raw_bytes(source)
-    inventory_path = repo_root / "inventory.json"
-    config_path = repo_root / "config.json"
-    write_inventory(
-        inventory_path,
-        locator=locator,
-        byte_size=source.stat().st_size,
-        sha256=source_hash,
+def write_json(path: Path, payload: dict) -> None:
+    path.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
     )
-    write_config(config_path)
-    return repo_root, source, inventory_path, config_path
 
 
-def test_extract_perceptual_has_exactly_eight_axes_and_fixed_rounding():
-    config = {
-        "canonical_axes": list(extractor.CANONICAL_AXES),
-        "mapping": {axis: {} for axis in extractor.CANONICAL_AXES},
+def committed_config_path() -> Path:
+    return (
+        Path(__file__).resolve().parents[1]
+        / "configs"
+        / "d1_perceptual_config.v1.json"
+    )
+
+
+def approved_source(tmp_path: Path) -> tuple[Path, Path, Path, Path]:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+
+    source_dir = repo_root / "corpus" / "audio"
+    source_dir.mkdir(parents=True)
+
+    source_path = source_dir / "approved.mp3"
+    source_path.write_bytes(b"synthetic-approved-d1-source")
+
+    source_hash = hashlib.sha256(source_path.read_bytes()).hexdigest()
+    inventory_path = repo_root / "inventory.json"
+    write_json(
+        inventory_path,
+        {
+            "schema_version": extractor.INVENTORY_SCHEMA_VERSION,
+            "entries": [
+                {
+                    "path": "corpus/audio/approved.mp3",
+                    "byte_size": source_path.stat().st_size,
+                    "sha256": f"sha256:{source_hash}",
+                    "suffix": ".mp3",
+                }
+            ],
+        },
+    )
+
+    config_path = repo_root / "config.json"
+    write_json(config_path, valid_config())
+
+    return repo_root, source_path, inventory_path, config_path
+
+
+def test_production_measurement_backend_matches_independent_contract():
+    assert extractor.MEASUREMENT_BACKEND == EXPECTED_MEASUREMENT_BACKEND
+
+
+def test_committed_config_loads_successfully():
+    config = extractor.load_config(committed_config_path())
+
+    assert tuple(config["canonical_axes"]) == extractor.CANONICAL_AXES
+    assert config["measurement_backend"] == EXPECTED_MEASUREMENT_BACKEND
+    assert config["rounding"] == {
+        "mode": "ROUND_HALF_EVEN",
+        "decimal_places": 6,
     }
-    perceptual = extractor.extract_perceptual(RAW, config)
+
+
+def test_committed_config_uses_exact_approved_formula_ids():
+    config = extractor.load_config(committed_config_path())
+
+    assert tuple(config["mapping"]) == extractor.CANONICAL_AXES
+    assert {
+        axis: config["mapping"][axis]["formula_id"]
+        for axis in extractor.CANONICAL_AXES
+    } == EXPECTED_FORMULA_IDS
+
+
+def test_extract_perceptual_has_exactly_eight_axes_in_fixed_order():
+    perceptual = extractor.extract_perceptual(RAW, valid_config())
 
     assert tuple(perceptual) == extractor.CANONICAL_AXES
     assert len(perceptual) == 8
     assert all(0.0 <= value <= 1.0 for value in perceptual.values())
-    assert extractor.canonical_perceptual_bytes(perceptual)
-    assert perceptual["symmetry_bias"] == 0.812346
-    assert perceptual["tension"] == 0.411523
 
 
-def test_identical_measurements_produce_byte_identical_output():
-    config = {
-        "canonical_axes": list(extractor.CANONICAL_AXES),
-        "mapping": {axis: {} for axis in extractor.CANONICAL_AXES},
+@pytest.mark.parametrize(
+    ("raw_value", "expected"),
+    [
+        (0.1234565, 0.123456),
+        (0.1234575, 0.123458),
+    ],
+)
+def test_symmetry_bias_uses_decimal_round_half_even(raw_value, expected):
+    raw = dict(RAW)
+    raw["symmetry_bias"] = raw_value
+
+    perceptual = extractor.extract_perceptual(raw, valid_config())
+
+    assert perceptual["symmetry_bias"] == expected
+
+
+def test_identical_measurements_produce_byte_identical_canonical_output():
+    first = extractor.extract_perceptual(RAW, valid_config())
+    second = extractor.extract_perceptual(dict(RAW), valid_config())
+
+    assert first == second
+    assert extractor.canonical_perceptual_bytes(first) == (
+        extractor.canonical_perceptual_bytes(second)
+    )
+
+
+def test_recursion_depth_consumes_already_mapped_canonical_tension():
+    raw = dict(RAW)
+    raw["dynamic_range"] = 30.0
+
+    perceptual = extractor.extract_perceptual(raw, valid_config())
+
+    expected = extractor._round6(
+        extractor._clip01(
+            0.50 * raw["spectral_centroid_norm"]
+            + 0.30 * perceptual["tension"]
+            + 0.20 * raw["spectral_flatness"]
+        )
+    )
+
+    assert perceptual["tension"] == 1.0
+    assert perceptual["recursion_depth"] == expected
+
+
+def test_formula_dispatch_changes_only_declared_axis(monkeypatch):
+    baseline = extractor.extract_perceptual(RAW, valid_config())
+
+    monkeypatch.setitem(
+        extractor._FORMULA_REGISTRY,
+        "test_zero_noise_level",
+        lambda measurements, mapped: 0.0,
+    )
+
+    config = valid_config()
+    config["mapping"]["noise_level"] = {
+        "formula_id": "test_zero_noise_level",
     }
-    first = extractor.extract_perceptual(RAW, config)
-    second = extractor.extract_perceptual(dict(reversed(list(RAW.items()))), config)
-    assert extractor.canonical_perceptual_bytes(first) == extractor.canonical_perceptual_bytes(second)
+    changed = extractor.extract_perceptual(RAW, config)
+
+    assert changed["noise_level"] == 0.0
+    assert changed["noise_level"] != baseline["noise_level"]
+
+    for axis in extractor.CANONICAL_AXES:
+        if axis != "noise_level":
+            assert changed[axis] == baseline[axis]
 
 
-def test_source_identity_is_verified_before_decoder_or_analyzer(tmp_path):
-    repo_root, source, inventory_path, config_path = approved_source(tmp_path)
-    source.write_bytes(b"tampered bytes")
-    calls = {"decoder": 0, "analyzer": 0}
+def test_production_validation_rejects_test_only_formula_id(tmp_path):
+    config_path = tmp_path / "config.json"
+    config = valid_config()
+    config["mapping"]["noise_level"] = {
+        "formula_id": "test_zero_noise_level",
+    }
+    write_json(config_path, config)
 
-    def decoder():
-        calls["decoder"] += 1
-        return "ffmpeg/7.1"
+    with pytest.raises(extractor.ExtractionContractError, match="formula_id"):
+        extractor.load_config(config_path)
 
-    def analyzer(_: str):
-        calls["analyzer"] += 1
-        return RAW
+
+def test_load_config_rejects_unknown_formula_id(tmp_path):
+    config_path = tmp_path / "config.json"
+    config = valid_config()
+    config["mapping"]["noise_level"] = {
+        "formula_id": "unknown_formula_id",
+    }
+    write_json(config_path, config)
+
+    with pytest.raises(extractor.ExtractionContractError, match="formula_id"):
+        extractor.load_config(config_path)
+
+
+def test_load_config_rejects_invalid_measurement_backend_contract(tmp_path):
+    config_path = tmp_path / "config.json"
+    config = valid_config()
+    config["measurement_backend"]["implementation_contract"] = "unapproved"
+    write_json(config_path, config)
 
     with pytest.raises(
         extractor.ExtractionContractError,
-        match="byte_size|sha256",
+        match="measurement_backend",
     ):
-        extractor.build_extraction_result(
-            repo_root=repo_root,
-            source_path=source,
-            inventory_path=inventory_path,
-            config_path=config_path,
-            decoder_detector=decoder,
-            analyzer=analyzer,
-        )
-
-    assert calls == {"decoder": 0, "analyzer": 0}
+        extractor.load_config(config_path)
 
 
-@pytest.mark.parametrize("field,value", [("byte_size", 1), ("suffix", ".wav")])
-def test_source_preflight_rejects_inventory_mismatch(tmp_path, field, value):
-    repo_root, source, inventory_path, _ = approved_source(tmp_path)
-    payload = json.loads(inventory_path.read_text(encoding="utf-8"))
-    payload["entries"][0][field] = value
-    inventory_path.write_text(json.dumps(payload), encoding="utf-8")
-
-    with pytest.raises(extractor.ExtractionContractError):
-        extractor.verify_source_identity(
-            repo_root=repo_root,
-            source_path=source,
-            inventory_path=inventory_path,
-        )
-
-
-def test_extraction_separates_diagnostics_from_perceptual_and_records_provenance(tmp_path):
-    repo_root, source, inventory_path, config_path = approved_source(tmp_path)
-    result = extractor.build_extraction_result(
-        repo_root=repo_root,
-        source_path=source,
-        inventory_path=inventory_path,
-        config_path=config_path,
-        decoder_detector=lambda: "ffmpeg/7.1",
-        analyzer=lambda _: RAW,
-    )
-
-    assert tuple(result["perceptual"]) == extractor.CANONICAL_AXES
-    assert "spectral_flatness" not in result["perceptual"]
-    assert result["diagnostics"]["spectral_flatness"] == RAW["spectral_flatness"]
-    assert result["provenance"]["adapter_name"] == "d1_perceptual_extractor"
-    assert result["provenance"]["adapter_version"] == "1.0.0"
-    assert result["provenance"]["analysis_config_version"] == "d1_perceptual_config/v1"
-    assert result["provenance"]["decoder_backend"] == "ffmpeg/7.1"
-    assert result["provenance"]["inventory_source_id"].startswith(
-        "audio_source_inventory/v1/sha256:"
-    )
-
-
-def test_unknown_decoder_identity_fails_closed(tmp_path):
-    repo_root, source, inventory_path, config_path = approved_source(tmp_path)
+@pytest.mark.parametrize(
+    "decoder_identity",
+    [
+        "libmpg123/1.32.0",
+        "ffmpeg/unknown version",
+        "not-a-decoder",
+    ],
+)
+def test_invalid_decoder_capability_identity_fails_closed(
+    tmp_path,
+    decoder_identity,
+):
+    repo_root, source_path, inventory_path, config_path = approved_source(tmp_path)
 
     with pytest.raises(extractor.ExtractionContractError, match="decoder"):
         extractor.build_extraction_result(
             repo_root=repo_root,
-            source_path=source,
+            source_path=source_path,
             inventory_path=inventory_path,
             config_path=config_path,
-            decoder_detector=lambda: (_ for _ in ()).throw(
-                extractor.ExtractionContractError("cannot detect ffmpeg decoder backend")
-            ),
+            decoder_detector=lambda: decoder_identity,
             analyzer=lambda _: RAW,
         )
 
 
-def test_invalid_measurement_fails_closed():
-    config = {
-        "canonical_axes": list(extractor.CANONICAL_AXES),
-        "mapping": {axis: {} for axis in extractor.CANONICAL_AXES},
+def test_source_sha_mismatch_fails_before_decoder_or_analyzer_invocation(tmp_path):
+    repo_root, source_path, inventory_path, config_path = approved_source(tmp_path)
+    source_path.write_bytes(b"synthetic-modified-d1-source")
+
+    calls = {
+        "decoder": 0,
+        "analyzer": 0,
     }
+
+    def decoder_detector() -> str:
+        calls["decoder"] += 1
+        return "ffmpeg/7.1"
+
+    def analyzer(_: str) -> dict:
+        calls["analyzer"] += 1
+        return RAW
+
+    with pytest.raises(extractor.ExtractionContractError, match="sha256"):
+        extractor.build_extraction_result(
+            repo_root=repo_root,
+            source_path=source_path,
+            inventory_path=inventory_path,
+            config_path=config_path,
+            decoder_detector=decoder_detector,
+            analyzer=analyzer,
+        )
+
+    assert calls == {
+        "decoder": 0,
+        "analyzer": 0,
+    }
+
+
+def test_inventory_mismatch_fails_before_decoder_or_analyzer_invocation(tmp_path):
+    repo_root, source_path, inventory_path, config_path = approved_source(tmp_path)
+
+    inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+    inventory["entries"][0]["path"] = "corpus/audio/not-approved.mp3"
+    write_json(inventory_path, inventory)
+
+    calls = {
+        "decoder": 0,
+        "analyzer": 0,
+    }
+
+    def decoder_detector() -> str:
+        calls["decoder"] += 1
+        return "ffmpeg/7.1"
+
+    def analyzer(_: str) -> dict:
+        calls["analyzer"] += 1
+        return RAW
+
+    with pytest.raises(extractor.ExtractionContractError, match="inventory"):
+        extractor.build_extraction_result(
+            repo_root=repo_root,
+            source_path=source_path,
+            inventory_path=inventory_path,
+            config_path=config_path,
+            decoder_detector=decoder_detector,
+            analyzer=analyzer,
+        )
+
+    assert calls == {
+        "decoder": 0,
+        "analyzer": 0,
+    }
+
+
+def test_diagnostics_are_not_perceptual_axes_or_canonical_perceptual_bytes(
+    tmp_path,
+):
+    repo_root, source_path, inventory_path, config_path = approved_source(tmp_path)
+
+    result = extractor.build_extraction_result(
+        repo_root=repo_root,
+        source_path=source_path,
+        inventory_path=inventory_path,
+        config_path=config_path,
+        decoder_detector=lambda: "ffmpeg/7.1",
+        analyzer=lambda _: RAW,
+    )
+
+    perceptual = result["perceptual"]
+    diagnostics = result["diagnostics"]
+
+    assert tuple(perceptual) == extractor.CANONICAL_AXES
+    assert "duration_sec" not in perceptual
+    assert diagnostics["duration_sec"] == RAW["duration_sec"]
+
+    canonical_bytes = extractor.canonical_perceptual_bytes(perceptual)
+    assert b"duration_sec" not in canonical_bytes
+    assert b"dynamic_range" not in canonical_bytes
+
+
+def test_provenance_uses_decoder_capability_backend_not_decoder_backend(tmp_path):
+    repo_root, source_path, inventory_path, config_path = approved_source(tmp_path)
+
+    result = extractor.build_extraction_result(
+        repo_root=repo_root,
+        source_path=source_path,
+        inventory_path=inventory_path,
+        config_path=config_path,
+        decoder_detector=lambda: "ffmpeg/7.1",
+        analyzer=lambda _: RAW,
+    )
+
+    provenance = result["provenance"]
+    assert provenance["decoder_capability_backend"] == "ffmpeg/7.1"
+    assert "decoder_backend" not in provenance
+
+
+def test_invalid_measurement_fails_closed_without_real_audio_execution():
     raw = dict(RAW)
     raw["noise_level"] = float("nan")
+
     with pytest.raises(extractor.ExtractionContractError, match="finite"):
-        extractor.extract_perceptual(raw, config)
-
-
-def test_config_version_is_part_of_provenance_identity(tmp_path):
-    repo_root, source, inventory_path, config_path = approved_source(tmp_path)
-    first = extractor.build_extraction_result(
-        repo_root=repo_root,
-        source_path=source,
-        inventory_path=inventory_path,
-        config_path=config_path,
-        decoder_detector=lambda: "ffmpeg/7.1",
-        analyzer=lambda _: RAW,
-    )
-    payload = json.loads(config_path.read_text(encoding="utf-8"))
-    payload["mapping"]["noise_level"]["formula"] = "changed"
-    config_path.write_text(json.dumps(payload), encoding="utf-8")
-    second = extractor.build_extraction_result(
-        repo_root=repo_root,
-        source_path=source,
-        inventory_path=inventory_path,
-        config_path=config_path,
-        decoder_detector=lambda: "ffmpeg/7.1",
-        analyzer=lambda _: RAW,
-    )
-    assert first["provenance"]["config_sha256"] != second["provenance"]["config_sha256"]
-    assert first["perceptual"] == second["perceptual"]
+        extractor.extract_perceptual(raw, valid_config())
