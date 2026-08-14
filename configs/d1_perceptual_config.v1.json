@@ -1,0 +1,54 @@
+{
+  "adapter_name": "d1_perceptual_extractor",
+  "adapter_version": "1.0.0",
+  "analysis_config_version": "d1_perceptual_config/v1",
+  "canonical_axes": [
+    "symmetry_bias",
+    "tension",
+    "harmonic_stability",
+    "harmonic_change_rate",
+    "texture_complexity",
+    "recursion_depth",
+    "section_complexity",
+    "noise_level"
+  ],
+  "decoder_policy": {
+    "backend": "ffmpeg",
+    "require_exact_version": true
+  },
+  "measurement_backend": {
+    "module": "lib.audio_analysis.analysis",
+    "function": "analyze_audio_file",
+    "implementation_contract": "e1_fix3_fixed_44100hz_mono_nfft2048_hop512"
+  },
+  "mapping": {
+    "symmetry_bias": {
+      "formula_id": "symmetry_bias_identity_clip01"
+    },
+    "tension": {
+      "formula_id": "dynamic_range_div_30_clip01"
+    },
+    "harmonic_stability": {
+      "formula_id": "mfcc_variance_identity_clip01"
+    },
+    "harmonic_change_rate": {
+      "formula_id": "harmonic_change_rate_div_2_clip01"
+    },
+    "texture_complexity": {
+      "formula_id": "flatness_centroid_onset_weighted_v1"
+    },
+    "recursion_depth": {
+      "formula_id": "centroid_tension_flatness_weighted_v1"
+    },
+    "section_complexity": {
+      "formula_id": "section_complexity_identity_clip01"
+    },
+    "noise_level": {
+      "formula_id": "noise_level_identity_clip01"
+    }
+  },
+  "rounding": {
+    "mode": "ROUND_HALF_EVEN",
+    "decimal_places": 6
+  }
+}
