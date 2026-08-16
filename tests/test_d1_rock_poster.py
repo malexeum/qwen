@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 import json
 import re
 from pathlib import Path
@@ -10,6 +11,7 @@ from tools.render_d1_rock_poster import (
     ARTIFACT_RELATIVE_PATH,
     CANONICAL_VIEWBOX,
     HORIZONTAL_ELLIPSIS,
+    MIDDLE_DOT,
     MULTIPLICATION_SIGN,
     PUBLICATION_COMMIT,
     RIGHT_ARROW,
@@ -53,6 +55,16 @@ def _visible_svg_text(svg_text: str) -> str:
     return re.sub(r"<[^>]+>", " ", without_style)
 
 
+def _embedded_svg_metadata(svg_text: str) -> dict[str, object]:
+    match = re.search(
+        r"<metadata>(.*?)</metadata>",
+        svg_text,
+        flags=re.DOTALL,
+    )
+    assert match is not None, "canonical SVG must contain metadata"
+    return json.loads(html.unescape(match.group(1)))
+
+
 def test_canonical_poster_is_deterministic_and_artifact_derived(tmp_path):
     first_svg, first_metadata = render_canonical(ARTIFACT_PATH)
     second_svg, second_metadata = render_canonical(ARTIFACT_PATH)
@@ -66,12 +78,18 @@ def test_canonical_poster_is_deterministic_and_artifact_derived(tmp_path):
 
     svg_text = first_svg.decode("utf-8")
     visible_text = _visible_svg_text(svg_text)
+    embedded_metadata = _embedded_svg_metadata(svg_text)
     metadata = json.loads(first_metadata.decode("utf-8"))
 
     assert 'xmlns="http://www.w3.org/2000/svg"' in svg_text
     assert 'viewBox="0 0 1080 1080"' in svg_text
     assert f"ROCK.MP3 {RIGHT_ARROW} D1" in visible_text
     assert "FROM PHYSICAL AUDIO TO CANONICAL FORM" in visible_text
+    assert "SOURCE FILE: ROCK.MP3" in visible_text
+    assert (
+        f"4,605,149 BYTES {MIDDLE_DOT} APPROVED INPUT"
+        in visible_text
+    )
     assert "CONCEPTUAL TRANSFORMATION MAP" in visible_text
     assert "NOT A SPECTROGRAM" in visible_text
     assert f"CANONICAL {THETA} HASH" in visible_text
@@ -93,6 +111,24 @@ def test_canonical_poster_is_deterministic_and_artifact_derived(tmp_path):
     assert artifact["git_sha"] == (
         "cc0be209a69245c52a9a2bd64c48f21954e0b1a7"
     )
+
+    assert embedded_metadata["artifact"] == artifact
+    assert embedded_metadata["poster_id"] == metadata["poster_id"]
+    assert embedded_metadata["renderer"] == metadata["renderer"]
+    assert (
+        embedded_metadata["publication_provenance"]
+        == metadata["publication_provenance"]
+    )
+    assert (
+        embedded_metadata["canonical_outputs"]["svg_viewbox"]
+        == CANONICAL_VIEWBOX
+    )
+    assert (
+        embedded_metadata["canonical_outputs"]["svg_filename"]
+        == "d1_rock_v1_poster.svg"
+    )
+    assert "svg_sha256" not in embedded_metadata["canonical_outputs"]
+    assert "raster_outputs" not in embedded_metadata
 
     assert metadata["canonical_outputs"]["svg_viewbox"] == CANONICAL_VIEWBOX
     assert metadata["canonical_outputs"]["svg_sha256"] == sha256_prefixed(

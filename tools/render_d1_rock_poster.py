@@ -172,12 +172,11 @@ def _svg_text(
     )
 
 
-def _metadata_dict(data: Mapping[str, Any], svg_sha256: str) -> dict[str, Any]:
+def _base_metadata(data: Mapping[str, Any]) -> dict[str, Any]:
     return {
         "artifact": dict(data),
         "canonical_outputs": {
             "svg_filename": SVG_FILENAME,
-            "svg_sha256": svg_sha256,
             "svg_viewbox": CANONICAL_VIEWBOX,
         },
         "central_graphic": {
@@ -194,14 +193,13 @@ def _metadata_dict(data: Mapping[str, Any], svg_sha256: str) -> dict[str, Any]:
             "name": RENDERER_NAME,
             "version": RENDERER_VERSION,
         },
-        "raster_outputs": [],
         "schema_version": POSTER_SCHEMA_VERSION,
     }
 
 
-def _svg_metadata(data: Mapping[str, Any], svg_sha256: str) -> str:
+def _embedded_svg_metadata(data: Mapping[str, Any]) -> str:
     encoded = canonical_json_bytes(
-        _metadata_dict(data, svg_sha256)
+        _base_metadata(data)
     ).decode("utf-8").rstrip("\n")
     return html.escape(encoded)
 
@@ -214,7 +212,7 @@ def render_svg(data: Mapping[str, Any]) -> bytes:
     source_size = data["source_byte_size"]
     locator = data["source_locator_registry_path"]
 
-    provisional_metadata = _svg_metadata(data, "sha256:" + "0" * 64)
+    embedded_metadata = _embedded_svg_metadata(data)
 
     spectral_bars = []
     bar_heights = (
@@ -257,13 +255,13 @@ def render_svg(data: Mapping[str, Any]) -> bytes:
             f'opacity="0.58"/>'
         )
 
-    svg = "\n".join(
+    return "\n".join(
         [
             '<?xml version="1.0" encoding="UTF-8"?>',
             '<svg xmlns="http://www.w3.org/2000/svg" width="1080" '
             'height="1080" viewBox="0 0 1080 1080" role="img" '
             'aria-labelledby="poster-title poster-description">',
-            f"<metadata>{provisional_metadata}</metadata>",
+            f"<metadata>{embedded_metadata}</metadata>",
             "<title id=\"poster-title\">"
             f"{html.escape(source_title)} {RIGHT_ARROW} D1"
             "</title>",
@@ -344,15 +342,15 @@ def render_svg(data: Mapping[str, Any]) -> bytes:
             ),
             _svg_text(
                 540,
-                327,
-                source_title,
+                319,
+                f"SOURCE FILE: {source_title}",
                 css_class="body",
                 anchor="middle",
             ),
             _svg_text(
                 540,
-                354,
-                f"{source_size:,} B",
+                351,
+                f"{source_size:,} BYTES {MIDDLE_DOT} APPROVED INPUT",
                 css_class="hash",
                 anchor="middle",
             ),
@@ -491,19 +489,12 @@ def render_svg(data: Mapping[str, Any]) -> bytes:
         ]
     ).encode("utf-8")
 
-    provisional_hash = sha256_prefixed(svg)
-    final_metadata = _svg_metadata(data, provisional_hash)
-    return svg.replace(
-        provisional_metadata.encode("utf-8"),
-        final_metadata.encode("utf-8"),
-        1,
-    )
-
 
 def build_metadata(data: Mapping[str, Any], svg_bytes: bytes) -> bytes:
-    return canonical_json_bytes(
-        _metadata_dict(data, sha256_prefixed(svg_bytes))
-    )
+    metadata = _base_metadata(data)
+    metadata["canonical_outputs"]["svg_sha256"] = sha256_prefixed(svg_bytes)
+    metadata["raster_outputs"] = []
+    return canonical_json_bytes(metadata)
 
 
 def render_canonical(artifact_path: Path) -> tuple[bytes, bytes]:
