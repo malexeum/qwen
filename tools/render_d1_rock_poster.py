@@ -5,9 +5,15 @@ import hashlib
 import html
 import json
 import re
+import sys
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+_repo_root_text = str(REPO_ROOT)
+if _repo_root_text not in sys.path:
+    sys.path.insert(0, _repo_root_text)
 
 from lib.d1_feature_artifact_io import read_feature_artifact
 
