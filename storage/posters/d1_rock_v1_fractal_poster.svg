@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1260" viewBox="0 0 1080 1260" role="img" aria-labelledby="poster-title poster-description">
+<metadata>{&quot;artifact&quot;:{&quot;analysis_id&quot;:&quot;d1_rock_v1&quot;,&quot;canonical_theta_hash&quot;:&quot;sha256:5e2ac5e7a4c1151d&quot;,&quot;feature_sha256&quot;:&quot;sha256:814b21fcdf5ae5a1e11172aa2301cd781f2d76446c436e27498902a9cebe81b4&quot;,&quot;git_sha&quot;:&quot;cc0be209a69245c52a9a2bd64c48f21954e0b1a7&quot;,&quot;schema_version&quot;:&quot;d1_feature_artifact/v2&quot;,&quot;source_byte_size&quot;:4605149,&quot;source_content_sha256&quot;:&quot;sha256:286b2a46b2eec82d2901625bfc4020547b14a568ca3082a3a5090d8223d27ebc&quot;,&quot;source_locator_registry_path&quot;:&quot;tests/audio/Rock.mp3&quot;,&quot;source_title&quot;:&quot;ROCK.MP3&quot;},&quot;canonical_outputs&quot;:{&quot;svg_filename&quot;:&quot;d1_rock_v1_fractal_poster.svg&quot;,&quot;svg_viewbox&quot;:&quot;0 0 1080 1260&quot;},&quot;central_graphic&quot;:{&quot;art_field_px&quot;:[1080,1080],&quot;composition&quot;:{&quot;actual_junction&quot;:{&quot;role&quot;:&quot;literal visible branch junction and field origin&quot;,&quot;x&quot;:540.0,&quot;y&quot;:360.0},&quot;branch_lines&quot;:&quot;seed-derived incoming crystalline branch network; visible branches terminate at the junction hexagon&quot;,&quot;theta_curves&quot;:&quot;seed-derived asymmetric broken Bezier trajectories originating at the literal junction hexagon&quot;,&quot;transition_endpoint&quot;:{&quot;role&quot;:&quot;dissolving energetic after-trace endpoint; not field origin&quot;,&quot;x&quot;:540.0,&quot;y&quot;:715.0}},&quot;lyapunov_accent&quot;:{&quot;claim&quot;:&quot;subtle artistic controlled-instability accent; not measured dynamics&quot;,&quot;enabled&quot;:true,&quot;secondary_layer_fraction_max&quot;:0.1,&quot;topology&quot;:&quot;split-drift-return-fade&quot;},&quot;materiality_layer&quot;:{&quot;contract&quot;:&quot;deterministic quiet-counterweight placement of cloud-like shadow density and fragmented paper-imprint traces&quot;,&quot;opacity_range&quot;:[0.05,0.12],&quot;placement_regions&quot;:[&quot;quiet-counterweight-1@182.1,824.0&quot;,&quot;quiet-counterweight-2@184.5,639.6&quot;,&quot;quiet-counterweight-3@377.0,811.6&quot;,&quot;quiet-counterweight-4@236.0,466.4&quot;,&quot;quiet-counterweight-5@366.4,597.6&quot;]},&quot;representation&quot;:&quot;deterministic artistic interpretation bound to the validated D1 identity&quot;,&quot;scientific_claim&quot;:&quot;artistic interpretation; not an audio spectrogram, measured fractal property, Lyapunov measurement, or scientific visualization of the track&quot;,&quot;seed_contract&quot;:&quot;sha256(canonical_theta_hash + &#x27;|&#x27; + feature_sha256)&quot;,&quot;seed_sha256&quot;:&quot;sha256:b5c1931e5db5b59dc358db78076f273e2c7c05c2fd79cafa4dfd23f73479a625&quot;},&quot;palette&quot;:{&quot;audit_cyan&quot;:&quot;#46D9E8&quot;,&quot;background&quot;:&quot;#070A12&quot;,&quot;caption&quot;:&quot;#E9EEF8&quot;,&quot;card&quot;:&quot;#11151F&quot;,&quot;dust&quot;:&quot;#7D8798&quot;,&quot;halo_gold&quot;:&quot;#F6C85F&quot;,&quot;imprint&quot;:&quot;#7D8798&quot;,&quot;rock_magenta&quot;:&quot;#C75CEB&quot;,&quot;shadow&quot;:&quot;#303A4D&quot;,&quot;theta_gold&quot;:&quot;#F6C85F&quot;},&quot;poster_id&quot;:&quot;d1_rock_v1_fractal_poster&quot;,&quot;publication_provenance&quot;:{&quot;commit&quot;:&quot;367a33e53f7be0c7c619c3ab2c8c1a5fc0bdd1c2&quot;},&quot;renderer&quot;:{&quot;name&quot;:&quot;d1_rock_fractal_poster_renderer&quot;,&quot;version&quot;:&quot;7&quot;},&quot;schema_version&quot;:&quot;d1_fractal_poster_metadata/v1&quot;,&quot;technical_field_px&quot;:[1080,180]}</metadata>
+<title id="poster-title">ROCK.MP3 Polaroid Poster MVP preview</title>
+<desc id="poster-description">A deterministic artistic interpretation bound to a validated D1 identity. The junction hexagon is the literal branch termination and origin of a dispersed resonant field.</desc>
+<defs>
+<filter id="crystal-glow" x="-80%" y="-80%" width="260%" height="260%">
+<feGaussianBlur stdDeviation="4.2" result="blur"/>
+<feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+</filter>
+<radialGradient id="junction-glow" cx="50%" cy="50%" r="50%">
+<stop offset="0%" stop-color="#46D9E8" stop-opacity="0.21"/>
+<stop offset="42%" stop-color="#F6C85F" stop-opacity="0.10"/>
+<stop offset="100%" stop-color="#070A12" stop-opacity="0"/>
+</radialGradient>
+</defs>
+<style>
+.caption{font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:400;letter-spacing:3px;fill:#E9EEF8;}
+.technical{font-family:Consolas,Menlo,monospace;font-size:13px;letter-spacing:0.7px;fill:#F6C85F;}
+</style>
+<rect width="1080" height="1260" fill="#11151F"/>
+<g id="art-field">
+<rect width="1080" height="1080" fill="#070A12"/>
+<g id="space-materiality" data-role="anchor-derived-materiality">
+<path class="shadow-density" data-role="cloud-density" data-center-x="182.06" data-center-y="823.97" data-area="40420.07" d="M 57.27 839.00 C 91.69 704.77, 173.45 726.28, 229.39 788.10 C 304.69 816.45, 289.63 914.14, 203.57 929.17 C 121.81 944.20, 50.81 889.72, 57.27 839.00 Z" fill="#303A4D" opacity="0.076"/>
+<path class="shadow-density" data-role="cloud-density" data-center-x="184.52" data-center-y="639.63" data-area="45465.40" d="M 49.79 655.29 C 86.96 503.70, 175.22 537.85, 235.62 608.95 C 316.92 631.80, 300.66 733.59, 207.74 749.24 C 119.48 764.90, 42.82 708.14, 49.79 655.29 Z" fill="#303A4D" opacity="0.094"/>
+<path class="shadow-density" data-role="cloud-density" data-center-x="376.99" data-center-y="811.63" data-area="39264.78" d="M 249.14 825.88 C 284.41 690.40, 368.17 719.00, 425.48 759.57 C 502.63 804.51, 487.20 897.14, 399.03 911.39 C 315.27 925.64, 242.53 873.98, 249.14 825.88 Z" fill="#303A4D" opacity="0.110"/>
+<path class="paper-imprint" data-role="fragmented-imprint" data-center-x="235.99" data-center-y="466.43" d="M 109.99 508.43 C 139.99 400.43, 202.99 409.55, 223.99 482.43 M 255.99 491.43 C 297.99 561.32, 353.99 536.43, 385.99 446.43" fill="none" stroke="#7D8798" stroke-width="13.0" stroke-linecap="round" opacity="0.078"/>
+<path class="paper-imprint" data-role="fragmented-imprint" data-center-x="366.41" data-center-y="597.63" d="M 240.41 639.63 C 270.41 531.63, 333.41 565.69, 354.41 613.63 M 386.41 622.63 C 428.41 667.57, 484.41 667.63, 516.41 577.63" fill="none" stroke="#7D8798" stroke-width="13.0" stroke-linecap="round" opacity="0.091"/>
+<path id="lyapunov-haze" data-role="split-drift-return-fade-haze" data-center-x="235.99" data-center-y="466.43" data-separation="28.00" d="M 103.99 486.43 C 163.99 442.43, 209.99 458.43, 235.99 466.43 C 283.99 438.43, 331.99 446.27, 359.99 459.43" fill="none" stroke="#7D8798" stroke-width="15.0" stroke-linecap="round" opacity="0.025"/>
+<path id="lyapunov-stable" data-role="split-drift-return-fade" data-center-x="235.99" data-center-y="466.43" d="M 103.99 486.43 C 163.99 442.43, 209.99 458.43, 235.99 466.43" fill="none" stroke="#7D8798" stroke-width="3.4" stroke-linecap="round" opacity="0.078"/>
+<path id="lyapunov-split-a" data-role="split-drift-return-fade" data-separation="28.00" d="M 235.99 466.43 C 270.99 438.43, 317.99 441.23, 357.99 456.43" fill="none" stroke="#7D8798" stroke-width="3.2" stroke-linecap="round" opacity="0.074"/>
+<path id="lyapunov-split-b" data-role="split-drift-return-fade" data-separation="28.00" d="M 235.99 466.43 C 271.99 494.43, 313.99 486.59, 337.99 474.43 C 351.99 458.43, 367.99 472.43, 383.99 486.43" fill="none" stroke="#7D8798" stroke-width="2.8" stroke-linecap="round" opacity="0.065"/>
+</g>
+<circle class="star" cx="736.38" cy="730.31" r="1.12" fill="#46D9E8" opacity="0.30"/>
+<circle class="star" cx="736.38" cy="610.87" r="1.36" fill="#BAC4D2" opacity="0.25"/>
+<circle class="star" cx="395.01" cy="816.56" r="0.99" fill="#BAC4D2" opacity="0.30"/>
+<circle class="star" cx="299.58" cy="235.98" r="1.01" fill="#BAC4D2" opacity="0.30"/>
+<circle class="star" cx="516.14" cy="760.16" r="1.63" fill="#BAC4D2" opacity="0.29"/>
+<circle class="star" cx="354.64" cy="929.36" r="0.57" fill="#46D9E8" opacity="0.12"/>
+<circle class="star" cx="978.64" cy="262.52" r="0.99" fill="#BAC4D2" opacity="0.18"/>
+<circle class="star" cx="681.32" cy="212.75" r="1.29" fill="#BAC4D2" opacity="0.22"/>
+<circle class="star" cx="780.42" cy="577.69" r="0.55" fill="#BAC4D2" opacity="0.11"/>
+<circle class="star" cx="648.28" cy="736.94" r="0.83" fill="#BAC4D2" opacity="0.25"/>
+<circle class="star" cx="875.86" cy="488.12" r="0.43" fill="#BAC4D2" opacity="0.21"/>
+<circle class="star" cx="479.44" cy="219.39" r="0.70" fill="#BAC4D2" opacity="0.11"/>
+<circle class="star" cx="784.09" cy="929.36" r="0.99" fill="#BAC4D2" opacity="0.24"/>
+<circle class="star" cx="813.46" cy="919.41" r="0.78" fill="#BAC4D2" opacity="0.24"/>
+<circle class="star" cx="1000.66" cy="206.12" r="1.61" fill="#BAC4D2" opacity="0.22"/>
+<circle class="star" cx="611.58" cy="189.53" r="0.86" fill="#BAC4D2" opacity="0.27"/>
+<circle class="star" cx="736.38" cy="690.49" r="1.17" fill="#BAC4D2" opacity="0.18"/>
+<circle cx="540.00" cy="360.00" r="142.0" fill="url(#junction-glow)"/>
+<g filter="url(#crystal-glow)">
+<circle class="resonance-halo" cx="540.00" cy="360.00" r="71.0" fill="none" stroke="#46D9E8" stroke-width="1.60" opacity="0.17"/>
+<circle class="resonance-halo" cx="540.00" cy="360.00" r="45.0" fill="none" stroke="#F6C85F" stroke-width="1.45" opacity="0.24"/>
+<line id="incoming-cyan" class="branch-line" data-role="incoming-junction" data-start-x="333.00" data-start-y="118.00" data-end-x="540.00" data-end-y="360.00" x1="333.00" y1="118.00" x2="540.00" y2="360.00" stroke="#46D9E8" stroke-width="5.15" stroke-linecap="round" opacity="0.90"/>
+<line id="incoming-gold" class="branch-line" data-role="incoming-junction" data-start-x="616.00" data-start-y="94.00" data-end-x="540.00" data-end-y="360.00" x1="616.00" y1="94.00" x2="540.00" y2="360.00" stroke="#F6C85F" stroke-width="4.80" stroke-linecap="round" opacity="0.88"/>
+<line id="incoming-magenta" class="branch-line" data-role="incoming-junction" data-start-x="792.00" data-start-y="206.00" data-end-x="540.00" data-end-y="360.00" x1="792.00" y1="206.00" x2="540.00" y2="360.00" stroke="#C75CEB" stroke-width="3.70" stroke-linecap="round" opacity="0.78"/>
+<line id="upper-branch-0" class="branch-line" data-role="incoming-tree" data-start-x="180.83" data-start-y="75.33" data-end-x="333.00" data-end-y="118.00" x1="180.83" y1="75.33" x2="333.00" y2="118.00" stroke="#46D9E8" stroke-width="2.85" stroke-linecap="round" opacity="0.69"/>
+<line id="upper-branch-1" class="branch-line" data-role="incoming-tree" data-start-x="246.87" data-start-y="192.69" data-end-x="333.00" data-end-y="118.00" x1="246.87" y1="192.69" x2="333.00" y2="118.00" stroke="#46D9E8" stroke-width="2.58" stroke-linecap="round" opacity="0.63"/>
+<line id="upper-branch-2" class="branch-line" data-role="incoming-tree" data-start-x="298.20" data-start-y="44.44" data-end-x="333.00" data-end-y="118.00" x1="298.20" y1="44.44" x2="333.00" y2="118.00" stroke="#46D9E8" stroke-width="2.31" stroke-linecap="round" opacity="0.58"/>
+<line id="upper-branch-3" class="branch-line" data-role="incoming-tree" data-start-x="427.50" data-start-y="68.85" data-end-x="333.00" data-end-y="118.00" x1="427.50" y1="68.85" x2="333.00" y2="118.00" stroke="#46D9E8" stroke-width="2.04" stroke-linecap="round" opacity="0.52"/>
+<line id="upper-branch-4" class="branch-line" data-role="incoming-tree" data-start-x="440.26" data-start-y="181.99" data-end-x="333.00" data-end-y="118.00" x1="440.26" y1="181.99" x2="333.00" y2="118.00" stroke="#46D9E8" stroke-width="1.77" stroke-linecap="round" opacity="0.47"/>
+<line id="upper-branch-5" class="branch-line" data-role="incoming-tree" data-start-x="508.59" data-start-y="48.17" data-end-x="616.00" data-end-y="94.00" x1="508.59" y1="48.17" x2="616.00" y2="94.00" stroke="#F6C85F" stroke-width="2.85" stroke-linecap="round" opacity="0.69"/>
+<line id="upper-branch-6" class="branch-line" data-role="incoming-tree" data-start-x="568.42" data-start-y="200.99" data-end-x="616.00" data-end-y="94.00" x1="568.42" y1="200.99" x2="616.00" y2="94.00" stroke="#F6C85F" stroke-width="2.58" stroke-linecap="round" opacity="0.63"/>
+<line id="upper-branch-7" class="branch-line" data-role="incoming-tree" data-start-x="675.32" data-start-y="46.38" data-end-x="616.00" data-end-y="94.00" x1="675.32" y1="46.38" x2="616.00" y2="94.00" stroke="#F6C85F" stroke-width="2.31" stroke-linecap="round" opacity="0.58"/>
+<line id="upper-branch-8" class="branch-line" data-role="incoming-tree" data-start-x="746.36" data-start-y="144.59" data-end-x="616.00" data-end-y="94.00" x1="746.36" y1="144.59" x2="616.00" y2="94.00" stroke="#F6C85F" stroke-width="2.04" stroke-linecap="round" opacity="0.52"/>
+<line id="upper-branch-9" class="branch-line" data-role="incoming-tree" data-start-x="598.11" data-start-y="250.27" data-end-x="616.00" data-end-y="94.00" x1="598.11" y1="250.27" x2="616.00" y2="94.00" stroke="#F6C85F" stroke-width="1.77" stroke-linecap="round" opacity="0.47"/>
+<line id="upper-branch-10" class="branch-line" data-role="incoming-tree" data-start-x="864.22" data-start-y="77.49" data-end-x="792.00" data-end-y="206.00" x1="864.22" y1="77.49" x2="792.00" y2="206.00" stroke="#C75CEB" stroke-width="2.85" stroke-linecap="round" opacity="0.69"/>
+<line id="upper-branch-11" class="branch-line" data-role="incoming-tree" data-start-x="922.88" data-start-y="162.57" data-end-x="792.00" data-end-y="206.00" x1="922.88" y1="162.57" x2="792.00" y2="206.00" stroke="#C75CEB" stroke-width="2.58" stroke-linecap="round" opacity="0.63"/>
+<line id="upper-branch-12" class="branch-line" data-role="incoming-tree" data-start-x="897.84" data-start-y="278.91" data-end-x="792.00" data-end-y="206.00" x1="897.84" y1="278.91" x2="792.00" y2="206.00" stroke="#C75CEB" stroke-width="2.31" stroke-linecap="round" opacity="0.58"/>
+<line id="upper-branch-13" class="branch-line" data-role="incoming-tree" data-start-x="733.36" data-start-y="280.59" data-end-x="792.00" data-end-y="206.00" x1="733.36" y1="280.59" x2="792.00" y2="206.00" stroke="#C75CEB" stroke-width="2.04" stroke-linecap="round" opacity="0.52"/>
+<line id="upper-branch-14" class="branch-line" data-role="incoming-tree" data-start-x="815.36" data-start-y="328.59" data-end-x="792.00" data-end-y="206.00" x1="815.36" y1="328.59" x2="792.00" y2="206.00" stroke="#C75CEB" stroke-width="1.77" stroke-linecap="round" opacity="0.47"/>
+<line id="offshoot-cyan" class="branch-line" data-role="secondary-offshoot" data-start-x="260.00" data-start-y="142.00" data-end-x="333.00" data-end-y="118.00" x1="260.00" y1="142.00" x2="333.00" y2="118.00" stroke="#46D9E8" stroke-width="1.55" stroke-linecap="round" opacity="0.42"/>
+<line id="offshoot-gold" class="branch-line" data-role="secondary-offshoot" data-start-x="668.00" data-start-y="186.00" data-end-x="616.00" data-end-y="94.00" x1="668.00" y1="186.00" x2="616.00" y2="94.00" stroke="#F6C85F" stroke-width="1.45" stroke-linecap="round" opacity="0.40"/>
+<polygon class="branch-node" data-role="upper-node" points="189.61,77.24 184.00,80.48 178.39,77.24 178.39,70.76 184.00,67.52 189.61,70.76" fill="none" stroke="#46D9E8" stroke-width="1.25" opacity="0.61"/>
+<polygon class="branch-node" data-role="upper-node" points="247.13,200.70 239.00,205.39 230.87,200.70 230.87,191.30 239.00,186.61 247.13,191.30" fill="none" stroke="#F6C85F" stroke-width="1.25" opacity="0.61"/>
+<path class="branch-node incomplete-node" data-role="incomplete-upper-node" d="M 297.29 54.39 L 304.00 46.00 L 310.71 53.92" fill="none" stroke="#C75CEB" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" opacity="0.56"/>
+<polygon class="branch-node" data-role="upper-node" points="426.63,75.83 420.00,79.66 413.37,75.83 413.37,68.17 420.00,64.34 426.63,68.17" fill="none" stroke="#46D9E8" stroke-width="1.25" opacity="0.61"/>
+<polygon class="branch-node" data-role="upper-node" points="452.17,184.14 445.00,188.28 437.83,184.14 437.83,175.86 445.00,171.72 452.17,175.86" fill="none" stroke="#F6C85F" stroke-width="1.25" opacity="0.61"/>
+<polygon class="branch-node" data-role="upper-node" points="514.64,55.76 509.00,59.02 503.36,55.76 503.36,49.25 509.00,46.00 514.64,49.25" fill="none" stroke="#C75CEB" stroke-width="1.25" opacity="0.61"/>
+<polygon class="branch-node" data-role="upper-node" points="573.35,206.24 566.00,210.48 558.65,206.24 558.65,197.76 566.00,193.52 573.35,197.76" fill="none" stroke="#46D9E8" stroke-width="1.25" opacity="0.61"/>
+<path class="branch-node incomplete-node" data-role="incomplete-upper-node" d="M 672.35 56.81 L 681.00 46.00 L 689.65 56.21" fill="none" stroke="#F6C85F" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" opacity="0.56"/>
+<polygon class="branch-node" data-role="upper-node" points="749.94,150.01 743.00,154.02 736.06,150.01 736.06,141.99 743.00,137.98 749.94,141.99" fill="none" stroke="#C75CEB" stroke-width="1.25" opacity="0.61"/>
+<polygon class="branch-node" data-role="upper-node" points="599.55,255.21 594.00,258.41 588.45,255.21 588.45,248.79 594.00,245.59 599.55,248.79" fill="none" stroke="#46D9E8" stroke-width="1.25" opacity="0.61"/>
+<polygon class="branch-node" data-role="upper-node" points="869.30,81.64 863.00,85.28 856.70,81.64 856.70,74.36 863.00,70.72 869.30,74.36" fill="none" stroke="#F6C85F" stroke-width="1.25" opacity="0.61"/>
+<polygon class="branch-node" data-role="upper-node" points="936.35,164.24 929.00,168.48 921.65,164.24 921.65,155.76 929.00,151.52 936.35,155.76" fill="none" stroke="#C75CEB" stroke-width="1.25" opacity="0.61"/>
+<path id="theta-0" class="theta-curve" data-role="early-fade" data-start-x="540.00" data-start-y="360.00" data-end-x="770.00" data-end-y="498.75" d="M 540.00 360.00 C 650.00 388.44, 710.00 463.96, 770.00 498.75" fill="none" stroke="#46D9E8" stroke-width="2.05" stroke-linecap="round" opacity="0.44"/>
+<path id="theta-1" class="theta-curve" data-role="turning-trace" data-start-x="540.00" data-start-y="360.00" data-end-x="808.00" data-end-y="569.10" d="M 540.00 360.00 C 637.00 446.86, 720.00 449.13, 808.00 569.10" fill="none" stroke="#F6C85F" stroke-width="2.15" stroke-linecap="round" opacity="0.52"/>
+<path id="theta-2" class="theta-curve" data-role="downward-fade" data-start-x="540.00" data-start-y="360.00" data-end-x="744.00" data-end-y="651.71" d="M 540.00 360.00 C 606.00 469.47, 692.00 563.59, 744.00 651.71" fill="none" stroke="#46D9E8" stroke-width="1.65" stroke-linecap="round" opacity="0.38"/>
+<path id="theta-3" class="theta-curve" data-role="long-right" data-start-x="540.00" data-start-y="360.00" data-end-x="875.00" data-end-y="462.95" d="M 540.00 360.00 C 665.00 354.44, 757.00 410.36, 875.00 462.95" fill="none" stroke="#F6C85F" stroke-width="1.85" stroke-linecap="round" opacity="0.45"/>
+<path id="theta-4" class="theta-curve" data-role="far-right-lower" data-start-x="540.00" data-start-y="360.00" data-end-x="926.00" data-end-y="730.13" d="M 540.00 360.00 C 636.00 508.67, 754.00 614.93, 926.00 730.13" fill="none" stroke="#F6C85F" stroke-width="1.70" stroke-linecap="round" opacity="0.40"/>
+<path id="theta-5" class="theta-curve" data-role="broken-return" data-start-x="540.00" data-start-y="360.00" data-end-x="702.00" data-end-y="579.84" d="M 540.00 360.00 C 588.00 411.54, 662.00 505.25, 702.00 579.84" fill="none" stroke="#C75CEB" stroke-width="1.45" stroke-linecap="round" opacity="0.30"/>
+<path id="trunk-haze" data-role="energetic-aftertrace-haze" data-start-x="540.00" data-start-y="360.00" data-end-x="540.00" data-end-y="715.00" d="M 540.00 391.00 C 534.00 502.00, 548.00 613.00, 540.00 715.00" fill="none" stroke="#46D9E8" stroke-width="20.0" stroke-linecap="round" opacity="0.13"/>
+<path id="trunk-ghost" data-role="energetic-aftertrace-ghost" data-start-x="540.00" data-start-y="360.00" data-end-x="547.00" data-end-y="709.00" d="M 545.00 395.00 C 549.00 515.00, 558.00 605.00, 547.00 709.00" fill="none" stroke="#C75CEB" stroke-width="7.0" stroke-linecap="round" opacity="0.045"/>
+<path id="trunk-core" data-role="energetic-aftertrace-core" data-start-x="540.00" data-start-y="360.00" data-end-x="540.00" data-end-y="715.00" d="M 540.00 391.00 C 534.00 502.00, 548.00 613.00, 540.00 715.00" fill="none" stroke="#46D9E8" stroke-width="4.4" stroke-linecap="round" opacity="0.68"/>
+<polygon id="junction-hexagon" data-role="actual-junction" data-x="540.00" data-y="360.00" points="566.85,375.50 540.00,391.00 513.15,375.50 513.15,344.50 540.00,329.00 566.85,344.50" fill="#0B1520" stroke="#F6C85F" stroke-width="2.40" opacity="0.98"/>
+</g>
+</g>
+<g id="technical-field">
+<rect y="1080" width="1080" height="180" fill="#11151F"/>
+<text x="540.0" y="1152.0" class="caption" text-anchor="middle">ROCK.MP3</text>
+<text x="540.0" y="1191.0" class="technical" text-anchor="middle">d1_rock_v1 · seed b5c1931e5db5b59d</text>
+</g>
+</svg>
