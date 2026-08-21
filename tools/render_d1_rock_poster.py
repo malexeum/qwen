@@ -20,7 +20,7 @@ from lib.d1_feature_artifact_io import read_feature_artifact
 POSTER_ID = "d1_rock_v1_poster"
 POSTER_SCHEMA_VERSION = "d1_poster_metadata/v1"
 RENDERER_NAME = "d1_rock_poster_renderer"
-RENDERER_VERSION = "1"
+RENDERER_VERSION = "2"
 PUBLICATION_COMMIT = "367a33e53f7be0c7c619c3ab2c8c1a5fc0bdd1c2"
 
 CANONICAL_VIEWBOX = "0 0 1080 1080"
@@ -182,7 +182,12 @@ def _base_metadata(data: Mapping[str, Any]) -> dict[str, Any]:
         "central_graphic": {
             "label": "CONCEPTUAL TRANSFORMATION MAP",
             "representation": (
-                "spectral-rock metaphor transitioning to theta coordinate grid"
+                "enlarged spectral-rock metaphor transitioning to "
+                "theta coordinate grid"
+            ),
+            "scale_note": (
+                "central scene enlarged for visual hierarchy; "
+                "not a measured spectrum"
             ),
             "warning": "NOT A SPECTROGRAM",
         },
@@ -204,6 +209,70 @@ def _embedded_svg_metadata(data: Mapping[str, Any]) -> str:
     return html.escape(encoded)
 
 
+def _spectral_bars() -> list[str]:
+    bars: list[str] = []
+    bar_heights = (
+        32, 68, 48, 100, 76, 132, 94, 182, 122, 214, 154, 256,
+        192, 286, 216, 250, 168, 202, 134, 162, 102, 126, 76,
+    )
+
+    for index, height in enumerate(bar_heights):
+        x = 196 + index * 28
+        y = 545 - height / 2
+        color = (
+            PALETTE["rock_magenta"]
+            if index % 2 == 0
+            else PALETTE["audit_cyan"]
+        )
+        bars.append(
+            f'<rect x="{x}" y="{y:.1f}" width="16" height="{height}" '
+            f'fill="{color}" opacity="0.88"/>'
+        )
+
+    return bars
+
+
+def _theta_grid() -> list[str]:
+    lines: list[str] = []
+
+    for offset in range(5):
+        x = 700 + offset * 48
+        lines.append(
+            f'<line x1="{x}" y1="430" x2="{x}" y2="660" '
+            f'stroke="{PALETTE["theta_gold"]}" stroke-width="1.7" '
+            'opacity="0.92"/>'
+        )
+
+    for offset in range(6):
+        y = 430 + offset * 46
+        lines.append(
+            f'<line x1="700" y1="{y}" x2="892" y2="{y}" '
+            f'stroke="{PALETTE["theta_gold"]}" stroke-width="1.7" '
+            'opacity="0.92"/>'
+        )
+
+    for offset in range(4):
+        x1 = 700 + offset * 48
+        x2 = x1 + 48
+        lines.append(
+            f'<line x1="{x1}" y1="430" x2="{x2}" y2="476" '
+            f'stroke="{PALETTE["theta_gold"]}" stroke-width="1.2" '
+            'opacity="0.68"/>'
+        )
+        lines.append(
+            f'<line x1="{x1}" y1="476" x2="{x2}" y2="522" '
+            f'stroke="{PALETTE["theta_gold"]}" stroke-width="1.2" '
+            'opacity="0.54"/>'
+        )
+        lines.append(
+            f'<line x1="{x1}" y1="522" x2="{x2}" y2="568" '
+            f'stroke="{PALETTE["theta_gold"]}" stroke-width="1.2" '
+            'opacity="0.42"/>'
+        )
+
+    return lines
+
+
 def render_svg(data: Mapping[str, Any]) -> bytes:
     source_hash = data["source_content_sha256"]
     theta_hash = data["canonical_theta_hash"]
@@ -213,47 +282,6 @@ def render_svg(data: Mapping[str, Any]) -> bytes:
     locator = data["source_locator_registry_path"]
 
     embedded_metadata = _embedded_svg_metadata(data)
-
-    spectral_bars = []
-    bar_heights = (
-        20, 46, 35, 72, 55, 95, 68, 132, 88, 154, 114, 184,
-        138, 208, 158, 180, 120, 145, 96, 115, 73, 91, 54,
-    )
-    for index, height in enumerate(bar_heights):
-        x = 250 + index * 25
-        y = 500 - height / 2
-        color = (
-            PALETTE["rock_magenta"]
-            if index % 2 == 0
-            else PALETTE["audit_cyan"]
-        )
-        spectral_bars.append(
-            f'<rect x="{x}" y="{y:.1f}" width="14" height="{height}" '
-            f'fill="{color}" opacity="0.78"/>'
-        )
-
-    theta_lines = []
-    for offset in range(5):
-        x = 675 + offset * 47
-        theta_lines.append(
-            f'<line x1="{x}" y1="420" x2="{x}" y2="580" '
-            f'stroke="{PALETTE["theta_gold"]}" stroke-width="1.4" '
-            f'opacity="0.85"/>'
-        )
-    for offset in range(5):
-        y = 420 + offset * 40
-        theta_lines.append(
-            f'<line x1="675" y1="{y}" x2="863" y2="{y}" '
-            f'stroke="{PALETTE["theta_gold"]}" stroke-width="1.4" '
-            f'opacity="0.85"/>'
-        )
-    for offset in range(4):
-        theta_lines.append(
-            f'<line x1="{675 + offset * 47}" y1="420" '
-            f'x2="{722 + offset * 47}" y2="460" '
-            f'stroke="{PALETTE["theta_gold"]}" stroke-width="1.0" '
-            f'opacity="0.58"/>'
-        )
 
     return "\n".join(
         [
@@ -266,37 +294,59 @@ def render_svg(data: Mapping[str, Any]) -> bytes:
             f"{html.escape(source_title)} {RIGHT_ARROW} D1"
             "</title>",
             "<desc id=\"poster-description\">"
-            "A conceptual transformation map from a D1 audio artifact "
-            "to canonical coordinate provenance. Not a spectrogram."
+            "An audit poster for a D1 audio artifact. The enlarged central "
+            "graphic is a conceptual transformation map, not a spectrogram."
             "</desc>",
             "<style>",
             (
                 ".title{font-family:Arial,Helvetica,sans-serif;"
-                "font-size:54px;font-weight:700;letter-spacing:2px;}"
+                "font-size:54px;font-weight:700;letter-spacing:2px;"
+                f"fill:{PALETTE['primary_text']};}}"
             ),
             (
                 ".subtitle{font-family:Arial,Helvetica,sans-serif;"
-                "font-size:15px;letter-spacing:3px;}"
+                "font-size:15px;letter-spacing:3px;"
+                f"fill:{PALETTE['secondary_text']};}}"
             ),
             (
                 ".label{font-family:Arial,Helvetica,sans-serif;"
-                "font-size:13px;letter-spacing:2px;}"
+                "font-size:13px;letter-spacing:2px;"
+                f"fill:{PALETTE['secondary_text']};}}"
+            ),
+            (
+                ".label-primary{font-family:Arial,Helvetica,sans-serif;"
+                "font-size:13px;letter-spacing:2px;"
+                f"fill:{PALETTE['primary_text']};}}"
             ),
             (
                 ".body{font-family:Arial,Helvetica,sans-serif;"
-                "font-size:16px;letter-spacing:0.5px;}"
+                "font-size:16px;letter-spacing:0.5px;"
+                f"fill:{PALETTE['primary_text']};}}"
             ),
             (
-                ".hash{font-family:Consolas,Menlo,monospace;"
-                "font-size:16px;}"
+                ".hash-audit{font-family:Consolas,Menlo,monospace;"
+                "font-size:16px;"
+                f"fill:{PALETTE['audit_cyan']};}}"
+            ),
+            (
+                ".hash-theta{font-family:Consolas,Menlo,monospace;"
+                "font-size:16px;"
+                f"fill:{PALETTE['theta_gold']};}}"
+            ),
+            (
+                ".hash-semantic{font-family:Consolas,Menlo,monospace;"
+                "font-size:16px;"
+                f"fill:{PALETTE['semantic_green']};}}"
             ),
             (
                 ".smallhash{font-family:Consolas,Menlo,monospace;"
-                "font-size:13px;}"
+                "font-size:13px;"
+                f"fill:{PALETTE['secondary_text']};}}"
             ),
             (
                 ".manifesto{font-family:Arial,Helvetica,sans-serif;"
-                "font-size:18px;font-weight:700;letter-spacing:1.5px;}"
+                "font-size:18px;font-weight:700;letter-spacing:1.5px;"
+                f"fill:{PALETTE['primary_text']};}}"
             ),
             "</style>",
             (
@@ -332,35 +382,35 @@ def render_svg(data: Mapping[str, Any]) -> bytes:
                 540,
                 252,
                 _short_hash(source_hash),
-                css_class="hash",
+                css_class="hash-audit",
                 anchor="middle",
             ),
             (
-                f'<rect x="351" y="286" width="378" height="94" rx="4" '
+                f'<rect x="331" y="278" width="418" height="96" rx="4" '
                 f'fill="none" stroke="{PALETTE["audit_cyan"]}" '
-                'stroke-width="1.5"/>'
+                'stroke-width="1.8"/>'
             ),
             _svg_text(
                 540,
-                319,
+                312,
                 f"SOURCE FILE: {source_title}",
                 css_class="body",
                 anchor="middle",
             ),
             _svg_text(
                 540,
-                351,
+                345,
                 f"{source_size:,} BYTES {MIDDLE_DOT} APPROVED INPUT",
-                css_class="hash",
+                css_class="hash-audit",
                 anchor="middle",
             ),
             (
-                f'<line x1="540" y1="380" x2="540" y2="407" '
-                f'stroke="{PALETTE["audit_cyan"]}" stroke-width="1.5"/>'
+                f'<line x1="540" y1="374" x2="540" y2="397" '
+                f'stroke="{PALETTE["audit_cyan"]}" stroke-width="1.8"/>'
             ),
             (
-                f'<path d="M532 400 L540 408 L548 400" fill="none" '
-                f'stroke="{PALETTE["audit_cyan"]}" stroke-width="1.5"/>'
+                f'<path d="M532 390 L540 398 L548 390" fill="none" '
+                f'stroke="{PALETTE["audit_cyan"]}" stroke-width="1.8"/>'
             ),
             _svg_text(
                 540,
@@ -370,78 +420,78 @@ def render_svg(data: Mapping[str, Any]) -> bytes:
                 anchor="middle",
             ),
             (
-                f'<rect x="150" y="420" width="780" height="185" rx="4" '
+                f'<rect x="104" y="420" width="872" height="270" rx="6" '
                 f'fill="{PALETTE["background"]}" '
-                f'stroke="{PALETTE["border"]}" stroke-width="1.5"/>'
+                f'stroke="{PALETTE["border"]}" stroke-width="1.8"/>'
             ),
             _svg_text(
                 540,
-                450,
+                452,
                 "CONCEPTUAL TRANSFORMATION MAP",
-                css_class="label",
+                css_class="label-primary",
                 anchor="middle",
             ),
-            *spectral_bars,
+            *_spectral_bars(),
             (
-                f'<line x1="600" y1="500" x2="655" y2="500" '
-                f'stroke="{PALETTE["secondary_text"]}" stroke-width="1.4"/>'
+                f'<line x1="636" y1="545" x2="677" y2="545" '
+                f'stroke="{PALETTE["secondary_text"]}" stroke-width="1.7"/>'
             ),
             (
-                f'<path d="M647 492 L655 500 L647 508" fill="none" '
-                f'stroke="{PALETTE["secondary_text"]}" stroke-width="1.4"/>'
+                f'<path d="M669 537 L677 545 L669 553" fill="none" '
+                f'stroke="{PALETTE["secondary_text"]}" stroke-width="1.7"/>'
             ),
-            *theta_lines,
+            *_theta_grid(),
             _svg_text(
                 540,
-                581,
+                666,
                 "NOT A SPECTROGRAM",
                 css_class="label",
                 anchor="middle",
             ),
             (
-                f'<line x1="540" y1="605" x2="540" y2="634" '
-                f'stroke="{PALETTE["theta_gold"]}" stroke-width="1.5"/>'
+                f'<line x1="540" y1="691" x2="540" y2="715" '
+                f'stroke="{PALETTE["theta_gold"]}" stroke-width="1.8"/>'
             ),
             (
-                f'<path d="M532 627 L540 635 L548 627" fill="none" '
-                f'stroke="{PALETTE["theta_gold"]}" stroke-width="1.5"/>'
+                f'<path d="M532 708 L540 716 L548 708" fill="none" '
+                f'stroke="{PALETTE["theta_gold"]}" stroke-width="1.8"/>'
             ),
             _svg_text(
                 540,
-                664,
+                745,
                 f"CANONICAL {THETA} HASH",
                 css_class="label",
                 anchor="middle",
             ),
             _svg_text(
                 540,
-                690,
+                771,
                 theta_hash,
-                css_class="hash",
+                css_class="hash-theta",
                 anchor="middle",
             ),
             _svg_text(
                 540,
-                737,
+                817,
                 "SEMANTIC FEATURE HASH",
                 css_class="label",
                 anchor="middle",
             ),
             _svg_text(
                 540,
-                763,
+                843,
                 _short_hash(feature_hash),
-                css_class="hash",
+                css_class="hash-semantic",
                 anchor="middle",
             ),
             (
-                f'<rect x="150" y="796" width="780" height="101" rx="4" '
+                f'<rect x="150" y="866" width="780" height="76" rx="4" '
                 f'fill="none" stroke="{PALETTE["semantic_green"]}" '
                 'stroke-width="1.5"/>'
             ),
             _svg_text(
                 180,
-                826,
+                894,
                 (
                     f"{data['schema_version']} {MIDDLE_DOT} "
                     f"{data['analysis_id']}"
@@ -450,36 +500,20 @@ def render_svg(data: Mapping[str, Any]) -> bytes:
             ),
             _svg_text(
                 180,
-                852,
+                918,
                 f"source: {locator}",
                 css_class="smallhash",
             ),
             _svg_text(
-                180,
-                877,
-                (
-                    "publication: "
-                    f"{_short_hash(PUBLICATION_COMMIT, 16, 6)}"
-                ),
-                css_class="smallhash",
-            ),
-            _svg_text(
                 540,
-                934,
-                "LOCATION IS AUDITABLE.",
+                976,
+                "LOCATION IS AUDITABLE.  SEMANTICS ARE IMMUTABLE.",
                 css_class="manifesto",
                 anchor="middle",
             ),
             _svg_text(
                 540,
-                962,
-                "SEMANTICS ARE IMMUTABLE.",
-                css_class="manifesto",
-                anchor="middle",
-            ),
-            _svg_text(
-                540,
-                990,
+                1004,
                 "MUSIC BECOMES A COORDINATE.",
                 css_class="manifesto",
                 anchor="middle",
