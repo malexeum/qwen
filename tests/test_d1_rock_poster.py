@@ -13,6 +13,7 @@ from tools.render_d1_rock_poster import (
     HORIZONTAL_ELLIPSIS,
     MIDDLE_DOT,
     MULTIPLICATION_SIGN,
+    PALETTE,
     PUBLICATION_COMMIT,
     RIGHT_ARROW,
     THETA,
@@ -95,6 +96,37 @@ def test_canonical_poster_is_deterministic_and_artifact_derived(tmp_path):
     assert f"CANONICAL {THETA} HASH" in visible_text
     assert HORIZONTAL_ELLIPSIS in visible_text
 
+    assert (
+        f".title{{font-family:Arial,Helvetica,sans-serif;"
+        f"font-size:54px;font-weight:700;letter-spacing:2px;"
+        f"fill:{PALETTE['primary_text']};}}"
+    ) in svg_text
+    assert (
+        f".subtitle{{font-family:Arial,Helvetica,sans-serif;"
+        f"font-size:15px;letter-spacing:3px;"
+        f"fill:{PALETTE['secondary_text']};}}"
+    ) in svg_text
+    assert (
+        f".hash-audit{{font-family:Consolas,Menlo,monospace;"
+        f"font-size:16px;fill:{PALETTE['audit_cyan']};}}"
+    ) in svg_text
+    assert (
+        f".hash-theta{{font-family:Consolas,Menlo,monospace;"
+        f"font-size:16px;fill:{PALETTE['theta_gold']};}}"
+    ) in svg_text
+    assert (
+        f".hash-semantic{{font-family:Consolas,Menlo,monospace;"
+        f"font-size:16px;fill:{PALETTE['semantic_green']};}}"
+    ) in svg_text
+    assert (
+        f".manifesto{{font-family:Arial,Helvetica,sans-serif;"
+        f"font-size:18px;font-weight:700;letter-spacing:1.5px;"
+        f"fill:{PALETTE['primary_text']};}}"
+    ) in svg_text
+
+    assert '<rect x="104" y="420" width="872" height="270" rx="6"' in svg_text
+    assert '<rect x="150" y="420" width="780" height="185" rx="4"' not in svg_text
+
     artifact = metadata["artifact"]
     assert artifact["analysis_id"] == "d1_rock_v1"
     assert artifact["schema_version"] == "d1_feature_artifact/v2"
@@ -115,6 +147,7 @@ def test_canonical_poster_is_deterministic_and_artifact_derived(tmp_path):
     assert embedded_metadata["artifact"] == artifact
     assert embedded_metadata["poster_id"] == metadata["poster_id"]
     assert embedded_metadata["renderer"] == metadata["renderer"]
+    assert embedded_metadata["renderer"]["version"] == "2"
     assert (
         embedded_metadata["publication_provenance"]
         == metadata["publication_provenance"]
@@ -129,6 +162,15 @@ def test_canonical_poster_is_deterministic_and_artifact_derived(tmp_path):
     )
     assert "svg_sha256" not in embedded_metadata["canonical_outputs"]
     assert "raster_outputs" not in embedded_metadata
+    assert (
+        embedded_metadata["central_graphic"]["representation"]
+        == "enlarged spectral-rock metaphor transitioning to "
+        "theta coordinate grid"
+    )
+    assert (
+        embedded_metadata["central_graphic"]["warning"]
+        == "NOT A SPECTROGRAM"
+    )
 
     assert metadata["canonical_outputs"]["svg_viewbox"] == CANONICAL_VIEWBOX
     assert metadata["canonical_outputs"]["svg_sha256"] == sha256_prefixed(
