@@ -1,53 +1,51 @@
 name: CI
 
 on:
+  pull_request:
   push:
     branches:
       - main
-  pull_request:
 
 permissions:
   contents: read
 
 jobs:
   test:
+    name: pytest (Python 3.14)
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.14"]
     steps:
       - uses: actions/checkout@v4
         with:
           lfs: true
-      - name: verify Git LFS availability
+      - name: Verify Git LFS availability
         run: git lfs version
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.14"
+          cache: pip
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
-      - name: verify D1 LFS raw-byte sources
+          python -m pip install pytest
+      - name: Verify D1 LFS raw-byte sources
         run: python tools/verify_d1_lfs_sources.py
-      - name: pytest
-        run: python -m pytest
+      - name: Run test suite
+        run: pytest -q
 
   diff-check:
+    name: diff check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          lfs: true
-      - name: verify Git LFS availability
-        run: git lfs version
-      - name: diff check
+          fetch-depth: 0
+      - name: Check whitespace errors
+        shell: bash
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            git fetch origin "${{ github.base_ref }}"
-            git diff --check "origin/${{ github.base_ref }}"...HEAD
+            git fetch --no-tags origin "${{ github.base_ref }}"
+            git diff --check "origin/${{ github.base_ref }}...HEAD"
           else
-            git diff --check HEAD^ HEAD
+            git diff --check "${{ github.event.before }}" "${{ github.sha }}"
           fi
