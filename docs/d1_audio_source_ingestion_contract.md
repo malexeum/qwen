@@ -1,6 +1,6 @@
 # D1 reproducible audio-source ingestion contract
 
-**Status:** design policy proposed by Issue #15.  
+**Status:** design policy proposed by Issue #15.
 **Scope:** source provenance before D1 extraction. This document does not ingest audio, change inventory, materialize a D1 artifact, update a manifest, or generate a poster.
 
 ## 1. Purpose and non-negotiable invariant
