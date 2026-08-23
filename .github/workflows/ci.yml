@@ -15,6 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Verify Git LFS availability
+        run: git lfs version
       - uses: actions/setup-python@v5
         with:
           python-version: "3.14"
@@ -24,6 +28,8 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
           python -m pip install pytest
+      - name: Verify D1 LFS raw-byte sources
+        run: python tools/verify_d1_lfs_sources.py
       - name: Run test suite
         run: pytest -q
 
