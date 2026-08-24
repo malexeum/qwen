@@ -1,0 +1,156 @@
+schema_version: "musical_portrait_v1"
+version: "v1.0.0"
+axes:
+  pulse:
+    regularity:
+      range: [0.0, 1.0]
+      formula_version: "pulse.regularity.v1"
+      required_raw_inputs:
+        - beat_regularity
+        - beat_confidence
+      neutral_fallback: 0.5
+      trace_fields: [pulse_regularity, beat_confidence]
+    urgency:
+      range: [0.0, 1.0]
+      formula_version: "pulse.urgency.v1"
+      required_raw_inputs:
+        - onset_density
+        - energy_arc
+        - bpm
+      neutral_fallback: 0.5
+      trace_fields: [onset_density, energy_arc, bpm]
+    impact:
+      range: [0.0, 1.0]
+      formula_version: "pulse.impact.v1"
+      required_raw_inputs:
+        - dynamic_range
+        - attack_ratio
+        - energy_arc
+      neutral_fallback: 0.5
+      trace_fields: [dynamic_range, attack_ratio, energy_arc]
+  gesture:
+    continuity:
+      range: [0.0, 1.0]
+      formula_version: "gesture.continuity.v1"
+      required_raw_inputs:
+        - sustain_ratio
+        - tonal_stability
+        - harmonic_ratio
+      neutral_fallback: 0.5
+      trace_fields: [sustain_ratio, tonal_stability, harmonic_ratio]
+    angularity:
+      range: [0.0, 1.0]
+      formula_version: "gesture.angularity.v1"
+      required_raw_inputs:
+        - spectral_flux
+        - harmonic_change_rate
+        - roughness
+      neutral_fallback: 0.5
+      trace_fields: [spectral_flux, harmonic_change_rate, roughness]
+    propulsion:
+      range: [0.0, 1.0]
+      formula_version: "gesture.propulsion.v1"
+      required_raw_inputs:
+        - onset_density
+        - dynamic_range
+        - spectral_flux
+      neutral_fallback: 0.5
+      trace_fields: [onset_density, dynamic_range, spectral_flux]
+  form:
+    complexity:
+      range: [0.0, 1.0]
+      formula_version: "form.complexity.v1"
+      required_raw_inputs:
+        - section_count
+        - section_duration_entropy
+        - section_contrast
+      neutral_fallback: 0.5
+      trace_fields: [section_count, section_duration_entropy, section_contrast]
+    recurrence:
+      range: [0.0, 1.0]
+      formula_version: "form.recurrence.v1"
+      required_raw_inputs:
+        - repetition_strength
+        - motif_recurrence
+        - return_ratio
+      neutral_fallback: 0.5
+      trace_fields: [repetition_strength, motif_recurrence, return_ratio]
+    contrast:
+      range: [0.0, 1.0]
+      formula_version: "form.contrast.v1"
+      required_raw_inputs:
+        - section_contrast
+        - climax_position
+        - dynamic_range
+      neutral_fallback: 0.5
+      trace_fields: [section_contrast, climax_position, dynamic_range]
+    climax_position:
+      range: [0.0, 1.0]
+      formula_version: "form.climax_position.v1"
+      required_raw_inputs:
+        - climax_position
+      neutral_fallback: 0.5
+      trace_fields: [climax_position]
+  material:
+    roughness:
+      range: [0.0, 1.0]
+      formula_version: "material.roughness.v1"
+      required_raw_inputs:
+        - roughness
+        - spectral_flatness
+      neutral_fallback: 0.5
+      trace_fields: [roughness, spectral_flatness]
+    brightness:
+      range: [0.0, 1.0]
+      formula_version: "material.brightness.v1"
+      required_raw_inputs:
+        - spectral_centroid
+        - spectral_rolloff
+      neutral_fallback: 0.5
+      trace_fields: [spectral_centroid, spectral_rolloff]
+    density:
+      range: [0.0, 1.0]
+      formula_version: "material.density.v1"
+      required_raw_inputs:
+        - spectral_bandwidth
+        - section_count
+        - onset_density
+      neutral_fallback: 0.5
+      trace_fields: [spectral_bandwidth, section_count, onset_density]
+    sustain:
+      range: [0.0, 1.0]
+      formula_version: "material.sustain.v1"
+      required_raw_inputs:
+        - sustain_ratio
+        - reverb_proxy
+        - tonal_stability
+      neutral_fallback: 0.5
+      trace_fields: [sustain_ratio, reverb_proxy, tonal_stability]
+  affect:
+    tension:
+      range: [0.0, 1.0]
+      formula_version: "affect.tension.v1"
+      required_raw_inputs:
+        - harmonic_change_rate
+        - roughness
+        - spectral_flux
+      neutral_fallback: 0.5
+      trace_fields: [harmonic_change_rate, roughness, spectral_flux]
+    stability:
+      range: [0.0, 1.0]
+      formula_version: "affect.stability.v1"
+      required_raw_inputs:
+        - tonal_stability
+        - chroma_stability
+        - harmonic_ratio
+      neutral_fallback: 0.5
+      trace_fields: [tonal_stability, chroma_stability, harmonic_ratio]
+    openness:
+      range: [0.0, 1.0]
+      formula_version: "affect.openness.v1"
+      required_raw_inputs:
+        - stereo_width_if_available
+        - reverb_proxy
+        - spectral_bandwidth
+      neutral_fallback: 0.5
+      trace_fields: [stereo_width_if_available, reverb_proxy, spectral_bandwidth]

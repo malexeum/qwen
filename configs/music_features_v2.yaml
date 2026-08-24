@@ -1,0 +1,50 @@
+schema_version: "music_features_v2"
+version: "v2.0.0"
+categories:
+  - pulse
+  - envelope
+  - form
+  - recurrence
+  - timbre
+  - harmony
+  - space
+fields:
+  pulse:
+    bpm: {type: float, range: [0.0, 220.0], description: "tempo estimate"}
+    beat_confidence: {type: float, range: [0.0, 1.0], description: "confidence of beat detection"}
+    beat_regularity: {type: float, range: [0.0, 1.0], description: "pulse regularity"}
+    onset_density: {type: float, range: [0.0, 1.0], description: "event density"}
+  envelope:
+    dynamic_range: {type: float, range: [0.0, 1.0], description: "amplitude excursion"}
+    attack_ratio: {type: float, range: [0.0, 1.0], description: "attack prominence"}
+    sustain_ratio: {type: float, range: [0.0, 1.0], description: "sustain share"}
+    energy_arc: {type: float, range: [0.0, 1.0], description: "shape of energy arc"}
+  form:
+    section_boundaries: {type: list, description: "normalized section boundary timestamps"}
+    section_count: {type: int, range: [1, 12], description: "number of musical sections"}
+    section_duration_entropy: {type: float, range: [0.0, 1.0], description: "section shape entropy"}
+    section_contrast: {type: float, range: [0.0, 1.0], description: "section-to-section contrast"}
+    climax_position: {type: float, range: [0.0, 1.0], description: "relative climax position"}
+  recurrence:
+    self_similarity: {type: float, range: [0.0, 1.0], description: "internal motif similarity"}
+    repetition_strength: {type: float, range: [0.0, 1.0], description: "repetition strength"}
+    motif_recurrence: {type: float, range: [0.0, 1.0], description: "motif recurrence intensity"}
+    return_ratio: {type: float, range: [0.0, 1.0], description: "return ratio of motifs"}
+  timbre:
+    spectral_centroid: {type: float, range: [0.0, 1.0], description: "spectral centroid normalized"}
+    spectral_rolloff: {type: float, range: [0.0, 1.0], description: "spectral rolloff normalized"}
+    spectral_flatness: {type: float, range: [0.0, 1.0], description: "tonality vs noise"}
+    spectral_flux: {type: float, range: [0.0, 1.0], description: "dynamic timbral change"}
+    roughness: {type: float, range: [0.0, 1.0], description: "roughness or grain"}
+  harmony:
+    harmonic_ratio: {type: float, range: [0.0, 1.0], description: "share of harmonic energy"}
+    chroma_stability: {type: float, range: [0.0, 1.0], description: "harmonic key stability"}
+    harmonic_change_rate: {type: float, range: [0.0, 1.0], description: "rate of harmonic change"}
+    tonal_stability: {type: float, range: [0.0, 1.0], description: "tonal stability"}
+  space:
+    spectral_bandwidth: {type: float, range: [0.0, 1.0], description: "spectral bandwidth normalized"}
+    stereo_width_if_available: {type: float, range: [0.0, 1.0], description: "stereo width when available"}
+    reverb_proxy: {type: float, range: [0.0, 1.0], description: "reverberant spread proxy"}
+
+# This file is design-only schema documentation.
+# It does not claim audio-derived V2 implementation exists in code.

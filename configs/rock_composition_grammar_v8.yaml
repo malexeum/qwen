@@ -1,0 +1,112 @@
+schema_version: "rock_composition_grammar_v8"
+version: "v8.0.0"
+mode_order:
+  - monolithic
+  - kinetic_break
+  - recursive_grove
+  - fragmented_signal
+  - open_horizon
+modes:
+  monolithic:
+    selection_rule: "if affect.tension < 0.55 and form.recurrence > 0.55 and affect.stability > 0.5"
+    macro_params:
+      junction: {range: [0.35, 0.72], default: 0.54}
+      flow_angle: {range: [0.15, 0.45], default: 0.28}
+      competing_centers: {range: [1, 3], default: 2}
+      branch_count: {range: [4, 8], default: 6}
+      recursion_levels: {range: [2, 4], default: 3}
+      global_symmetry: {range: [0.55, 0.9], default: 0.72}
+      line_continuity: {range: [0.55, 0.95], default: 0.78}
+      density: {range: [0.45, 0.8], default: 0.62}
+      materiality: {range: [0.3, 0.75], default: 0.48}
+      palette_usage_ratio: {range: [0.25, 0.6], default: 0.42}
+    guardrails:
+      - "density must be within [0.45, 0.8]"
+      - "global_symmetry must not drop below 0.55"
+  kinetic_break:
+    selection_rule: "if gesture.angularity > 0.6 and affect.tension > 0.6 and form.complexity > 0.6"
+    macro_params:
+      junction: {range: [0.45, 0.8], default: 0.63}
+      flow_angle: {range: [0.35, 0.75], default: 0.52}
+      competing_centers: {range: [2, 4], default: 3}
+      branch_count: {range: [6, 10], default: 8}
+      recursion_levels: {range: [2, 5], default: 3}
+      global_symmetry: {range: [0.35, 0.7], default: 0.52}
+      line_continuity: {range: [0.4, 0.75], default: 0.58}
+      density: {range: [0.5, 0.9], default: 0.7}
+      materiality: {range: [0.45, 0.88], default: 0.67}
+      palette_usage_ratio: {range: [0.35, 0.7], default: 0.52}
+    guardrails:
+      - "flow_angle must remain above 0.35"
+      - "line_continuity must stay below 0.75"
+  recursive_grove:
+    selection_rule: "if form.complexity > 0.7 and form.recurrence > 0.65 and gesture.continuity > 0.55"
+    macro_params:
+      junction: {range: [0.25, 0.7], default: 0.44}
+      flow_angle: {range: [0.1, 0.35], default: 0.22}
+      competing_centers: {range: [2, 5], default: 3}
+      branch_count: {range: [7, 12], default: 9}
+      recursion_levels: {range: [3, 6], default: 4}
+      global_symmetry: {range: [0.5, 0.85], default: 0.68}
+      line_continuity: {range: [0.7, 0.98], default: 0.82}
+      density: {range: [0.6, 0.95], default: 0.78}
+      materiality: {range: [0.45, 0.85], default: 0.63}
+      palette_usage_ratio: {range: [0.4, 0.8], default: 0.58}
+    guardrails:
+      - "recursion_levels must be >= 3"
+      - "line_continuity must stay above 0.7"
+  fragmented_signal:
+    selection_rule: "if affect.tension > 0.7 and material.roughness > 0.7 and gesture.angularity > 0.7"
+    macro_params:
+      junction: {range: [0.35, 0.88], default: 0.67}
+      flow_angle: {range: [0.45, 0.95], default: 0.72}
+      competing_centers: {range: [3, 6], default: 4}
+      branch_count: {range: [8, 15], default: 11}
+      recursion_levels: {range: [1, 4], default: 2}
+      global_symmetry: {range: [0.2, 0.6], default: 0.38}
+      line_continuity: {range: [0.2, 0.55], default: 0.38}
+      density: {range: [0.65, 0.98], default: 0.8}
+      materiality: {range: [0.6, 0.95], default: 0.82}
+      palette_usage_ratio: {range: [0.3, 0.8], default: 0.63}
+    guardrails:
+      - "global_symmetry must stay below 0.6"
+      - "line_continuity must stay below 0.55"
+  open_horizon:
+    selection_rule: "if affect.openness > 0.7 and form.contrast < 0.45 and gesture.continuity > 0.6"
+    macro_params:
+      junction: {range: [0.2, 0.6], default: 0.38}
+      flow_angle: {range: [0.05, 0.3], default: 0.18}
+      competing_centers: {range: [1, 3], default: 2}
+      branch_count: {range: [4, 9], default: 6}
+      recursion_levels: {range: [2, 5], default: 3}
+      global_symmetry: {range: [0.45, 0.8], default: 0.62}
+      line_continuity: {range: [0.5, 0.9], default: 0.7}
+      density: {range: [0.35, 0.75], default: 0.5}
+      materiality: {range: [0.25, 0.7], default: 0.42}
+      palette_usage_ratio: {range: [0.25, 0.7], default: 0.45}
+    guardrails:
+      - "density must remain <= 0.75"
+      - "junction must remain within low-energy range"
+selection_rules:
+  deterministic_mode_priority:
+    - recursive_grove
+    - fragmented_signal
+    - kinetic_break
+    - monolithic
+    - open_horizon
+  tie_break_rule: "highest mode confidence wins; unresolved ties fall back to monolithic"
+  confidence_formula: "weighted_sum_of_matching_axes / total_axes_considered"
+  neutral_fallback_mode: monolithic
+  no_seed_policy: true
+mapping_trace_requirements:
+  required_fields:
+    - mode
+    - selected_rule
+    - portrait_axes_considered
+    - confidence
+    - macro_params
+    - guardrail_status
+  guardrails:
+    - "no seed participates in mode selection"
+    - "no seed participates in macro parameter resolution"
+    - "all macro param values must be clamped to declared ranges"
