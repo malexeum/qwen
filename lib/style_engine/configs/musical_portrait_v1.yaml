@@ -1,0 +1,224 @@
+schema: MusicalPortraitV1
+version: v1.0.0
+artifact:
+  track_id: "track_id"
+  source_feature_hash: "sha256"
+  portrait_hash: "sha256"
+  resolver_name: "musical_portrait_v1"
+  resolver_version: "v1.0.0"
+  created_at: "ISO-8601 timestamp"
+identity_core:
+  dominant_interpretation_mode:
+    enum: [structure, gesture, light, material]
+  secondary_interpretation_mode:
+    enum: [structure, gesture, light, material, none]
+  identity_confidence:
+    type: float
+    range: [0.0, 1.0]
+profiles:
+  pulse_profile:
+    steadiness:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - pulse.beat_confidence
+          - pulse.pulse_regularity
+          - recurrence.repetition_ratio
+
+    drive:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - pulse.onset_density
+          - envelope.attack_sharpness
+          - envelope.macro_energy_arc
+
+    syncopation:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - pulse.syncopation_index
+
+    sparsity:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - pulse.onset_density
+          - envelope.silence_ratio
+
+  gesture_profile:
+    weight:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - envelope.dynamic_range
+          - timbre.roughness
+          - harmony.dissonance_proxy
+
+    attack:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - envelope.attack_sharpness
+          - pulse.onset_density
+
+    flow:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - envelope.sustain_ratio
+          - harmony.chroma_stability
+          - timbre.spectral_flux
+
+    directionality:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - pulse.pulse_regularity
+          - form.climax_position
+          - harmony.harmonic_change_rate
+
+  form_profile:
+    structural_clarity:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - form.section_count
+          - form.section_contrast
+          - recurrence.self_similarity
+
+    contrast:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - form.section_contrast
+          - harmony.harmonic_change_rate
+          - envelope.dynamic_range
+
+    climax_strength:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - form.climax_position
+          - envelope.macro_energy_arc
+
+    return_strength:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - recurrence.motif_return_strength
+          - recurrence.self_similarity
+
+  material_profile:
+    smoothness:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - timbre.roughness
+          - envelope.sustain_ratio
+
+    grain:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - timbre.roughness
+          - timbre.spectral_flux
+          - timbre.brightness
+
+    erosion:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - timbre.spectral_flatness
+          - harmony.dissonance_proxy
+          - envelope.attack_sharpness
+
+    crystallinity:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - harmony.tonal_stability
+          - harmony.chroma_stability
+          - timbre.brightness
+
+    atmosphere:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - space.reverb_proxy
+          - space.depth_proxy
+          - envelope.sustain_ratio
+
+  affect_profile:
+    tension:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - harmony.dissonance_proxy
+          - harmony.harmonic_change_rate
+          - form.section_contrast
+
+    stability:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - harmony.tonal_stability
+          - pulse.pulse_regularity
+          - recurrence.self_similarity
+
+    luminosity:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - timbre.brightness
+          - harmony.harmonic_ratio
+
+    dramatic_charge:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - envelope.macro_energy_arc
+          - form.climax_position
+          - form.section_contrast
+
+  spatial_profile:
+    width:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - space.stereo_width
+
+    depth:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - space.depth_proxy
+          - space.reverb_proxy
+
+    resonance:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - space.reverb_proxy
+          - envelope.sustain_ratio
+
+    openness:
+      range: [0.0, 1.0]
+      mapping_rules:
+        from:
+          - space.spectral_bandwidth
+          - envelope.silence_ratio
+          - timbre.brightness
+mode_rules:
+  structure:
+    condition: "form_profile.structural_clarity and form_profile.return_strength are high"
+    tie_break: "before gesture"
+  gesture:
+    condition: "gesture_profile.attack and gesture_profile.directionality are high"
+    tie_break: "before light and material"
+  light:
+    condition: "spatial_profile.resonance and material_profile.atmosphere and affect_profile.luminosity are high"
+    tie_break: "after gesture, before material"
+  material:
+    condition: "material_profile.grain or material_profile.erosion and affect_profile.tension are high"
+    tie_break: "after gesture and light"

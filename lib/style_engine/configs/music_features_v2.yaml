@@ -1,0 +1,193 @@
+schema: MusicFeaturesV2
+version: v2.0.0
+artifact:
+  track_id: "track_id"
+  audio_content_hash: "sha256"
+  feature_hash: "sha256"
+  extractor_name: "audio_feature_extractor"
+  extractor_version: "v2.0.0"
+  created_at: "ISO-8601 timestamp"
+  synthetic_fixture: true
+normalization:
+  range: [0.0, 1.0]
+  fallback_policy: "missing normalized feature falls back to 0.5"
+  missing_value_default: 0.5
+feature_groups:
+  pulse:
+    bpm:
+      type: float
+      unit: bpm
+      normalized: false
+      range_hint: [0.0, 220.0]
+      description: "tempo estimate"
+    beat_confidence:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "confidence that detected pulses are musical beats"
+    pulse_regularity:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "regularity of pulse across the track"
+    onset_density:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "fractional density of note onsets"
+    syncopation_index:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "degree of off-beat accentuation"
+  envelope:
+    dynamic_range:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "relative loudness excursion"
+    attack_sharpness:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "attack distinctness"
+    sustain_ratio:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "relative sustained energy"
+    macro_energy_arc:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "overall trajectory of energy across the form"
+    silence_ratio:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "fraction of quiet or sparse segments"
+  form:
+    section_count:
+      type: int
+      normalized: false
+      range_hint: [1, 12]
+      description: "count of identified sections"
+    section_contrast:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "average contrast between sections"
+    climax_position:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "relative position of the main climax"
+    intro_length_ratio:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "relative duration of opening section"
+    ending_decay_ratio:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "relative decay at the end"
+  recurrence:
+    self_similarity:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "internal similarity of recurring motifs"
+    motif_return_strength:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "strength of motif return"
+    repetition_ratio:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "share of recurring material"
+    variation_ratio:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "amount of variation within repeated material"
+  timbre:
+    spectral_centroid:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "spectral centroid proxy"
+    spectral_rolloff:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "spectral rolloff proxy"
+    spectral_flatness:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "noise-like vs tonal spectral balance"
+    spectral_flux:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "rate of spectral change"
+    roughness:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "textural grain or abrasion"
+    brightness:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "high-frequency emphasis"
+  harmony:
+    harmonic_ratio:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "relative harmonic content"
+    chroma_stability:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "stability of pitch-class profile"
+    harmonic_change_rate:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "rate of harmonic motion"
+    tonal_stability:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "stability of tonal center"
+    dissonance_proxy:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "proxy for harmonic tension or dissonance"
+  space:
+    spectral_bandwidth:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "spectral spread proxy"
+    stereo_width:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "stereo width proxy"
+    reverb_proxy:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "reverberant spread proxy"
+    depth_proxy:
+      type: float
+      normalized: true
+      range_hint: [0.0, 1.0]
+      description: "perceived spatial depth"

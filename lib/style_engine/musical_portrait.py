@@ -1,112 +1,260 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
-from typing import Any
+import hashlib
+import json
+from typing import Any, Iterable
+
+DEFAULT_FALLBACK = 0.5
+MODE_PRIORITY = ("structure", "gesture", "light", "material")
 
 
-@dataclass(frozen=True)
-class MusicalPortrait:
-    pulse_regularity: float = 0.5
-    pulse_urgency: float = 0.5
-    pulse_impact: float = 0.5
-    gesture_continuity: float = 0.5
-    gesture_angularity: float = 0.5
-    gesture_propulsion: float = 0.5
-    form_complexity: float = 0.5
-    form_recurrence: float = 0.5
-    form_contrast: float = 0.5
-    form_climax_position: float = 0.5
-    material_roughness: float = 0.5
-    material_brightness: float = 0.5
-    material_density: float = 0.5
-    material_sustain: float = 0.5
-    affect_tension: float = 0.5
-    affect_stability: float = 0.5
-    affect_openness: float = 0.5
-
-    def __post_init__(self) -> None:
-        for name, value in asdict(self).items():
-            if isinstance(value, bool):
-                raise ValueError(f"{name} must be numeric and bounded 0..1")
-            value = float(value)
-            if not 0.0 <= value <= 1.0:
-                raise ValueError(f"{name} must be in [0.0, 1.0]")
-
-    def as_dict(self) -> dict[str, float]:
-        return {k: float(v) for k, v in asdict(self).items()}
+def clamp01(value: Any) -> float:
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return DEFAULT_FALLBACK
+    if numeric != numeric:
+        return DEFAULT_FALLBACK
+    if numeric < 0.0:
+        return 0.0
+    if numeric > 1.0:
+        return 1.0
+    return numeric
 
 
-def _clamp01(value: float) -> float:
-    return max(0.0, min(1.0, float(value)))
+def get_feature_value(features: dict, dotted_path: str, fallback: float = DEFAULT_FALLBACK) -> float:
+    current: Any = features
+    for part in dotted_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            return float(fallback)
+        current = current[part]
+    try:
+        return clamp01(current)
+    except (TypeError, ValueError):
+        return float(fallback)
 
 
-def resolve_mode(portrait: MusicalPortrait) -> str:
-    score = {
-        "recursive_grove": (
-            portrait.form_complexity * 0.30
-            + portrait.form_recurrence * 0.30
-            + portrait.gesture_continuity * 0.20
-            + portrait.affect_stability * 0.20
-        ),
-        "fragmented_signal": (
-            portrait.affect_tension * 0.35
-            + portrait.material_roughness * 0.30
-            + portrait.gesture_angularity * 0.20
-            + portrait.form_contrast * 0.15
-        ),
-        "kinetic_break": (
-            portrait.gesture_angularity * 0.30
-            + portrait.affect_tension * 0.25
-            + portrait.form_complexity * 0.25
-            + portrait.material_brightness * 0.20
-        ),
-        "monolithic": (
-            portrait.form_recurrence * 0.30
-            + portrait.affect_stability * 0.30
-            + portrait.pulse_regularity * 0.20
-            + portrait.material_sustain * 0.20
-        ),
-        "open_horizon": (
-            portrait.affect_openness * 0.35
-            + portrait.gesture_continuity * 0.30
-            + portrait.form_contrast * 0.20
-            + portrait.material_brightness * 0.15
-        ),
+def aggregate_feature_values(values: Iterable[float | int | None]) -> float:
+    cleaned = []
+    for value in values:
+        if value is None:
+            continue
+        try:
+            cleaned.append(float(value))
+        except (TypeError, ValueError):
+            continue
+    if not cleaned:
+        return DEFAULT_FALLBACK
+    return clamp01(sum(cleaned) / len(cleaned))
+
+
+def invert(value: Any) -> float:
+    return clamp01(1.0 - clamp01(value))
+
+
+def build_musical_portrait(features: dict) -> dict:
+    if not isinstance(features, dict):
+        raise TypeError("features must be a dict")
+
+    pulse = features.get("pulse", {})
+    envelope = features.get("envelope", {})
+    form = features.get("form", {})
+    recurrence = features.get("recurrence", {})
+    timbre = features.get("timbre", {})
+    harmony = features.get("harmony", {})
+    space = features.get("space", {})
+
+    portrait = {
+        "schema": "MusicalPortraitV1",
+        "version": "v1.0.0",
+        "artifact": {
+            "track_id": str(features.get("artifact", {}).get("track_id", "unknown_track")),
+            "source_feature_hash": str(features.get("artifact", {}).get("feature_hash", "unknown_hash")),
+            "portrait_hash": "",
+            "resolver_name": "musical_portrait_v1",
+            "resolver_version": "v1.0.0",
+            "created_at": str(features.get("artifact", {}).get("created_at", "1970-01-01T00:00:00Z")),
+        },
+        "identity_core": {
+            "dominant_interpretation_mode": "structure",
+            "secondary_interpretation_mode": "none",
+            "identity_confidence": 0.5,
+        },
+        "profiles": {
+            "pulse_profile": {
+                "steadiness": aggregate_feature_values([
+                    get_feature_value(pulse, "beat_confidence"),
+                    get_feature_value(pulse, "pulse_regularity"),
+                    get_feature_value(recurrence, "repetition_ratio"),
+                ]),
+                "drive": aggregate_feature_values([
+                    get_feature_value(pulse, "onset_density"),
+                    get_feature_value(envelope, "attack_sharpness"),
+                    get_feature_value(envelope, "macro_energy_arc"),
+                ]),
+                "syncopation": get_feature_value(pulse, "syncopation_index"),
+                "sparsity": aggregate_feature_values([
+                    invert(get_feature_value(pulse, "onset_density")),
+                    get_feature_value(envelope, "silence_ratio"),
+                ]),
+            },
+            "gesture_profile": {
+                "weight": aggregate_feature_values([
+                    get_feature_value(envelope, "dynamic_range"),
+                    get_feature_value(timbre, "roughness"),
+                    get_feature_value(harmony, "dissonance_proxy"),
+                ]),
+                "attack": aggregate_feature_values([
+                    get_feature_value(envelope, "attack_sharpness"),
+                    get_feature_value(pulse, "onset_density"),
+                ]),
+                "flow": aggregate_feature_values([
+                    get_feature_value(envelope, "sustain_ratio"),
+                    get_feature_value(harmony, "chroma_stability"),
+                    invert(get_feature_value(timbre, "spectral_flux")),
+                ]),
+                "directionality": aggregate_feature_values([
+                    get_feature_value(pulse, "pulse_regularity"),
+                    get_feature_value(form, "climax_position"),
+                    get_feature_value(harmony, "harmonic_change_rate"),
+                ]),
+            },
+            "form_profile": {
+                "structural_clarity": aggregate_feature_values([
+                    get_feature_value(form, "section_count"),
+                    get_feature_value(form, "section_contrast"),
+                    get_feature_value(recurrence, "self_similarity"),
+                ]),
+                "contrast": aggregate_feature_values([
+                    get_feature_value(form, "section_contrast"),
+                    get_feature_value(harmony, "harmonic_change_rate"),
+                    get_feature_value(envelope, "dynamic_range"),
+                ]),
+                "climax_strength": aggregate_feature_values([
+                    get_feature_value(form, "climax_position"),
+                    get_feature_value(envelope, "macro_energy_arc"),
+                ]),
+                "return_strength": aggregate_feature_values([
+                    get_feature_value(recurrence, "motif_return_strength"),
+                    get_feature_value(recurrence, "self_similarity"),
+                ]),
+            },
+            "material_profile": {
+                "smoothness": aggregate_feature_values([
+                    invert(get_feature_value(timbre, "roughness")),
+                    get_feature_value(envelope, "sustain_ratio"),
+                ]),
+                "grain": aggregate_feature_values([
+                    get_feature_value(timbre, "roughness"),
+                    get_feature_value(timbre, "spectral_flux"),
+                    get_feature_value(timbre, "brightness"),
+                ]),
+                "erosion": aggregate_feature_values([
+                    get_feature_value(timbre, "spectral_flatness"),
+                    get_feature_value(harmony, "dissonance_proxy"),
+                    get_feature_value(envelope, "attack_sharpness"),
+                ]),
+                "crystallinity": aggregate_feature_values([
+                    get_feature_value(harmony, "tonal_stability"),
+                    get_feature_value(harmony, "chroma_stability"),
+                    get_feature_value(timbre, "brightness"),
+                ]),
+                "atmosphere": aggregate_feature_values([
+                    get_feature_value(space, "reverb_proxy"),
+                    get_feature_value(space, "depth_proxy"),
+                    get_feature_value(envelope, "sustain_ratio"),
+                ]),
+            },
+            "affect_profile": {
+                "tension": aggregate_feature_values([
+                    get_feature_value(harmony, "dissonance_proxy"),
+                    get_feature_value(harmony, "harmonic_change_rate"),
+                    get_feature_value(form, "section_contrast"),
+                ]),
+                "stability": aggregate_feature_values([
+                    get_feature_value(harmony, "tonal_stability"),
+                    get_feature_value(pulse, "pulse_regularity"),
+                    get_feature_value(recurrence, "self_similarity"),
+                ]),
+                "luminosity": aggregate_feature_values([
+                    get_feature_value(timbre, "brightness"),
+                    get_feature_value(harmony, "harmonic_ratio"),
+                ]),
+                "dramatic_charge": aggregate_feature_values([
+                    get_feature_value(envelope, "macro_energy_arc"),
+                    get_feature_value(form, "climax_position"),
+                    get_feature_value(form, "section_contrast"),
+                ]),
+            },
+            "spatial_profile": {
+                "width": get_feature_value(space, "stereo_width"),
+                "depth": aggregate_feature_values([
+                    get_feature_value(space, "depth_proxy"),
+                    get_feature_value(space, "reverb_proxy"),
+                ]),
+                "resonance": aggregate_feature_values([
+                    get_feature_value(space, "reverb_proxy"),
+                    get_feature_value(envelope, "sustain_ratio"),
+                ]),
+                "openness": aggregate_feature_values([
+                    get_feature_value(space, "spectral_bandwidth"),
+                    get_feature_value(envelope, "silence_ratio"),
+                    get_feature_value(timbre, "brightness"),
+                ]),
+            },
+        },
     }
-    return max(score.items(), key=lambda item: item[1])[0]
+
+    dominant, secondary, confidence = resolve_interpretation_modes(portrait)
+    portrait["identity_core"]["dominant_interpretation_mode"] = dominant
+    portrait["identity_core"]["secondary_interpretation_mode"] = secondary
+    portrait["identity_core"]["identity_confidence"] = clamp01(confidence)
+    portrait["artifact"]["portrait_hash"] = compute_portrait_hash(portrait)
+    return portrait
 
 
-def resolve_macro_params(portrait: MusicalPortrait, mode: str) -> dict[str, Any]:
-    mapping: dict[str, Any] = {
-        "junction": _clamp01(portrait.form_climax_position * 0.8 + portrait.affect_tension * 0.2),
-        "flow_angle": _clamp01(portrait.gesture_propulsion * 0.7 + portrait.gesture_angularity * 0.3),
-        "competing_centers": int(round(1 + portrait.form_complexity * 4)),
-        "branch_count": int(round(4 + portrait.form_complexity * 8)),
-        "recursion_levels": int(round(2 + portrait.form_recurrence * 4)),
-        "global_symmetry": _clamp01(0.5 + (portrait.affect_stability - 0.5) * 0.7),
-        "line_continuity": _clamp01(0.5 + (portrait.gesture_continuity - 0.5) * 0.8),
-        "density": _clamp01(0.4 + portrait.material_density * 0.6),
-        "materiality": _clamp01(0.35 + portrait.material_roughness * 0.65),
-        "palette_usage_ratio": _clamp01(0.25 + portrait.material_brightness * 0.5),
+def resolve_interpretation_modes(portrait: dict) -> tuple[str, str, float]:
+    if not isinstance(portrait, dict):
+        raise TypeError("portrait must be a dict")
+
+    profiles = portrait.get("profiles", {})
+    form = profiles.get("form_profile", {})
+    gesture = profiles.get("gesture_profile", {})
+    material = profiles.get("material_profile", {})
+    affect = profiles.get("affect_profile", {})
+    spatial = profiles.get("spatial_profile", {})
+
+    scores = {
+        "structure": aggregate_feature_values([
+            form.get("structural_clarity", DEFAULT_FALLBACK),
+            form.get("return_strength", DEFAULT_FALLBACK),
+        ]),
+        "gesture": aggregate_feature_values([
+            gesture.get("attack", DEFAULT_FALLBACK),
+            gesture.get("directionality", DEFAULT_FALLBACK),
+        ]),
+        "light": aggregate_feature_values([
+            spatial.get("resonance", DEFAULT_FALLBACK),
+            material.get("atmosphere", DEFAULT_FALLBACK),
+            affect.get("luminosity", DEFAULT_FALLBACK),
+        ]),
+        "material": aggregate_feature_values([
+            material.get("grain", DEFAULT_FALLBACK),
+            material.get("erosion", DEFAULT_FALLBACK),
+            affect.get("tension", DEFAULT_FALLBACK),
+        ]),
     }
-    if mode == "recursive_grove":
-        mapping["junction"] = _clamp01(0.25 + portrait.form_recurrence * 0.45)
-        mapping["branch_count"] = int(round(7 + portrait.form_complexity * 8))
-        mapping["recursion_levels"] = int(round(3 + portrait.form_complexity * 5))
-        mapping["global_symmetry"] = _clamp01(0.55 + portrait.affect_stability * 0.35)
-    elif mode == "fragmented_signal":
-        mapping["flow_angle"] = _clamp01(0.45 + portrait.gesture_angularity * 0.55)
-        mapping["global_symmetry"] = _clamp01(0.2 + (1.0 - portrait.affect_stability) * 0.6)
-        mapping["line_continuity"] = _clamp01(0.2 + (1.0 - portrait.gesture_continuity) * 0.6)
-    elif mode == "kinetic_break":
-        mapping["junction"] = _clamp01(0.45 + portrait.affect_tension * 0.4)
-        mapping["branch_count"] = int(round(6 + portrait.gesture_angularity * 7))
-        mapping["density"] = _clamp01(0.5 + portrait.material_density * 0.5)
-    elif mode == "open_horizon":
-        mapping["junction"] = _clamp01(0.2 + portrait.affect_openness * 0.5)
-        mapping["flow_angle"] = _clamp01(0.1 + portrait.affect_openness * 0.4)
-        mapping["line_continuity"] = _clamp01(0.5 + portrait.gesture_continuity * 0.4)
-    elif mode == "monolithic":
-        mapping["global_symmetry"] = _clamp01(0.55 + portrait.affect_stability * 0.35)
-        mapping["recursion_levels"] = int(round(2 + portrait.form_recurrence * 3))
-    return mapping
+
+    ranked = sorted(scores.items(), key=lambda item: (item[1], -MODE_PRIORITY.index(item[0])), reverse=True)
+    dominant = ranked[0][0]
+    secondary = next((name for name, _ in ranked[1:] if name != dominant), "none")
+    return dominant, secondary, clamp01(ranked[0][1])
+
+
+def compute_portrait_hash(portrait: dict) -> str:
+    payload_items = []
+    for profile_name, profile in sorted(portrait.get("profiles", {}).items()):
+        for field_name, value in sorted(profile.items()):
+            payload_items.append(f"{profile_name}.{field_name}:{clamp01(value)}")
+    payload = json.dumps(payload_items, separators=(",", ":"), sort_keys=True)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
