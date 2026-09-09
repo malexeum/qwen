@@ -335,6 +335,135 @@ def build_sacred_mandala(
     return "".join(elements)
 
 
+def _solaris_ocean_currents(
+    cx: float,
+    cy: float,
+    bridge_params: Mapping[str, Any],
+    palette: Mapping[str, str],
+    rng: random.Random,
+) -> list[str]:
+    """
+    агическое нелинейное флюидное пространство кеана Соляриса:
+    амильтоново поле линий тока (Streamfunction psi) с сохранением несжимаемости,
+    асимметричные вихревые сингулярности разного масштаба,
+    невесомые эфирные шлейфы (fill-opacity 0.009..0.022) с глубоким наложением.
+    икаких жестких бубликов, полосок или волос.
+    """
+    elements = ['<g id="solaris-ocean-layer">']
+
+    drive = float(bridge_params.get("drive", 0.4))
+    tension = float(bridge_params.get("tension", 0.0))
+    line_density = float(bridge_params.get("line_density", 0.5))
+    grain = float(bridge_params.get("grain", 0.5))
+
+    col_cyan = palette.get("audit_cyan", "#46D9E8")
+    col_magenta = palette.get("rock_magenta", "#EA580C")
+    col_gold = palette.get("theta_gold", "#F6C85F")
+    palette_pool = [col_cyan, col_magenta, col_gold]
+
+    # СТЫ ХЫ СУСТ (СТ ХСТ  СЫ  )
+    # аспределены органично в объеме, создавая богатейший гидродинамический рельеф
+    vortex_nodes = [
+        {"x": cx + 180.0, "y": cy - 160.0, "gamma": 140.0 + drive * 40.0, "core": 120.0},
+        {"x": cx - 220.0, "y": cy + 140.0, "gamma": -110.0 - tension * 35.0, "core": 140.0},
+        {"x": cx - 140.0, "y": cy - 230.0, "gamma": 75.0, "core": 95.0},
+        {"x": cx + 240.0, "y": cy + 190.0, "gamma": -85.0, "core": 110.0},
+        {"x": cx - 40.0,  "y": cy + 320.0, "gamma": 60.0, "core": 130.0},
+    ]
+
+    # Скорость несжимаемого течения через градиенты потенциала тока: v = (d_psi/dy, -d_psi/dx)
+    def flow_velocity(px: float, py: float, flow_seed: float):
+        vx = 0.0
+        vy = 0.0
+
+        for vn in vortex_nodes:
+            dx = px - vn["x"]
+            dy = py - vn["y"]
+            r2 = dx * dx + dy * dy + vn["core"] * vn["core"]
+            inv_r2 = vn["gamma"] / r2
+            # Тангенциальная скорость вихря
+            vx += -dy * inv_r2 * 26.0
+            vy +=  dx * inv_r2 * 26.0
+
+        # Фоновый анизотропный дрейф океанических глубин
+        drift_angle = 0.65 + math.sin(py * 0.003 + flow_seed) * 0.4
+        vx += math.cos(drift_angle) * (14.0 + drive * 6.0)
+        vy += math.sin(drift_angle) * (8.0 - tension * 4.0)
+
+        # ягкий обтекаемый буфер вокруг светящегося цветка
+        dcx, dcy = px - cx, py - cy
+        dist_c = math.hypot(dcx, dcy) + 1.0
+        if dist_c < 220.0:
+            push = math.pow((220.0 - dist_c) / 220.0, 1.4)
+            vx += (dcx / dist_c) * push * 32.0
+            vy += (dcy / dist_c) * push * 32.0
+
+        return vx, vy
+
+    # Ц ФЫХ ЫХ СС (СЫ ШФЫ)
+    num_shrouds = int(22 + line_density * 8)
+    steps = 46
+    dt = 1.35
+
+    for s_idx in range(num_shrouds):
+        # Стартовые позиции распылены по периферии и глубине пространства
+        ang = (2.0 * math.pi / num_shrouds) * s_idx + rng.uniform(-0.18, 0.18)
+        dist = rng.uniform(320.0, 560.0)
+        cur_x = cx + dist * math.cos(ang)
+        cur_y = cy + dist * math.sin(ang) * 0.85
+
+        pts_l = []
+        pts_r = []
+        color = palette_pool[s_idx % len(palette_pool)]
+        shroud_seed = s_idx * 0.73
+
+        # нтегрирование траектории и эволюции ширины шлейфа
+        for st in range(steps + 1):
+            t = st / float(steps)
+
+            vx, vy = flow_velocity(cur_x, cur_y, shroud_seed)
+            v_mag = math.hypot(vx, vy) or 1.0
+            nx, ny = -vy / v_mag, vx / v_mag
+
+            # лавная, непрерывная дымная толщина (от 20 до 75px)
+            # ависит от скорости течения: где поток быстрее — там струя тоньше и острее
+            speed_factor = min(2.2, max(0.6, 24.0 / v_mag))
+            base_w = (28.0 + grain * 26.0) * math.sin(t * math.pi) * speed_factor
+
+            pts_l.append((cur_x + nx * base_w, cur_y + ny * base_w))
+            pts_r.append((cur_x - nx * base_w, cur_y - ny * base_w))
+
+            # Шаг переноса массы
+            cur_x += vx * dt
+            cur_y += vy * dt
+
+            # редел холста
+            if math.hypot(cur_x - cx, cur_y - cy) > 680.0:
+                break
+
+        if len(pts_l) > 5:
+            path_cmds = [f"M {pts_l[0][0]:.2f} {pts_l[0][1]:.2f}"]
+            for p in pts_l[1:]:
+                path_cmds.append(f"L {p[0]:.2f} {p[1]:.2f}")
+            for p in reversed(pts_r):
+                path_cmds.append(f"L {p[0]:.2f} {p[1]:.2f}")
+            path_cmds.append("Z")
+
+            veil_d = " ".join(path_cmds)
+
+            # ТШ, С СТЦСТ: 0.011..0.024
+            # ри наложении десятков слоев дает глубокое, шелковое объемное свечение без плотных полос
+            alpha = (0.012 + grain * 0.010) * (1.15 if s_idx % 2 == 0 else 0.85)
+
+            elements.append(
+                f'<path d="{veil_d}" fill="{color}" fill-opacity="{alpha:.4f}" '
+                f'stroke="none" />'
+            )
+
+    elements.append('</g>')
+    return elements
+
+
 def _branch_geometry(
     seed: bytes,
     bridge_params: Mapping[str, Any] | None = None,
@@ -362,6 +491,7 @@ def _branch_geometry(
     elements.append(
         f'<circle cx="{cx:.2f}" cy="{cy:.2f}" r="450" fill="url(#space-ambient)" />'
     )
+    elements.extend(_solaris_ocean_currents(cx, cy, bp, PALETTE, rng))
 
     # 1. ЦЫ С: 3 Ы Т (Х 6 ЩУЦ!)
     # асовый ствол идет преимущественно вниз (гравитация рока), два боковых крыла расходятся влево-вверх и вправо
