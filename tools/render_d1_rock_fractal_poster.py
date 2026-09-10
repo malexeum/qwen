@@ -237,16 +237,15 @@ def build_sacred_mandala(
 
     elements = ['<g id="sacred-mandala-master">']
 
-    # 1.  ХТ Т  (С СТУЫ УХ)
+    # 1. СТУТУ:  (ХЫ  ЫХ Ц)
     if mode == "structure":
         base_r = 150.0 + symmetry * 100.0
         num_strands = int(50 + line_density * 45)
         
-        # егкие хаотичные переплетающиеся хорды
+        # егкие органические переплетающиеся хорды
         for s in range(num_strands):
-            # Случайные углы для секущих нитей гнезда
             ang1 = rng.uniform(0.0, 2.0 * math.pi)
-            span = rng.uniform(1.2, 2.6) # не полный диаметр, а хорда
+            span = rng.uniform(1.2, 2.6)
             ang2 = ang1 + span + rng.uniform(-0.15, 0.15)
             
             r_var1 = base_r * rng.uniform(0.35, 1.0)
@@ -257,10 +256,9 @@ def build_sacred_mandala(
             x2 = cx + r_var2 * math.cos(ang2)
             y2 = cy + r_var2 * math.sin(ang2)
             
-            # егкий органический прогиб нити к центру
             bend_dist = rng.uniform(-18.0, 18.0)
-            mx = (x1 + x2) * 0.5 + bend_dist * math.cos(ang1 + math.pi*0.5)
-            my = (y1 + y2) * 0.5 + bend_dist * math.sin(ang1 + math.pi*0.5)
+            mx = (x1 + x2) * 0.5 + bend_dist * math.cos(ang1 + math.pi * 0.5)
+            my = (y1 + y2) * 0.5 + bend_dist * math.sin(ang1 + math.pi * 0.5)
             
             str_op = rng.uniform(0.08, 0.22) + line_density * 0.1
             elements.append(
@@ -268,16 +266,7 @@ def build_sacred_mandala(
                 f'stroke="{col_gold}" stroke-width="0.45" stroke-opacity="{str_op:.2f}" />'
             )
 
-        # Тонкие вибрирующие концентрические кольца-орбиты
-        for ring_i in range(int(4 + grain * 4)):
-            r_ring = base_r * (0.28 + ring_i * 0.16) + rng.uniform(-6.0, 6.0)
-            op = max(0.12, 0.38 - ring_i * 0.05)
-            elements.append(
-                f'<circle cx="{cx + rng.uniform(-2,2):.2f}" cy="{cy + rng.uniform(-2,2):.2f}" r="{r_ring:.2f}" fill="none" '
-                f'stroke="{col_cyan}" stroke-width="0.55" stroke-opacity="{op:.2f}" stroke-dasharray="{rng.choice(["", "2,4", "4,6"])}" />'
-            )
-
-    # 2. С  (СТЫ УТ)
+    # 2. : УТ
     else:
         elements.append(
             f'<circle cx="{cx:.2f}" cy="{cy:.2f}" r="130.0" fill="{col_bg}" fill-opacity="0.85" filter="url(#core-glow)" />'
@@ -323,10 +312,10 @@ def build_sacred_mandala(
                     f'stroke="{col_layer}" stroke-width="{sw:.2f}" stroke-opacity="{stroke_op:.2f}" />'
                 )
 
-    # 3. С  (У)
+    # 3. СТЩС 
     heart_r = 28.0 + line_density * 8.0
     elements.append(
-        f'<circle cx="{cx:.2f}" cy="{cy:.2f}" r="{heart_r*1.4:.2f}" fill="{col_gold}" fill-opacity="0.30" filter="url(#core-glow)" />'
+        f'<circle cx="{cx:.2f}" cy="{cy:.2f}" r="{heart_r * 1.4:.2f}" fill="{col_gold}" fill-opacity="0.30" filter="url(#core-glow)" />'
     )
     elements.append(
         f'<circle cx="{cx:.2f}" cy="{cy:.2f}" r="{heart_r:.2f}" fill="url(#sacred-heart)" stroke="{col_gold}" stroke-width="1.4" opacity="0.98"/>'
@@ -496,7 +485,7 @@ def _branch_geometry(
     # 1. ЦЫ С: 3 Ы Т (Х 6 ЩУЦ!)
     # асовый ствол идет преимущественно вниз (гравитация рока), два боковых крыла расходятся влево-вверх и вправо
     main_stems = [
-        {"base_phi": math.pi * 0.5 + rng.uniform(-0.18, 0.18), "weight": 1.4, "len": 380.0 + drive * 160.0}, # ощный ствол вниз
+        {"base_phi": math.pi * 0.5 + rng.choice([-0.28, 0.28]), "weight": 1.4, "len": 390.0 + drive * 150.0}, # ощный ствол вниз
         {"base_phi": math.pi * 1.05 + rng.uniform(-0.25, 0.15), "weight": 1.0, "len": 320.0 + drive * 120.0}, # евое крыло
         {"base_phi": -math.pi * 0.08 + rng.uniform(-0.15, 0.25), "weight": 1.1, "len": 340.0 + drive * 130.0}, # равое крыло
     ]
@@ -537,7 +526,7 @@ def _branch_geometry(
             grav_drop = (1.2 - drive * 0.4) * 110.0 * (t ** 1.7) if math.sin(phi) > -0.2 else -20.0 * (t**1.4)
 
             # лавный свивающийся изгиб основного древесного ствола
-            wood_bend = math.sin(t * math.pi * 1.5 + stem_idx * 1.7) * (25.0 + tension * 20.0) * t
+            wood_bend = math.sin(t * math.pi * 2.2 + stem_idx * 1.5) * (42.0 + tension * 28.0) * math.sin(t * math.pi * 0.95)
 
             px = cx + dist * math.cos(phi) - wood_bend * math.sin(phi)
             py = cy + dist * math.sin(phi) + wood_bend * math.cos(phi) + grav_drop
@@ -606,49 +595,258 @@ def _branch_geometry(
     return elements
 
 
+def _gravitational_dripping(
+    seed: bytes,
+    bridge_params: Mapping[str, Any] | None = None,
+) -> list[str]:
+    bp = bridge_params or {}
+    junction = bp.get("junction") if isinstance(bp.get("junction"), Mapping) else {}
+    cx = float(junction.get("x", 540.0))
+    cy = float(junction.get("y", 540.0))
+    grain = float(bp.get("grain", 0.5))
+    drive = float(bp.get("drive", 0.4))
+    tension = float(bp.get("tension", 0.0))
+
+    col_gold = PALETTE.get("theta_gold", "#F6C85F")
+    col_cyan = PALETTE.get("audit_cyan", "#46D9E8")
+    col_magenta = PALETTE.get("rock_magenta", "#C75CEB")
+    drip_colors = [col_gold, col_magenta, col_cyan]
+
+    seed_int = int.from_bytes(seed[4:12], "big")
+    rng = random.Random(seed_int)
+
+    elements = ['<g id="gravitational-dripping-spatter">']
+
+    # 1. Струйки туши
+    num_trails = int(3 + grain * 4)
+    for _ in range(num_trails):
+        start_x = cx + rng.uniform(-130.0, 130.0)
+        start_y = cy + rng.uniform(50.0, 200.0)
+        trail_len = rng.uniform(40.0, 140.0) + drive * 60.0
+        c_trail = rng.choice(drip_colors)
+        w_trail = rng.uniform(0.35, 0.70)
+        op_trail = rng.uniform(0.12, 0.28)
+
+        ctrl_x = start_x + rng.uniform(-5.0, 5.0)
+        end_x = start_x + rng.uniform(-10.0, 10.0)
+        end_y = start_y + trail_len
+
+        elements.append(
+            f'<path d="M {start_x:.2f} {start_y:.2f} Q {ctrl_x:.2f} {start_y + trail_len*0.5:.2f} {end_x:.2f} {end_y:.2f}" '
+            f'fill="none" stroke="{c_trail}" stroke-width="{w_trail:.2f}" stroke-opacity="{op_trail:.3f}" stroke-linecap="round" />'
+        )
+        r_drop = rng.uniform(1.2, 2.4)
+        elements.append(
+            f'<ellipse cx="{end_x:.2f}" cy="{end_y + r_drop:.2f}" rx="{r_drop*0.8:.2f}" ry="{r_drop*1.3:.2f}" '
+            f'fill="{c_trail}" fill-opacity="{op_trail * 1.4:.3f}" />'
+        )
+
+    # 2. икрокапли и взвесь
+    num_drips = int(14 + grain * 20 + drive * 12)
+    for _ in range(num_drips):
+        spread_x = rng.gauss(0.0, 100.0 + tension * 35.0)
+        drop_x = cx + spread_x
+        drop_y = cy + rng.uniform(80.0, 480.0)
+        c_spatter = rng.choice(drip_colors)
+        rx = rng.uniform(0.6, 1.7)
+        ry = rx * rng.uniform(1.2, 2.2)
+        op_spatter = rng.uniform(0.10, 0.40)
+        elements.append(
+            f'<ellipse cx="{drop_x:.2f}" cy="{drop_y:.2f}" rx="{rx:.2f}" ry="{ry:.2f}" '
+            f'fill="{c_spatter}" fill-opacity="{op_spatter:.3f}" />'
+        )
+
+    elements.append("</g>")
+    return elements
+
+
+def _paper_canvas_texture(seed: bytes) -> list[str]:
+    """
+    атериальная фактура офортного листа / холста:
+    микроволокна и зернистая взвесь туши, убирающая цифровой пластик.
+    """
+    elements = ['<g id="canvas-paper-texture" pointer-events="none">']
+    seed_int = int.from_bytes(seed[12:20], "big")
+    rng = random.Random(seed_int)
+
+    # 1. икроволокна бумаги (короткие штрихи)
+    for _ in range(160):
+        x = rng.uniform(40.0, 1040.0)
+        y = rng.uniform(40.0, 1040.0)
+        length = rng.uniform(2.5, 7.0)
+        angle = rng.uniform(0, math.pi)
+        dx = length * math.cos(angle)
+        dy = length * math.sin(angle)
+        op = rng.uniform(0.04, 0.12)
+        col = "#E9EEF8" if rng.random() > 0.4 else "#F6C85F"
+        elements.append(
+            f'<line x1="{x:.1f}" y1="{y:.1f}" x2="{x+dx:.1f}" y2="{y+dy:.1f}" '
+            f'stroke="{col}" stroke-width="0.6" stroke-opacity="{op:.3f}" stroke-linecap="round"/>'
+        )
+
+    # 2. ернистые микропоры полотна (точки)
+    for _ in range(350):
+        px = rng.uniform(30.0, 1050.0)
+        py = rng.uniform(30.0, 1050.0)
+        r = rng.uniform(0.4, 0.9)
+        op = rng.uniform(0.05, 0.16)
+        elements.append(
+            f'<circle cx="{px:.1f}" cy="{py:.1f}" r="{r:.2f}" fill="#E9EEF8" fill-opacity="{op:.3f}"/>'
+        )
+
+    elements.append('</g>')
+    return elements
+
+
+def _bold_dripping(
+    seed: bytes,
+    bridge_params: Mapping[str, Any] | None = None,
+) -> list[str]:
+    """
+    равитационный дриппинг: струи и капли жидкой туши, стекающие вниз.
+    """
+    bp = bridge_params or {}
+    junction = bp.get("junction") if isinstance(bp.get("junction"), Mapping) else {}
+    cx = float(junction.get("x", 540.0))
+    cy = float(junction.get("y", 540.0))
+    drive = float(bp.get("drive", 0.4))
+    grain = float(bp.get("grain", 0.5))
+
+    col_gold = PALETTE.get("theta_gold", "#F6C85F")
+    col_cyan = PALETTE.get("audit_cyan", "#46D9E8")
+    col_magenta = PALETTE.get("rock_magenta", "#C75CEB")
+    colors = [col_gold, col_magenta, col_cyan, col_gold]
+
+    seed_int = int.from_bytes(seed[2:10], "big")
+    rng = random.Random(seed_int)
+
+    elements = ['<g id="gravitational-ink-dripping">']
+
+    # 1. аметные вертикальные потеки туши со свисающими каплями
+    num_trails = int(5 + grain * 4)
+    for i in range(num_trails):
+        # сточник потеков: нижняя часть цветка и начало стебля
+        ox = cx + rng.uniform(-110.0, 110.0)
+        oy = cy + rng.uniform(70.0, 220.0)
+        d_len = rng.uniform(50.0, 170.0) + drive * 80.0
+        c_ink = colors[i % len(colors)]
+        w_trail = rng.uniform(1.0, 1.8)
+        op_trail = rng.uniform(0.40, 0.75)
+
+        ctrl_x = ox + rng.uniform(-6.0, 6.0)
+        end_x = ox + rng.uniform(-10.0, 10.0)
+        end_y = oy + d_len
+
+        # Струя туши
+        elements.append(
+            f'<path d="M {ox:.2f} {oy:.2f} Q {ctrl_x:.2f} {oy + d_len*0.5:.2f} {end_x:.2f} {end_y:.2f}" '
+            f'fill="none" stroke="{c_ink}" stroke-width="{w_trail:.2f}" stroke-opacity="{op_trail:.3f}" stroke-linecap="round"/>'
+        )
+
+        # апля туши на конце потека
+        r_drop = rng.uniform(2.2, 4.0)
+        elements.append(
+            f'<ellipse cx="{end_x:.2f}" cy="{end_y + r_drop*0.8:.2f}" rx="{r_drop*0.85:.2f}" ry="{r_drop*1.3:.2f}" '
+            f'fill="{c_ink}" fill-opacity="{min(0.95, op_trail + 0.2):.3f}"/>'
+        )
+
+    # 2. адающие капли и брызги в свободном падении
+    num_spatters = int(24 + grain * 25)
+    for _ in range(num_spatters):
+        sp_x = cx + rng.gauss(0.0, 95.0)
+        # етят вниз к низу арт-поля (Y от 120 до 480 ниже центра)
+        sp_y = cy + rng.uniform(110.0, 480.0)
+        c_drop = rng.choice(colors)
+        rx = rng.uniform(1.0, 2.5)
+        ry = rx * rng.uniform(1.3, 2.2) # вытянуты по вертикали гравитацией
+        op = rng.uniform(0.35, 0.80)
+
+        elements.append(
+            f'<ellipse cx="{sp_x:.2f}" cy="{sp_y:.2f}" rx="{rx:.2f}" ry="{ry:.2f}" '
+            f'fill="{c_drop}" fill-opacity="{op:.3f}"/>'
+        )
+
+    elements.append('</g>')
+    return elements
+
+
 def _theta_arcs(
     seed: bytes,
     bridge_params: Mapping[str, Any] | None = None,
 ) -> list[str]:
-    # ивые асимметричные гравитационные волны вместо циркульных орбит
-    arcs: list[str] = ['<g id="gravitational-ripples">']
+    """
+    лагородные эфирные дуги йнштейна на дальней периферии:
+    - ынесены дальше от цветка/гнезда (r: 320..520).
+    - инии толще (1.5..2.1px), но прозрачнее (0.10..0.18) — эффект мягкого оптоволокна/неона.
+    - ольшая часть дуги растворена в темноте (крутое затухание краев sin^2).
+    """
+    arcs: list[str] = ['<g id="gravitational-peripheral-flashes">']
     bp = bridge_params or {}
     junction = bp.get("junction") if isinstance(bp.get("junction"), Mapping) else {}
     cx = float(junction.get("x", 540.0))
     cy = float(junction.get("y", 540.0))
     resonance = float(bp.get("resonance", 0.3))
     tension = float(bp.get("tension", 0.0))
-    grain = float(bp.get("grain", 0.5))
+    drive = float(bp.get("drive", 0.4))
 
-    num_ripples = max(4, int(4 + resonance * 10))
-    spiral_shift = 0.45 + tension * 0.8
+    col_cyan = PALETTE.get("audit_cyan", "#46D9E8")
+    col_gold = PALETTE.get("theta_gold", "#F6C85F")
+    colors = [col_cyan, col_gold, col_cyan]
 
-    for i in range(num_ripples):
-        # симметричный радиус и волнообразный изгиб
-        r_base = 120.0 + i * (45.0 + resonance * 40.0)
-        start_angle = i * spiral_shift
-        arc_span = math.pi * (1.2 + 0.6 * math.sin(i * 1.3))
-        end_angle = start_angle + arc_span
+    seed_int = int.from_bytes(seed[8:16], "big")
+    rng = random.Random(seed_int)
 
-        # азомкнутая дуга езье, обнимающая центр масс
-        x1 = cx + r_base * math.cos(start_angle)
-        y1 = cy + (r_base * 0.75) * math.sin(start_angle)
+    # 3 внешних световых серпа: вынесены на дальнюю периферию (320..520)
+    arc_configs = [
+        {"r": 330.0 + resonance * 35.0, "span": 0.90 * math.pi, "phi0": 0.45 + tension * 0.6, "w": 2.05, "op": 0.16},
+        {"r": 420.0 + drive * 45.0,     "span": 0.75 * math.pi, "phi0": math.pi * 1.05 - tension * 0.4, "w": 1.75, "op": 0.13},
+        {"r": 510.0 + resonance * 50.0, "span": 0.65 * math.pi, "phi0": -0.60 + drive * 0.7, "w": 1.50, "op": 0.10},
+    ]
 
-        mid_angle = start_angle + arc_span * 0.5
-        r_mid = r_base * (1.1 + 0.2 * math.cos(i + tension))
-        cx_pt = cx + r_mid * math.cos(mid_angle)
-        cy_pt = cy + (r_mid * 0.75) * math.sin(mid_angle)
+    for idx, cfg in enumerate(arc_configs):
+        color = colors[idx % len(colors)]
+        r_base = cfg["r"]
+        phi0 = cfg["phi0"]
+        span = cfg["span"]
+        sw = cfg["w"]
+        base_op = cfg["op"]
 
-        x2 = cx + r_base * math.cos(end_angle)
-        y2 = cy + (r_base * 0.75) * math.sin(end_angle)
+        steps = 40
+        pts = []
+        alphas = []
 
-        opacity = max(0.08, 0.42 - (i / float(num_ripples)) * 0.34)
-        col = PALETTE.get("audit_cyan", "#46D9E8") if i % 2 == 0 else PALETTE.get("theta_gold", "#F6C85F")
+        fx = cx + math.cos(phi0) * 45.0
+        fy = cy + math.sin(phi0) * 35.0
 
-        arcs.append(
-            f'<path d="M {x1:.2f} {y1:.2f} Q {cx_pt:.2f} {cy_pt:.2f} {x2:.2f} {y2:.2f}" '
-            f'fill="none" stroke="{col}" stroke-width="0.65" stroke-linecap="round" stroke-opacity="{opacity:.2f}"/>'
-        )
+        for s in range(steps + 1):
+            t = s / float(steps)
+            phi = (phi0 - span * 0.5) + t * span
+
+            # лавная гравитационная волна
+            r_curr = r_base * (1.0 + 0.07 * math.sin(phi * 2.0 + tension) + 0.03 * math.cos(phi * 3.0))
+
+            # Ш СТ СТ: крутое затухание краев (sin^2)
+            edge_fade = math.pow(math.sin(t * math.pi), 2.0)
+            cur_alpha = base_op * edge_fade
+
+            px = fx + r_curr * math.cos(phi)
+            py = fy + (r_curr * 0.86) * math.sin(phi)
+
+            pts.append((px, py))
+            alphas.append(cur_alpha)
+
+        mean_alpha = sum(alphas) / max(1, len(alphas))
+        if len(pts) > 3 and mean_alpha > 0.01:
+            d_chunks = [f"M {pts[0][0]:.2f} {pts[0][1]:.2f}"]
+            for pt in pts[1:]:
+                d_chunks.append(f"L {pt[0]:.2f} {pt[1]:.2f}")
+            path_d = " ".join(d_chunks)
+
+            arcs.append(
+                f'<path d="{path_d}" fill="none" stroke="{color}" '
+                f'stroke-width="{sw:.2f}" stroke-opacity="{mean_alpha:.3f}" '
+                f'stroke-linecap="round" />'
+            )
 
     arcs.append('</g>')
     return arcs
@@ -757,19 +955,28 @@ def render_svg(data: Mapping[str, Any]) -> bytes:
             '<feGaussianBlur stdDeviation="12" result="glow"/>',
             '<feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>',
             "</filter>",
-            "</defs>",
+            '<filter id="analog-paper-grain" x="0%" y="0%" width="100%" height="100%">',
+            '<feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" result="noise"/>',
+            '<feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.045 0"/>',
+            '</filter>',
+            '</defs>',
             "<style>",
             ".title{font-family:'Segoe UI',Arial,sans-serif;font-size:28px;font-weight:700;letter-spacing:4px;fill:#E9EEF8;text-anchor:middle;}",
             ".hash{font-family:Consolas,Menlo,monospace;font-size:15px;letter-spacing:2px;fill:#7D8798;text-anchor:middle;}",
             "</style>",
             # 1. Фон квадратного арт-поля (1080x1080)
             f'<rect width="1080" height="1080" fill="{PALETTE["background"]}"/>',
+            '<rect width="1080" height="1080" fill="#FFFFFF" opacity="0.035" filter="url(#analog-paper-grain)" pointer-events="none"/>',
             # 2. вездное/текстурное поле
             *_star_field(seed),
+            # Фактура бумаги и офортного холста
+            *_paper_canvas_texture(seed),
             # 3. рафика в координатах junction
             '<g id="d1-geometry" filter="url(#crystal-glow)">',
             *_theta_arcs(seed, bridge_params),
             *_branch_geometry(seed, bridge_params),
+            *_bold_dripping(seed, bridge_params),
+            *_gravitational_dripping(seed, bridge_params),
             "</g>",
             # 4. Тонкая разделительная черта под артом
             f'<line x1="0" y1="1080" x2="1080" y2="1080" stroke="{PALETTE.get("card", PALETTE.get("background", "#14100E"))}" stroke-width="2"/>',
