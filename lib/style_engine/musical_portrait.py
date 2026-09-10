@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from typing import Any, Iterable
 
 DEFAULT_FALLBACK = 0.5
@@ -48,6 +49,38 @@ def aggregate_feature_values(values: Iterable[float | int | None]) -> float:
     return clamp01(sum(cleaned) / len(cleaned))
 
 
+def weighted_contrast(
+    values: Iterable[float | int | None],
+    weights: Iterable[float],
+    gain: float = 1.5,
+    center: float = 0.5,
+) -> float:
+    cleaned = []
+    for value, weight in zip(values, weights):
+        try:
+            numeric = float(value)
+            numeric_weight = float(weight)
+        except (TypeError, ValueError):
+            continue
+        cleaned.append((numeric, numeric_weight))
+    if not cleaned:
+        return DEFAULT_FALLBACK
+    total_weight = sum(weight for _, weight in cleaned)
+    if total_weight <= 0.0:
+        return DEFAULT_FALLBACK
+    weighted_mean = sum(value * weight for value, weight in cleaned) / total_weight
+    return clamp01(center + (weighted_mean - center) * gain)
+
+
+def get_normalized_bpm(pulse: dict) -> float:
+    return clamp01(get_feature_value(pulse, "bpm") / 220.0)
+
+
+def expand_spectral_flatness(timbre: dict) -> float:
+    value = max(get_feature_value(timbre, "spectral_flatness"), 1.0e-4)
+    return clamp01((math.log10(value) + 4.0) / 2.0)
+
+
 def invert(value: Any) -> float:
     return clamp01(1.0 - clamp01(value))
 
@@ -82,16 +115,17 @@ def build_musical_portrait(features: dict) -> dict:
         },
         "profiles": {
             "pulse_profile": {
-                "steadiness": aggregate_feature_values([
+                "steadiness": weighted_contrast([
                     get_feature_value(pulse, "beat_confidence"),
                     get_feature_value(pulse, "pulse_regularity"),
                     get_feature_value(recurrence, "repetition_ratio"),
-                ]),
-                "drive": aggregate_feature_values([
+                ], [0.35, 0.4, 0.25]),
+                "drive": weighted_contrast([
                     get_feature_value(pulse, "onset_density"),
                     get_feature_value(envelope, "attack_sharpness"),
                     get_feature_value(envelope, "macro_energy_arc"),
-                ]),
+                    get_normalized_bpm(pulse),
+                ], [0.35, 0.3, 0.15, 0.2], gain=3.2, center=0.3),
                 "syncopation": get_feature_value(pulse, "syncopation_index"),
                 "sparsity": aggregate_feature_values([
                     invert(get_feature_value(pulse, "onset_density")),
@@ -99,37 +133,37 @@ def build_musical_portrait(features: dict) -> dict:
                 ]),
             },
             "gesture_profile": {
-                "weight": aggregate_feature_values([
+                "weight": weighted_contrast([
                     get_feature_value(envelope, "dynamic_range"),
                     get_feature_value(timbre, "roughness"),
                     get_feature_value(harmony, "dissonance_proxy"),
-                ]),
-                "attack": aggregate_feature_values([
+                ], [0.4, 0.4, 0.2]),
+                "attack": weighted_contrast([
                     get_feature_value(envelope, "attack_sharpness"),
                     get_feature_value(pulse, "onset_density"),
-                ]),
+                ], [0.65, 0.35]),
                 "flow": aggregate_feature_values([
                     get_feature_value(envelope, "sustain_ratio"),
                     get_feature_value(harmony, "chroma_stability"),
                     invert(get_feature_value(timbre, "spectral_flux")),
                 ]),
-                "directionality": aggregate_feature_values([
+                "directionality": weighted_contrast([
                     get_feature_value(pulse, "pulse_regularity"),
                     get_feature_value(form, "climax_position"),
                     get_feature_value(harmony, "harmonic_change_rate"),
-                ]),
+                ], [0.25, 0.5, 0.25]),
             },
             "form_profile": {
-                "structural_clarity": aggregate_feature_values([
-                    get_feature_value(form, "section_count"),
+                "structural_clarity": weighted_contrast([
+                    clamp01(get_feature_value(form, "section_count") / 12.0),
                     get_feature_value(form, "section_contrast"),
                     get_feature_value(recurrence, "self_similarity"),
-                ]),
-                "contrast": aggregate_feature_values([
+                ], [0.25, 0.45, 0.3]),
+                "contrast": weighted_contrast([
                     get_feature_value(form, "section_contrast"),
                     get_feature_value(harmony, "harmonic_change_rate"),
                     get_feature_value(envelope, "dynamic_range"),
-                ]),
+                ], [0.45, 0.35, 0.2]),
                 "climax_strength": aggregate_feature_values([
                     get_feature_value(form, "climax_position"),
                     get_feature_value(envelope, "macro_energy_arc"),
@@ -144,11 +178,12 @@ def build_musical_portrait(features: dict) -> dict:
                     invert(get_feature_value(timbre, "roughness")),
                     get_feature_value(envelope, "sustain_ratio"),
                 ]),
-                "grain": aggregate_feature_values([
+                "grain": weighted_contrast([
                     get_feature_value(timbre, "roughness"),
                     get_feature_value(timbre, "spectral_flux"),
+                    expand_spectral_flatness(timbre),
                     get_feature_value(timbre, "brightness"),
-                ]),
+                ], [0.25, 0.15, 0.5, 0.1]),
                 "erosion": aggregate_feature_values([
                     get_feature_value(timbre, "spectral_flatness"),
                     get_feature_value(harmony, "dissonance_proxy"),
@@ -166,11 +201,11 @@ def build_musical_portrait(features: dict) -> dict:
                 ]),
             },
             "affect_profile": {
-                "tension": aggregate_feature_values([
+                "tension": weighted_contrast([
                     get_feature_value(harmony, "dissonance_proxy"),
                     get_feature_value(harmony, "harmonic_change_rate"),
                     get_feature_value(form, "section_contrast"),
-                ]),
+                ], [0.25, 0.35, 0.4]),
                 "stability": aggregate_feature_values([
                     get_feature_value(harmony, "tonal_stability"),
                     get_feature_value(pulse, "pulse_regularity"),
@@ -224,31 +259,40 @@ def resolve_interpretation_modes(portrait: dict) -> tuple[str, str, float]:
     affect = profiles.get("affect_profile", {})
     spatial = profiles.get("spatial_profile", {})
 
+    structural_clarity = clamp01(form.get("structural_clarity", DEFAULT_FALLBACK))
+    return_strength = clamp01(form.get("return_strength", DEFAULT_FALLBACK))
+    material_grain = clamp01(material.get("grain", DEFAULT_FALLBACK))
     scores = {
-        "structure": aggregate_feature_values([
-            form.get("structural_clarity", DEFAULT_FALLBACK),
-            form.get("return_strength", DEFAULT_FALLBACK),
-        ]),
-        "gesture": aggregate_feature_values([
-            gesture.get("attack", DEFAULT_FALLBACK),
-            gesture.get("directionality", DEFAULT_FALLBACK),
-        ]),
-        "light": aggregate_feature_values([
+        "structure": clamp01(
+            0.5 * structural_clarity
+            + 0.3 * return_strength
+            + 0.2 * clamp01(profiles.get("pulse_profile", {}).get("steadiness", DEFAULT_FALLBACK))
+            - 0.2 * clamp01(form.get("contrast", DEFAULT_FALLBACK))
+            + 0.8 * max(0.0, structural_clarity - 0.3)
+        ),
+        "gesture": clamp01(
+            0.45 * clamp01(gesture.get("attack", DEFAULT_FALLBACK))
+            + 0.35 * clamp01(gesture.get("directionality", DEFAULT_FALLBACK))
+            + 0.2 * clamp01(profiles.get("pulse_profile", {}).get("drive", DEFAULT_FALLBACK))
+        ),
+        "light": weighted_contrast([
             spatial.get("resonance", DEFAULT_FALLBACK),
             material.get("atmosphere", DEFAULT_FALLBACK),
             affect.get("luminosity", DEFAULT_FALLBACK),
-        ]),
-        "material": aggregate_feature_values([
-            material.get("grain", DEFAULT_FALLBACK),
-            material.get("erosion", DEFAULT_FALLBACK),
-            affect.get("tension", DEFAULT_FALLBACK),
-        ]),
+        ], [0.4, 0.35, 0.25]),
+        "material": clamp01(
+            0.65 * material_grain
+            + 0.2 * clamp01(material.get("erosion", DEFAULT_FALLBACK))
+            + 0.15 * clamp01(affect.get("tension", DEFAULT_FALLBACK))
+        ),
     }
 
     ranked = sorted(scores.items(), key=lambda item: (item[1], -MODE_PRIORITY.index(item[0])), reverse=True)
     dominant = ranked[0][0]
-    secondary = next((name for name, _ in ranked[1:] if name != dominant), "none")
-    return dominant, secondary, clamp01(ranked[0][1])
+    score_gap = ranked[0][1] - ranked[1][1]
+    secondary = ranked[1][0] if score_gap <= 0.35 else "none"
+    confidence = 0.5 + 0.45 * clamp01(score_gap)
+    return dominant, secondary, clamp01(confidence)
 
 
 def compute_portrait_hash(portrait: dict) -> str:

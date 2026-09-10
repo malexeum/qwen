@@ -1,0 +1,79 @@
+{
+  "artifact": {
+    "audio_content_hash": "sha256:8ede453e2c708018c875661f22046dff28d70e8e21b0b8aa19e5e03dbd73c628",
+    "created_at": "2026-08-23T11:36:30.970289Z",
+    "extractor_name": "music_features_v2_extractor",
+    "extractor_version": "2.0.0",
+    "feature_hash": "sha256:099265cf17862eb9eb531f8fa53d2c1a719964b06cdc3ff63bb1f2599396a350",
+    "synthetic_fixture": false,
+    "track_id": "12 - Sunny Afternoon"
+  },
+  "features": {
+    "envelope": {
+      "attack_sharpness": 0.371072,
+      "dynamic_range": 0.25129,
+      "macro_energy_arc": 0.465466,
+      "silence_ratio": 0.018827,
+      "sustain_ratio": 0.537611
+    },
+    "form": {
+      "climax_position": 0.4,
+      "ending_decay_ratio": 0.009709,
+      "intro_length_ratio": 0.000271,
+      "section_contrast": 0.100959,
+      "section_count": 6
+    },
+    "harmony": {
+      "chroma_stability": 0.97831,
+      "dissonance_proxy": 0.435025,
+      "harmonic_change_rate": 0.046601,
+      "harmonic_ratio": 0.997926,
+      "tonal_stability": 0.003061
+    },
+    "pulse": {
+      "beat_confidence": 0.895884,
+      "bpm": 123.046875,
+      "onset_density": 0.447942,
+      "pulse_regularity": 0.926307,
+      "syncopation_index": 0.449687
+    },
+    "recurrence": {
+      "motif_return_strength": 0.766998,
+      "repetition_ratio": 0.766998,
+      "self_similarity": 0.766998,
+      "variation_ratio": 0.233002
+    },
+    "space": {
+      "depth_proxy": 0.010451,
+      "reverb_proxy": 0.002074,
+      "spectral_bandwidth": 0.150275,
+      "stereo_width": 0.5
+    },
+    "timbre": {
+      "brightness": 0.139259,
+      "roughness": 1.0,
+      "spectral_centroid": 0.139259,
+      "spectral_flatness": 0.002074,
+      "spectral_flux": 1.0,
+      "spectral_rolloff": 0.286459
+    }
+  },
+  "normalization": {
+    "bpm_range": [
+      0.0,
+      220.0
+    ],
+    "fallback_policy": "missing or unsupported measurement is explicitly listed in artifact metadata",
+    "fallback_value": 0.5,
+    "fallbacks": {
+      "stereo_width": "mono source; neutral fallback 0.5"
+    },
+    "range": [
+      0.0,
+      1.0
+    ],
+    "section_count": "integer count, range 1..12"
+  },
+  "schema": "MusicFeaturesV2",
+  "version": "v2.0.0"
+}

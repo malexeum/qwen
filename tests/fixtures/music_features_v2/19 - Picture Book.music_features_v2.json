@@ -1,0 +1,79 @@
+{
+  "artifact": {
+    "audio_content_hash": "sha256:c443295a3205b28584adc3ea9c5f13713b14a9b7f1056e4bc4378e19fba5590e",
+    "created_at": "2026-08-23T11:36:31.003439Z",
+    "extractor_name": "music_features_v2_extractor",
+    "extractor_version": "2.0.0",
+    "feature_hash": "sha256:ea3e52e3cb983e57fd0090ce339117dcde45d8cdacd0fd45fb2b9caec73ff760",
+    "synthetic_fixture": false,
+    "track_id": "19 - Picture Book"
+  },
+  "features": {
+    "envelope": {
+      "attack_sharpness": 0.30044,
+      "dynamic_range": 0.327749,
+      "macro_energy_arc": 0.465263,
+      "silence_ratio": 0.010811,
+      "sustain_ratio": 0.437353
+    },
+    "form": {
+      "climax_position": 0.4,
+      "ending_decay_ratio": 0.017673,
+      "intro_length_ratio": 0.00045,
+      "section_contrast": 0.082773,
+      "section_count": 6
+    },
+    "harmony": {
+      "chroma_stability": 0.9679,
+      "dissonance_proxy": 0.418207,
+      "harmonic_change_rate": 0.17784,
+      "harmonic_ratio": 0.994761,
+      "tonal_stability": 0.000682
+    },
+    "pulse": {
+      "beat_confidence": 0.979708,
+      "bpm": 120.18532,
+      "onset_density": 0.489854,
+      "pulse_regularity": 0.961881,
+      "syncopation_index": 0.509632
+    },
+    "recurrence": {
+      "motif_return_strength": 0.782051,
+      "repetition_ratio": 0.782051,
+      "self_similarity": 0.782051,
+      "variation_ratio": 0.217949
+    },
+    "space": {
+      "depth_proxy": 0.008025,
+      "reverb_proxy": 0.005239,
+      "spectral_bandwidth": 0.192774,
+      "stereo_width": 0.5
+    },
+    "timbre": {
+      "brightness": 0.188383,
+      "roughness": 1.0,
+      "spectral_centroid": 0.188383,
+      "spectral_flatness": 0.005239,
+      "spectral_flux": 1.0,
+      "spectral_rolloff": 0.40191
+    }
+  },
+  "normalization": {
+    "bpm_range": [
+      0.0,
+      220.0
+    ],
+    "fallback_policy": "missing or unsupported measurement is explicitly listed in artifact metadata",
+    "fallback_value": 0.5,
+    "fallbacks": {
+      "stereo_width": "mono source; neutral fallback 0.5"
+    },
+    "range": [
+      0.0,
+      1.0
+    ],
+    "section_count": "integer count, range 1..12"
+  },
+  "schema": "MusicFeaturesV2",
+  "version": "v2.0.0"
+}

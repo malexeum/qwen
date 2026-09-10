@@ -1,0 +1,516 @@
+name,hex
+Hermosa Pink,#F7C9D5
+Corinthian Pink,#F6BDC1
+Cameo Pink,#E5BCBC
+Fawn,#D6B8AA
+Light Brown Drab,#C1A19E
+Coral Red,#F09082
+Fresh Color,#F1947C
+Grenadine Pink,#EF805F
+Eosine Pink,#ED7E92
+Spinel Red,#EC6E8D
+Old Rose,#D56A75
+Eugenia Red | A,#E05D53
+Eugenia Red | B,#DB4F58
+Raw Sienna,#C37608
+Vinaceous Tawny,#CB6012
+Jasper Red,#E74C0A
+Spectrum Red,#DF0716
+Red Orange,#DB3815
+Etruscan Red,#CA503D
+Burnt Sienna,#B65115
+Ochre Red,#B45447
+Scarlet,#CF2438
+Carmine,#CD002D
+Indian Lake,#C93465
+Rosolanc Purple,#B8356D
+Pomegranite Purple,#BC0B50
+Hydrangea Red,#AB3945
+Brick Red,#B03F16
+Carmine Red,#AD242F
+Pompeian Red,#B31831
+Red,#AD153B
+Brown,#86431F
+Hay's Russet,#833121
+Vandyke Red,#8C1D19
+Pansy Purple,#870836
+Pale Burnt Lake,#8A2322
+Violet Red,#5E2657
+Vistoris Lake,#784244
+Sulpher Yellow,#F8F2C8
+Pale Lemon Yellow,#FFF3B2
+Naples Yellow,#FBECA3
+Ivory Buff,#EFDBA5
+Seashell Pink,#FBDCC4
+Light Pinkish Cinnamon,#FACE9D
+Pinkish Cinnamon,#EFBC7E
+Cinnamon Buff,#FBCC7A
+Cream Yellow,#FAC55F
+Golden Yellow,#F2A84B
+Vinaceous Cinnamon,#EFAE8D
+Ochraceous Salmon,#DCAB77
+Isabella Color,#D0B16C
+Maple,#D0AC6B
+Olive Buff,#CED19B
+Ecru,#CCB998
+Yellow,#FFF100
+Lemon Yellow,#F9EE28
+Apricot Yellow,#FFE100
+Pyrite Yellow,#CFB948
+Olive Ocher,#DABB24
+Yellow Ocher,#E5BC2A
+Orange Yellow,#F9B900
+Yellow Orange,#F5A100
+Apricot Orange,#F18F44
+Orange,#ED7100
+Peach Red,#EA5520
+English Red,#D86310
+Cinnamon Rufous,#C97838
+Orange Rufous,#C86C0E
+Sulphine Yellow,#C8A800
+Khaki,#C49007
+Citron Yellow,#B7BC21
+Citrine,#AC9D12
+Buffy Citrine,#9E8E43
+Dark Citrine,#978C56
+Light Grayish Olive,#8E885F
+Krongbergs Green,#8C8E58
+Olive,#8A851F
+Orange Citrine,#A37821
+Sudan Brown,#AD6B4C
+Olive Green,#71773A
+Light Brownish Olive,#8B7546
+Deep Grayish Olive,#6C6037
+Pale Raw Umber,#7A5329
+Sepia,#6D4F14
+Madder Brown,#802911
+Mars Brown Tobacco,#703509
+Vandyke Brown,#513412
+Turquoise Green,#C0E1CE
+Glaucous Green,#BED4C7
+Dark Greenish Glaucous,#BFC9AC
+Yellow Green,#B6D564
+Light Green Yellow,#CCD53C
+Night Green,#88C122
+Olive Yellow,#AAA64D
+Artemesia Green,#759894
+Andover Green,#6F8277
+Rainette Green,#84925E
+Chromium Green,#7A9C6F
+Pistachio Green,#649278
+Sea Green,#00AC95
+Benzol Green,#009087
+Light Porcelain Green,#008E88
+Green,#3A9764
+Dull Viridian Green,#008E5C
+Oil Green,#849725
+Diamine Green,#00873A
+Cossack Green,#39793C
+Lincoln Green,#5A5C2F
+Blackish Olive,#48583E
+Deep Slate Olive,#253121
+Nile Blue,#C8E7E9
+Pale King's Blue,#B4DAE9
+Light Glaucous Blue,#B0CFD7
+Salvia Blue,#A2B2CD
+Cobalt Green,#A0D2A8
+Calamine Blue,#83CCD2
+Venice Green,#68C3BE
+Cerulian Blue,#008EA5
+Peacock Blue,#008C97
+Green Blue,#008F97
+Olympic Blue,#5981B5
+Blue,#0065B3
+Antwarp Blue,#006E93
+Helvetia Blue,#00558E
+Dark Medici Blue,#527177
+Dusky Green,#005147
+Deep Lyons Blue,#033983
+Violet Blue,#373F68
+Vandar Poel's Blue,#00486C
+Dark Tyrian Blue,#093451
+Dull Violet Black,#011B45
+Deep Indigo,#001231
+Deep Slate Green,#0B2F2C
+Grayish Lavender - A,#C0B8DB
+Grayish Lavender - B,#C7B0B8
+Laelia Pink,#CF97AB
+Lilac,#BF87B0
+Eupatorium Purple,#C1528E
+Light Mauve,#A070A8
+Aconite Violet,#A966A2
+Dull Blue Violet,#816E9D
+Dark Soft Violet,#645B99
+Blue Violet,#614498
+Purple Drab,#8E585A
+Deep Violet / Plumbeous,#72737C
+Veronia Purple,#94495E
+Dark Slate Purple,#703D51
+Taupe Brown,#854659
+Violet Carmine,#703645
+Violet,#443580
+Red Violet,#551C68
+Cotinga Purple,#520E45
+Dusky Madder Violet,#4D194A
+White,#FFFFFF
+Neutral Gray,#C0C7C6
+Mineral Gray,#AFBBB5
+Warm Gray,#ACAC9E
+Slate Color,#2C424A
+Black,#191110
+
+id,type,colors
+001,2-color,"English Red|Cerulian Blue"
+002,2-color,"Yellow Orange|Dark Tyrian Blue"
+003,2-color,"Raw Sienna|Pale Lemon Yellow"
+004,2-color,"Isabella Color|Red Violet"
+005,2-color,"Cossack Green|Vandar Poel's Blue"
+006,2-color,"Grenadine Pink|Deep Indigo"
+007,2-color,"Orange|Glaucous Green"
+008,2-color,"Cinnamon Rufous|Grayish Lavender - A"
+009,2-color,"Violet Red|Dull Blue Violet"
+010,2-color,"Cinnamon Rufous|Dark Citrine"
+011,2-color,"Ivory Buff|Mineral Gray"
+012,2-color,"Isabella Color|Green Blue"
+013,2-color,"Raw Sienna|Veronia Purple"
+014,2-color,"Spinel Red|Naples Yellow"
+015,2-color,"Benzol Green|Grayish Lavender - A"
+016,2-color,"Vandyke Red|Pale King's Blue"
+017,2-color,"Eugenia Red | B|Sea Green"
+018,2-color,"Fawn|Dusky Madder Violet"
+019,2-color,"Mars Brown Tobacco|Night Green"
+020,2-color,"Calamine Blue|Laelia Pink"
+021,2-color,"Grenadine Pink|Sea Green"
+022,2-color,"Yellow|Deep Lyons Blue"
+023,2-color,"Cinnamon Buff|Light Mauve"
+024,2-color,"Sepia|Veronia Purple"
+025,2-color,"Etruscan Red|Nile Blue"
+026,2-color,"Golden Yellow|Pale Raw Umber"
+027,2-color,"Corinthian Pink|Slate Color"
+028,2-color,"Madder Brown|Deep Indigo"
+029,2-color,"Krongbergs Green|Salvia Blue"
+030,2-color,"Pompeian Red|Mineral Gray"
+031,2-color,"Red Orange|Pale Lemon Yellow"
+032,2-color,"Ochraceous Salmon|Night Green"
+033,2-color,"Raw Sienna|Slate Color"
+034,2-color,"Eosine Pink|Neutral Gray"
+035,2-color,"Light Brown Drab|Carmine Red"
+036,2-color,"Sulphine Yellow|Turquoise Green"
+037,2-color,"Brick Red|Red Violet"
+038,2-color,"Diamine Green|Deep Lyons Blue"
+039,2-color,"Carmine|Helvetia Blue"
+040,2-color,"Vinaceous Tawny|Citron Yellow"
+041,2-color,"Dark Citrine|Calamine Blue"
+042,2-color,"Yellow Ocher|Violet"
+043,2-color,"Corinthian Pink|Aconite Violet"
+044,2-color,"Light Porcelain Green|Olympic Blue"
+045,2-color,"Seashell Pink|Lemon Yellow"
+046,2-color,"Orange|Black"
+047,2-color,"Etruscan Red|Grayish Lavender - B"
+048,2-color,"Rosolanc Purple|Helvetia Blue"
+049,2-color,"Pale King's Blue|Blue"
+050,2-color,"Ivory Buff|Dusky Madder Violet"
+051,2-color,"Carmine Red|Blue"
+052,2-color,"Sulpher Yellow|Black"
+053,2-color,"Yellow Orange|Dusky Madder Violet"
+054,2-color,"Benzol Green|Light Glaucous Blue"
+055,2-color,"Old Rose|White"
+056,2-color,"Grayish Lavender - B|Violet"
+057,2-color,"Taupe Brown|Slate Color"
+058,2-color,"Hay's Russet|Sea Green"
+059,2-color,"Eosine Pink|Citrine"
+060,2-color,"Pale Lemon Yellow|Dark Tyrian Blue"
+061,2-color,"Light Green Yellow|Cotinga Purple"
+062,2-color,"Yellow|Black"
+063,2-color,"Vistoris Lake|Cerulian Blue"
+064,2-color,"Aconite Violet|Dark Soft Violet"
+065,2-color,"Sulphine Yellow|Calamine Blue"
+066,2-color,"Olive Ocher|Olive Green"
+067,2-color,"Olympic Blue|Dark Tyrian Blue"
+068,2-color,"Light Brown Drab|Yellow"
+069,2-color,"Warm Gray|Black"
+070,2-color,"Raw Sienna|Lincoln Green"
+071,2-color,"Pompeian Red|Ochraceous Salmon"
+072,2-color,"Sulpher Yellow|Pale King's Blue"
+073,2-color,"Pale Raw Umber|Rainette Green"
+074,2-color,"Turquoise Green|Green Blue"
+075,2-color,"Pale King's Blue|Violet Blue"
+076,2-color,"Pale Lemon Yellow|Warm Gray"
+077,2-color,"Eugenia Red | B|Vandar Poel's Blue"
+078,2-color,"Pinkish Cinnamon|Venice Green"
+079,2-color,"Madder Brown|Green Blue"
+080,2-color,"Sulpher Yellow|Light Mauve"
+081,2-color,"Golden Yellow|Warm Gray"
+082,2-color,"Hay's Russet|Dusky Madder Violet"
+083,2-color,"Olive Buff|Violet Blue"
+084,2-color,"Seashell Pink|Deep Slate Green"
+085,2-color,"Vinaceous Tawny|Antwarp Blue"
+086,2-color,"Raw Sienna|Sea Green"
+087,2-color,"Corinthian Pink|Citron Yellow"
+088,2-color,"Seashell Pink|Blue"
+089,2-color,"Yellow Orange|Violet Blue"
+090,2-color,"Eosine Pink|Aconite Violet"
+091,2-color,"Vistoris Lake|Orange Rufous"
+092,2-color,"Coral Red|Benzol Green"
+093,2-color,"Citrine|Light Glaucous Blue"
+094,2-color,"Ivory Buff|Dusky Green"
+095,2-color,"Hay's Russet|Dull Violet Black"
+096,2-color,"Yellow Ocher|Olive"
+097,2-color,"Corinthian Pink|Etruscan Red"
+098,2-color,"Madder Brown|Violet Blue"
+099,2-color,"Pale Lemon Yellow|Cerulian Blue"
+100,2-color,"Buffy Citrine|Dull Blue Violet"
+101,2-color,"Cameo Pink|Deep Lyons Blue"
+102,2-color,"Ivory Buff|Orange Rufous"
+103,2-color,"Cinnamon Rufous|Dusky Madder Violet"
+104,2-color,"Carmine Red|Sulpher Yellow"
+105,2-color,"Cameo Pink|Chromium Green"
+106,2-color,"Antwarp Blue|Dull Violet Black"
+107,2-color,"Apricot Yellow|Light Grayish Olive"
+108,2-color,"Eosine Pink|Brick Red"
+109,2-color,"Pale Lemon Yellow|Blackish Olive"
+110,2-color,"Brown|Vandyke Brown"
+111,2-color,"Pale Lemon Yellow|Yellow Green"
+112,2-color,"Grenadine Pink|Black"
+113,2-color,"Seashell Pink|Vandyke Brown"
+114,2-color,"Orange Yellow|Antwarp Blue"
+115,2-color,"Naples Yellow|Peach Red"
+116,2-color,"Cameo Pink|Blue Violet"
+117,2-color,"Carmine|Black"
+118,2-color,"Yellow Ocher|Vandyke Brown"
+119,2-color,"Light Glaucous Blue|Dark Tyrian Blue"
+120,2-color,"Cameo Pink|Pompeian Red"
+Комбинации #121–#240 (3-цветные)
+text
+121,3-color,"Brown|Ochraceous Salmon|Lincoln Green"
+122,3-color,"Carmine|Cream Yellow|Benzol Green"
+123,3-color,"Coral Red|Lemon Yellow|Taupe Brown"
+124,3-color,"Pale Burnt Lake|Yellow Ocher|Olive Yellow"
+125,3-color,"Fawn|Cerulian Blue|Violet Blue"
+126,3-color,"Ivory Buff|Yellow Ocher|Deep Lyons Blue"
+127,3-color,"Cinnamon Buff|Pistachio Green|Dark Soft Violet"
+128,3-color,"Corinthian Pink|Venice Green|Light Mauve"
+129,3-color,"Apricot Yellow|Khaki|Salvia Blue"
+130,3-color,"Raw Sienna|Carmine Red|Violet"
+131,3-color,"Raw Sienna|English Red|Peacock Blue"
+132,3-color,"Sulpher Yellow|Golden Yellow|Citrine"
+133,3-color,"Vandyke Red|Citrine|Sea Green"
+134,3-color,"Eosine Pink|Light Mauve|Red Violet"
+135,3-color,"Sulpher Yellow|Cossack Green|Salvia Blue"
+136,3-color,"Scarlet|Dull Viridian Green|Red Violet"
+137,3-color,"Etruscan Red|Cinnamon Buff|Pistachio Green"
+138,3-color,"Golden Yellow|Lemon Yellow|Venice Green"
+139,3-color,"Salvia Blue|Deep Indigo|Neutral Gray"
+140,3-color,"Golden Yellow|Antwarp Blue|Slate Color"
+141,3-color,"Orange|Yellow Green|Dark Tyrian Blue"
+142,3-color,"Hydrangea Red|Sulphine Yellow|Salvia Blue"
+143,3-color,"Blue|Lilac|Warm Gray"
+144,3-color,"Rosolanc Purple|Orange|Black"
+145,3-color,"Brown|Citron Yellow|Dull Violet Black"
+146,3-color,"Khaki|Deep Grayish Olive|Diamine Green"
+147,3-color,"Spinel Red|Vandyke Red|Turquoise Green"
+148,3-color,"Olive Ocher|Orange Yellow|Cerulian Blue"
+149,3-color,"Olive Ocher|Orange|Deep Slate Green"
+150,3-color,"Seashell Pink|Citron Yellow|Glaucous Green"
+151,3-color,"Sulpher Yellow|Yellow Orange|Vandar Poel's Blue"
+152,3-color,"Etruscan Red|Hay's Russet|Light Glaucous Blue"
+153,3-color,"Eosine Pink|Orange Yellow|Citron Yellow"
+154,3-color,"Carmine|Yellow|Blue"
+155,3-color,"Jasper Red|Benzol Green|Deep Indigo"
+156,3-color,"Olive Ocher|Cobalt Green|Violet"
+157,3-color,"Pansy Purple|Olive Ocher|Olympic Blue"
+158,3-color,"Lemon Yellow|Cinnamon Rufous|Night Green"
+159,3-color,"Khaki|Calamine Blue|Grayish Lavender - A"
+160,3-color,"Sulphine Yellow|Pale Raw Umber|Dark Medici Blue"
+161,3-color,"Brown|Pinkish Cinnamon|Helvetia Blue"
+162,3-color,"Old Rose|Rainette Green|Lilac"
+163,3-color,"Apricot Yellow|Turquoise Green|Antwarp Blue"
+164,3-color,"Red Orange|Orange Yellow|Violet"
+165,3-color,"Cameo Pink|Spinel Red|Vistoris Lake"
+166,3-color,"Grenadine Pink|Naples Yellow|Deep Slate Green"
+167,3-color,"Ecru|Pale King's Blue|Vandar Poel's Blue"
+168,3-color,"Lemon Yellow|Vandar Poel's Blue|Veronia Purple"
+169,3-color,"Corinthian Pink|Pale Lemon Yellow|Warm Gray"
+170,3-color,"Rosolanc Purple|Orange Yellow|Red Violet"
+171,3-color,"Pale Burnt Lake|Yellow Orange|Glaucous Green"
+172,3-color,"Cinnamon Rufous|Antwarp Blue|Red Violet"
+173,3-color,"Lemon Yellow|Madder Brown|Turquoise Green"
+174,3-color,"Corinthian Pink|Grayish Lavender - B|Taupe Brown"
+175,3-color,"Pinkish Cinnamon|Olive Buff|Blue Violet"
+176,3-color,"Hermosa Pink|Seashell Pink|Calamine Blue"
+177,3-color,"Pale Burnt Lake|Buffy Citrine|Grayish Lavender - A"
+178,3-color,"Ivory Buff|Light Glaucous Blue|Green Blue"
+179,3-color,"Red Orange|Golden Yellow|Deep Lyons Blue"
+180,3-color,"Cinnamon Buff|Light Mauve|Neutral Gray"
+181,3-color,"Carmine Red|Violet|Cotinga Purple"
+182,3-color,"Raw Sienna|Vandyke Brown|Deep Indigo"
+183,3-color,"Deep Violet / Plumbeous|Veronia Purple|Red Violet"
+184,3-color,"Spinel Red|Ivory Buff|Light Grayish Olive"
+185,3-color,"Light Brown Drab|Etruscan Red|Pale Lemon Yellow"
+186,3-color,"Hay's Russet|Ochraceous Salmon|Blue"
+187,3-color,"Helvetia Blue|Grayish Lavender - B|Aconite Violet"
+188,3-color,"Rainette Green|Salvia Blue|Cobalt Green"
+189,3-color,"Lemon Yellow|Deep Slate Olive|Venice Green"
+190,3-color,"Ivory Buff|English Red|Black"
+191,3-color,"Light Brown Drab|Yellow Ocher|Blue"
+192,3-color,"Cream Yellow|Vandyke Brown|Deep Violet / Plumbeous"
+193,3-color,"Grenadine Pink|Naples Yellow|Light Porcelain Green"
+194,3-color,"Jasper Red|Seashell Pink|Olympic Blue"
+195,3-color,"Spinel Red|Pale Lemon Yellow|Neutral Gray"
+196,3-color,"Citron Yellow|Pale King's Blue|Blue Violet"
+197,3-color,"Eosine Pink|Dark Soft Violet|Neutral Gray"
+198,3-color,"Burnt Sienna|Apricot Yellow|Green"
+199,3-color,"Ochre Red|Light Brownish Olive|Deep Lyons Blue"
+Комбинации #200–#240 (3-цветные, продолжение)
+text
+200,3-color,"Carmine Red|Olive Buff|Chromium Green"
+201,3-color,"Grenadine Pink|Olive|Cobalt Green"
+202,3-color,"Turquoise Green|Cobalt Green|Slate Color"
+203,3-color,"Pale Lemon Yellow|Vinaceous Cinnamon|Lincoln Green"
+204,3-color,"Rosolanc Purple|Cinnamon Rufous|Light Glaucous Blue"
+205,3-color,"Pale Burnt Lake|Vinaceous Cinnamon|Violet"
+206,3-color,"Corinthian Pink|Golden Yellow|Cinnamon Rufous"
+207,3-color,"Sudan Brown|Glaucous Green|Black"
+208,3-color,"Sulpher Yellow|Green Blue|Antwarp Blue"
+209,3-color,"Ivory Buff|Yellow Orange|Salvia Blue"
+210,3-color,"Cinnamon Buff|Lemon Yellow|Lincoln Green"
+211,3-color,"Apricot Orange|Olive Yellow|Deep Indigo"
+212,3-color,"Pompeian Red|Orange Citrine|Salvia Blue"
+213,3-color,"Vinaceous Cinnamon|Apricot Yellow|Pale King's Blue"
+214,3-color,"Ivory Buff|Sudan Brown|Violet"
+215,3-color,"Cream Yellow|Blue|Eupatorium Purple"
+216,3-color,"Jasper Red|Green|Black"
+217,3-color,"Pale Burnt Lake|Ochraceous Salmon|Diamine Green"
+218,3-color,"Helvetia Blue|Grayish Lavender - A|Deep Violet / Plumbeous"
+219,3-color,"Jasper Red|Chromium Green|Dusky Green"
+220,3-color,"Pomegranite Purple|Ochraceous Salmon|Aconite Violet"
+221,3-color,"Carmine Red|Neutral Gray|Black"
+222,3-color,"Yellow Ocher|Yellow Orange|Orange Rufous"
+223,3-color,"Light Brown Drab|Ochraceous Salmon|Turquoise Green"
+224,3-color,"Spinel Red|Dark Medici Blue|Taupe Brown"
+225,3-color,"Carmine|Dusky Green|Dark Slate Purple"
+226,3-color,"Vistoris Lake|Cream Yellow|Violet"
+227,3-color,"Hermosa Pink|Light Glaucous Blue|Cerulian Blue"
+228,3-color,"Carmine Red|Pale Lemon Yellow|Neutral Gray"
+229,3-color,"Golden Yellow|Deep Slate Olive|Neutral Gray"
+230,3-color,"Grenadine Pink|Turquoise Green|Cobalt Green"
+231,3-color,"Cameo Pink|Hay's Russet|Olympic Blue"
+232,3-color,"Carmine|Pinkish Cinnamon|Deep Indigo"
+233,3-color,"Carmine Red|Buffy Citrine|Violet Blue"
+234,3-color,"Cinnamon Buff|Pale Raw Umber|Pale King's Blue"
+235,3-color,"Ivory Buff|Yellow Orange|Grayish Lavender - B"
+236,3-color,"Khaki|Deep Lyons Blue|Purple Drab"
+237,3-color,"Carmine Red|Madder Brown|Salvia Blue"
+238,3-color,"Ochraceous Salmon|Cotinga Purple|Warm Gray"
+239,3-color,"Light Brown Drab|Pyrite Yellow|Glaucous Green"
+240,3-color,"Fresh Color|Yellow|Cerulian Blue"
+Комбинации #241–#295 (4-цветные)
+text
+241,4-color,"Red Orange|Pale Lemon Yellow|Isabella Color|Dark Medici Blue"
+242,4-color,"Eosine Pink|Burnt Sienna|Diamine Green|Black"
+243,4-color,"Raw Sienna|Ivory Buff|Olive Green|Slate Color"
+244,4-color,"Light Brown Drab|Vinaceous Tawny|Andover Green|Antwarp Blue"
+245,4-color,"Carmine Red|Oil Green|Dark Tyrian Blue|Slate Color"
+246,4-color,"Corinthian Pink|Brick Red|Sulpher Yellow|Cinnamon Buff"
+247,4-color,"Raw Sienna|Apricot Yellow|Benzol Green|Deep Lyons Blue"
+248,4-color,"Eosine Pink|Khaki|Grayish Lavender - A|Dark Slate Purple"
+249,4-color,"Hay's Russet|Ecru|Olive Ocher|Dark Medici Blue"
+250,4-color,"Pyrite Yellow|Peach Red|Sea Green|Nile Blue"
+251,4-color,"Red|Yellow|Diamine Green|Slate Color"
+252,4-color,"Eugenia Red | B|Raw Sienna|Sulphine Yellow|Green Blue"
+253,4-color,"Lemon Yellow|Apricot Orange|Cotinga Purple|Slate Color"
+254,4-color,"Corinthian Pink|Sulpher Yellow|Olive|Laelia Pink"
+255,4-color,"Raw Sienna|Pyrite Yellow|Calamine Blue|Black"
+256,4-color,"Vinaceous Cinnamon|Orange|Dull Viridian Green|Black"
+257,4-color,"Spectrum Red|Orange Yellow|Blue|Aconite Violet"
+258,4-color,"Pale Burnt Lake|Pinkish Cinnamon|Olive|Antwarp Blue"
+259,4-color,"Lemon Yellow|Green Blue|Helvetia Blue|Warm Gray"
+260,4-color,"Old Rose|Vinaceous Cinnamon|Glaucous Green|Sea Green"
+261,4-color,"Red|Pale Lemon Yellow|Calamine Blue|Warm Gray"
+262,4-color,"Eugenia Red | B|Ivory Buff|Citrine|Cossack Green"
+263,4-color,"Burnt Sienna|Pinkish Cinnamon|Turquoise Green|Slate Color"
+264,4-color,"Corinthian Pink|Red Orange|Dark Greenish Glaucous|Cerulian Blue"
+265,4-color,"Old Rose|Apricot Yellow|Olive Yellow|Dull Violet Black"
+266,4-color,"Spectrum Red|Ivory Buff|Rainette Green|Benzol Green"
+267,4-color,"Cream Yellow|Yellow Orange|Benzol Green|Blue"
+268,4-color,"Light Brown Drab|Raw Sienna|Deep Slate Olive|Nile Blue"
+269,4-color,"Raw Sienna|Pale Burnt Lake|Aconite Violet|Black"
+270,4-color,"Eugenia Red | B|Sulpher Yellow|Olive Green|Cossack Green"
+271,4-color,"Pomegranite Purple|Cobalt Green|Green Blue|Deep Slate Green"
+272,4-color,"Pale Lemon Yellow|Orange|Turquoise Green|Salvia Blue"
+273,4-color,"Hermosa Pink|Pansy Purple|Sudan Brown|Neutral Gray"
+274,4-color,"Peach Red|Dark Citrine|Olympic Blue|Light Mauve"
+275,4-color,"Etruscan Red|Ecru|Madder Brown|Taupe Brown"
+276,4-color,"Eosine Pink|Seashell Pink|Yellow Green|Black"
+277,4-color,"Spinel Red|Rosolanc Purple|Olive|Dull Violet Black"
+278,4-color,"Cream Yellow|Olive Ocher|Cossack Green|Dusky Green"
+279,4-color,"Raw Sienna|Vinaceous Cinnamon|Ecru|Dark Tyrian Blue"
+280,4-color,"Eugenia Red | B|Lincoln Green|Laelia Pink|Taupe Brown"
+281,4-color,"Pale Lemon Yellow|Benzol Green|Cobalt Green|Antwarp Blue"
+282,4-color,"Eugenia Red | B|Maple|Cobalt Green|Lilac"
+283,4-color,"Ochre Red|Pale Burnt Lake|Chromium Green|Venice Green"
+284,4-color,"Eugenia Red | A|Apricot Yellow|Sea Green|Dusky Green"
+285,4-color,"Light Brown Drab|Burnt Sienna|Peach Red|Turquoise Green"
+286,4-color,"Burnt Sienna|Orange Yellow|Peacock Blue|Violet Blue"
+287,4-color,"Eosine Pink|Pyrite Yellow|Pale King's Blue|Calamine Blue"
+288,4-color,"Yellow Orange|Sepia|Taupe Brown|Black"
+289,4-color,"Lemon Yellow|Light Green Yellow|Violet Blue|Dull Violet Black"
+290,4-color,"Vistoris Lake|Pale Lemon Yellow|Lincoln Green|Cobalt Green"
+291,4-color,"Light Green Yellow|Sea Green|Cobalt Green|Calamine Blue"
+292,4-color,"Pale Lemon Yellow|Pinkish Cinnamon|Isabella Color|Ecru"
+293,4-color,"Raw Sienna|Turquoise Green|Artemesia Green|Green"
+294,4-color,"Sulpher Yellow|Cream Yellow|Cossack Green|Salvia Blue"
+295,4-color,"Cream Yellow|Yellow|Blue|Dull Violet Black"
+296,4-color,"Sulpher Yellow|Ochraceous Salmon|Pale Raw Umber|Slate Color"
+297,4-color,"Burnt Sienna|Yellow Orange|Olive Green|Violet Blue"
+298,4-color,"Raw Sienna|Lemon Yellow|Peach Red|Black"
+299,4-color,"Indian Lake|Vinaceous Cinnamon|Oil Green|Antwarp Blue"
+300,4-color,"Grenadine Pink|Cream Yellow|Turquoise Green|Calamine Blue"
+301,4-color,"Spectrum Red|Ivory Buff|Rainette Green|Aconite Violet"
+302,4-color,"Cream Yellow|Ecru|Nile Blue|Antwarp Blue"
+303,4-color,"Naples Yellow|Peach Red|Deep Slate Olive|Neutral Gray"
+304,4-color,"Hay's Russet|Cream Yellow|Dark Citrine|Benzol Green"
+305,4-color,"Pinkish Cinnamon|Apricot Yellow|Citron Yellow|Turquoise Green"
+306,4-color,"Lemon Yellow|Benzol Green|Dull Viridian Green|Nile Blue"
+307,4-color,"Carmine|Grayish Lavender - A|Aconite Violet|Cotinga Purple"
+308,4-color,"Fawn|Scarlet|English Red|Cobalt Green"
+309,4-color,"Golden Yellow|Apricot Orange|Violet Blue|Vandar Poel's Blue"
+310,4-color,"Sulpher Yellow|Pinkish Cinnamon|Olive|Deep Slate Olive"
+311,4-color,"Pompeian Red|Cream Yellow|Dark Greenish Glaucous|Light Green Yellow"
+312,4-color,"Burnt Sienna|Yellow Orange|Artemesia Green|Helvetia Blue"
+313,4-color,"Carmine|Yellow|Diamine Green|Black"
+314,4-color,"Eosine Pink|Hay's Russet|Deep Lyons Blue|Dusky Madder Violet"
+315,4-color,"Grenadine Pink|Sulpher Yellow|Golden Yellow|Eupatorium Purple"
+316,4-color,"Vandyke Red|Dull Viridian Green|Violet|Red Violet"
+317,4-color,"Light Pinkish Cinnamon|Ecru|Lemon Yellow|Turquoise Green"
+318,4-color,"Light Brownish Olive|Blackish Olive|Dusky Green|Deep Slate Green"
+319,4-color,"Raw Sienna|Apricot Yellow|Yellow Orange|Cossack Green"
+320,4-color,"Coral Red|Sulpher Yellow|Oil Green|Light Glaucous Blue"
+321,4-color,"Light Brown Drab|Sulpher Yellow|Deep Slate Olive|Salvia Blue"
+322,4-color,"Spectrum Red|Brick Red|Eupatorium Purple|Blue Violet"
+323,4-color,"Cinnamon Buff|Citron Yellow|Madder Brown|Black"
+324,4-color,"Pompeian Red|Olympic Blue|Aconite Violet|Neutral Gray"
+325,4-color,"Eugenia Red | B|Naples Yellow|Yellow Ocher|Deep Slate Green"
+326,4-color,"Sulpher Yellow|Peach Red|Yellow Green|Night Green"
+327,4-color,"Eosine Pink|Raw Sienna|Ecru|Grayish Lavender - B"
+328,4-color,"Brick Red|Apricot Orange|Vandyke Brown|Light Porcelain Green"
+329,4-color,"Cream Yellow|Grayish Lavender - B|Cotinga Purple|Slate Color"
+330,4-color,"Olive Buff|Nile Blue|Salvia Blue|Green Blue"
+331,4-color,"Indian Lake|Dull Violet Black|Light Mauve|Violet"
+332,4-color,"Coral Red|Scarlet|Deep Slate Olive|Dusky Green"
+333,4-color,"Burnt Sienna|Lemon Yellow|Cobalt Green|Blue"
+334,4-color,"Seashell Pink|Olive|Yellow Green|Antwarp Blue"
+335,4-color,"Vandyke Red|Yellow Orange|Violet|Slate Color"
+336,4-color,"Eosine Pink|Hay's Russet|Pale Lemon Yellow|Blackish Olive"
+337,4-color,"Vistoris Lake|Laelia Pink|Violet Carmine|Black"
+338,4-color,"Carmine Red|Orange Yellow|Dusky Green|Grayish Lavender - B"
+339,4-color,"Ochraceous Salmon|English Red|Light Glaucous Blue|Violet Blue"
+340,4-color,"Peach Red|Sea Green|Neutral Gray|Black"
+341,4-color,"Grenadine Pink|Cossack Green|Deep Slate Olive|Light Glaucous Blue"
+342,4-color,"Corinthian Pink|Cream Yellow|Orange Citrine|Deep Slate Olive"
+343,4-color,"Burnt Sienna|Ivory Buff|Deep Grayish Olive|Vandar Poel's Blue"
+344,4-color,"Cinnamon Buff|Deep Lyons Blue|Aconite Violet|Black"
+345,4-color,"Hay's Russet|Nile Blue|Venice Green|Blue Violet"
+346,4-color,"Rosolanc Purple|Turquoise Green|Light Green Yellow|Andover Green"
+347,4-color,"Olive Yellow|Sea Green|Helvetia Blue|Lilac"
+348,4-color,"Olive Buff|Cossack Green|Deep Slate Olive|Cotinga Purple"

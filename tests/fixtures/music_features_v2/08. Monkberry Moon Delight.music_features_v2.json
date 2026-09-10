@@ -1,0 +1,79 @@
+{
+  "artifact": {
+    "audio_content_hash": "sha256:9623df517afc73cfcc5d32e4e69e298d7764d5e730eb0fee33acf4aa2224a93d",
+    "created_at": "2026-08-23T11:36:30.929796Z",
+    "extractor_name": "music_features_v2_extractor",
+    "extractor_version": "2.0.0",
+    "feature_hash": "sha256:4bfaff6f562bc7f804f755706988388d968adc706cff5d0937ebc3b7eb1b0274",
+    "synthetic_fixture": false,
+    "track_id": "08. Monkberry Moon Delight"
+  },
+  "features": {
+    "envelope": {
+      "attack_sharpness": 0.342727,
+      "dynamic_range": 0.329599,
+      "macro_energy_arc": 0.438561,
+      "silence_ratio": 0.024641,
+      "sustain_ratio": 0.496152
+    },
+    "form": {
+      "climax_position": 0.8,
+      "ending_decay_ratio": 0.008784,
+      "intro_length_ratio": 0.001361,
+      "section_contrast": 0.369932,
+      "section_count": 6
+    },
+    "harmony": {
+      "chroma_stability": 0.969187,
+      "dissonance_proxy": 0.415196,
+      "harmonic_change_rate": 0.242171,
+      "harmonic_ratio": 0.998907,
+      "tonal_stability": 0.004288
+    },
+    "pulse": {
+      "beat_confidence": 0.695658,
+      "bpm": 97.508844,
+      "onset_density": 0.347829,
+      "pulse_regularity": 0.953595,
+      "syncopation_index": 0.499184
+    },
+    "recurrence": {
+      "motif_return_strength": 0.738171,
+      "repetition_ratio": 0.738171,
+      "self_similarity": 0.738171,
+      "variation_ratio": 0.261829
+    },
+    "space": {
+      "depth_proxy": 0.012867,
+      "reverb_proxy": 0.001093,
+      "spectral_bandwidth": 0.137737,
+      "stereo_width": 0.5
+    },
+    "timbre": {
+      "brightness": 0.118811,
+      "roughness": 1.0,
+      "spectral_centroid": 0.118811,
+      "spectral_flatness": 0.001093,
+      "spectral_flux": 1.0,
+      "spectral_rolloff": 0.234511
+    }
+  },
+  "normalization": {
+    "bpm_range": [
+      0.0,
+      220.0
+    ],
+    "fallback_policy": "missing or unsupported measurement is explicitly listed in artifact metadata",
+    "fallback_value": 0.5,
+    "fallbacks": {
+      "stereo_width": "mono source; neutral fallback 0.5"
+    },
+    "range": [
+      0.0,
+      1.0
+    ],
+    "section_count": "integer count, range 1..12"
+  },
+  "schema": "MusicFeaturesV2",
+  "version": "v2.0.0"
+}
