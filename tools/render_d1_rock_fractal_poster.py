@@ -467,7 +467,13 @@ def _branch_geometry(
     bp = bridge_params or {}
     junction = bp.get("junction") if isinstance(bp.get("junction"), Mapping) else {}
     cx = float(junction.get("x", 540.0))
-    cy = float(junction.get("y", 540.0))
+    base_cy = float(junction.get("y", 540.0))
+    # 1. Spectral Skewness: гравитационный сдвиг по вертикали (-15..+15px)
+    skewness = float(bp.get("spectral_skewness", 0.5))
+    cy = base_cy + (skewness - 0.5) * 30.0
+    # 2. BPM: волновая частота и плотность ветвления
+    bpm = float(bp.get("bpm", 120.0))
+    bpm_factor = min(1.5, max(0.65, bpm / 120.0))
     drive = float(bp.get("drive", 0.4))
     line_density = float(bp.get("line_density", 0.5))
     grain = float(bp.get("grain", 0.5))
@@ -485,7 +491,7 @@ def _branch_geometry(
     # 1. ЦЫ С: 3 Ы Т (Х 6 ЩУЦ!)
     # асовый ствол идет преимущественно вниз (гравитация рока), два боковых крыла расходятся влево-вверх и вправо
     main_stems = [
-        {"base_phi": math.pi * 0.5 + rng.choice([-0.28, 0.28]), "weight": 1.4, "len": 390.0 + drive * 150.0}, # ощный ствол вниз
+        {"base_phi": math.pi * 0.5 + rng.choice([-0.28, 0.28]), "weight": 1.4, "len": (390.0 + drive * 150.0) * (0.85 + 0.15 * bpm_factor)}, # ощный ствол вниз
         {"base_phi": math.pi * 1.05 + rng.uniform(-0.25, 0.15), "weight": 1.0, "len": 320.0 + drive * 120.0}, # евое крыло
         {"base_phi": -math.pi * 0.08 + rng.uniform(-0.15, 0.25), "weight": 1.1, "len": 340.0 + drive * 130.0}, # равое крыло
     ]
@@ -602,7 +608,13 @@ def _gravitational_dripping(
     bp = bridge_params or {}
     junction = bp.get("junction") if isinstance(bp.get("junction"), Mapping) else {}
     cx = float(junction.get("x", 540.0))
-    cy = float(junction.get("y", 540.0))
+    base_cy = float(junction.get("y", 540.0))
+    # 1. Spectral Skewness: гравитационный сдвиг по вертикали (-15..+15px)
+    skewness = float(bp.get("spectral_skewness", 0.5))
+    cy = base_cy + (skewness - 0.5) * 30.0
+    # 2. BPM: волновая частота и плотность ветвления
+    bpm = float(bp.get("bpm", 120.0))
+    bpm_factor = min(1.5, max(0.65, bpm / 120.0))
     grain = float(bp.get("grain", 0.5))
     drive = float(bp.get("drive", 0.4))
     tension = float(bp.get("tension", 0.0))
@@ -708,7 +720,13 @@ def _bold_dripping(
     bp = bridge_params or {}
     junction = bp.get("junction") if isinstance(bp.get("junction"), Mapping) else {}
     cx = float(junction.get("x", 540.0))
-    cy = float(junction.get("y", 540.0))
+    base_cy = float(junction.get("y", 540.0))
+    # 1. Spectral Skewness: гравитационный сдвиг по вертикали (-15..+15px)
+    skewness = float(bp.get("spectral_skewness", 0.5))
+    cy = base_cy + (skewness - 0.5) * 30.0
+    # 2. BPM: волновая частота и плотность ветвления
+    bpm = float(bp.get("bpm", 120.0))
+    bpm_factor = min(1.5, max(0.65, bpm / 120.0))
     drive = float(bp.get("drive", 0.4))
     grain = float(bp.get("grain", 0.5))
 
@@ -784,7 +802,13 @@ def _theta_arcs(
     bp = bridge_params or {}
     junction = bp.get("junction") if isinstance(bp.get("junction"), Mapping) else {}
     cx = float(junction.get("x", 540.0))
-    cy = float(junction.get("y", 540.0))
+    base_cy = float(junction.get("y", 540.0))
+    # 1. Spectral Skewness: гравитационный сдвиг по вертикали (-15..+15px)
+    skewness = float(bp.get("spectral_skewness", 0.5))
+    cy = base_cy + (skewness - 0.5) * 30.0
+    # 2. BPM: волновая частота и плотность ветвления
+    bpm = float(bp.get("bpm", 120.0))
+    bpm_factor = min(1.5, max(0.65, bpm / 120.0))
     resonance = float(bp.get("resonance", 0.3))
     tension = float(bp.get("tension", 0.0))
     drive = float(bp.get("drive", 0.4))
@@ -991,9 +1015,39 @@ def render_svg(data: Mapping[str, Any]) -> bytes:
 
 
 def build_metadata(data: Mapping[str, Any], svg_bytes: bytes) -> bytes:
-    metadata = _base_metadata(data)
-    metadata["canonical_outputs"]["svg_sha256"] = sha256_prefixed(svg_bytes)
-    metadata["raster_outputs"] = []
+    metadata = dict(_base_metadata(data))
+    metadata["schema"] = "rock_poster_v8_canonical_passport/v1"
+    metadata["canonical_outputs"] = {
+        "svg_sha256": sha256_prefixed(svg_bytes),
+        "renderer": "tools/render_d1_rock_fractal_poster.py",
+        "resolution": {"width": 1080, "height": 1260},
+    }
+    # Фиксация параметров генерации V8
+    bp = data.get("bridge_params", {})
+    metadata["v8_generation_params"] = {
+        "bridge_params": bp,
+        "acoustic_axes": {
+            "bpm": bp.get("bpm", 120.0),
+            "spectral_skewness": bp.get("spectral_skewness", 0.5),
+            "dynamic_range": bp.get("dynamic_range", 0.5),
+            "drive": bp.get("drive", 0.4),
+            "tension": bp.get("tension", 0.0),
+            "grain": bp.get("grain", 0.5),
+            "resonance": bp.get("resonance", 0.3),
+        },
+        "active_visual_layers": [
+            "space_ambient_void",
+            "solaris_ocean_currents",
+            "paper_canvas_texture",
+            "gravitational_ink_dripping",
+            "d1_geometry_branch_stems",
+            "sacred_flower_lotus",
+            "core_aperture_iris",
+            "central_core_glow",
+            "peripheral_einstein_arcs",
+            "swiss_identity_plate",
+        ],
+    }
     return canonical_json_bytes(metadata)
 
 
