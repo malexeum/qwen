@@ -25,7 +25,7 @@ from tools.blues_d2_physical_layers import (
 POSTER_ID = "d2_blues_v1_poster"
 SCHEMA_VERSION = "d2_poster_metadata/v1"
 RENDERER_NAME = "d2_blues_two_body_renderer"
-RENDERER_VERSION = "1.1"
+RENDERER_VERSION = "1.2"
 VIEWBOX = "0 0 1080 1260"
 PALETTE = {
     "background": "#03050A",
@@ -57,18 +57,28 @@ def sha256_prefixed(data: bytes) -> str:
 def _closed_spline(coords: list[tuple[float, float]]) -> str:
     path = [f"M {coords[0][0]:.2f} {coords[0][1]:.2f}"]
     count = len(coords)
-    for i in range(count):
-        p0 = coords[(i - 1) % count]
-        p1 = coords[i]
-        p2 = coords[(i + 1) % count]
-        p3 = coords[(i + 2) % count]
-        c1 = (p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6)
-        c2 = (p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6)
+    for index in range(count):
+        p0 = coords[(index - 1) % count]
+        p1 = coords[index]
+        p2 = coords[(index + 1) % count]
+        p3 = coords[(index + 2) % count]
+        c1 = (
+            p1[0] + (p2[0] - p0[0]) / 6,
+            p1[1] + (p2[1] - p0[1]) / 6,
+        )
+        c2 = (
+            p2[0] - (p3[0] - p1[0]) / 6,
+            p2[1] - (p3[1] - p1[1]) / 6,
+        )
         path.append(
             f"C {c1[0]:.2f} {c1[1]:.2f} {c2[0]:.2f} {c2[1]:.2f} "
             f"{p2[0]:.2f} {p2[1]:.2f}"
         )
     return " ".join(path) + " Z"
+
+
+def _signed_power(value: float, exponent: float) -> float:
+    return math.copysign(abs(value) ** exponent, value)
 
 
 def _advected_body(
@@ -83,42 +93,56 @@ def _advected_body(
     top_taper: float,
     bottom_spread: float,
     contact_side: float,
-    contact_pull: float,
+    contact_dent: float,
+    downstream: float,
+    settling: float,
 ) -> str:
-    """Build an asymmetric density body deformed by gravity and counterflow."""
+    """Build a directional density field with an indented contact flank."""
     rng = random.Random(seed_int(seed, salt))
     phase3 = rng.uniform(0, math.tau)
     phase5 = rng.uniform(0, math.tau)
-    phase9 = rng.uniform(0, math.tau)
+    phase8 = rng.uniform(0, math.tau)
     coords: list[tuple[float, float]] = []
 
-    for i in range(points):
-        angle = math.tau * i / points
+    for index in range(points):
+        angle = math.tau * index / points
         cosine = math.cos(angle)
         sine = math.sin(angle)
         top = max(0.0, -sine)
         bottom = max(0.0, sine)
+
+        # A superelliptic base prevents a soft circular cloud while preserving mass.
+        horizontal = _signed_power(cosine, 0.78)
+        vertical = _signed_power(sine, 0.94)
         irregularity = (
             1
-            + 0.075 * math.sin(3 * angle + phase3)
-            + 0.045 * math.sin(5 * angle + phase5)
-            + 0.022 * math.sin(9 * angle + phase9)
+            + 0.052 * math.sin(3 * angle + phase3)
+            + 0.034 * math.sin(5 * angle + phase5)
+            + 0.017 * math.sin(8 * angle + phase8)
         )
         horizontal_scale = 1 - top_taper * top + bottom_spread * bottom
-        contact = (
-            contact_side
-            * contact_pull
-            * max(0.0, contact_side * cosine) ** 2
-            * math.exp(-((sine / 0.62) ** 2))
-        )
+
+        # Contact is a real indentation, not two luminous balls overlapping.
+        contact_zone = max(0.0, contact_side * cosine)
+        central_contact = math.exp(-((sine + 0.02) / 0.43) ** 2)
+        dent = contact_side * contact_dent * contact_zone**1.7 * central_contact
+
+        # The lower mass is dragged away from the seam and settles into the current.
+        toe = bottom**2.15
         x = (
             cx
-            + rx * irregularity * horizontal_scale * cosine
+            + rx * irregularity * horizontal_scale * horizontal
             + shear * sine
-            + 14 * math.sin(2 * angle + phase5)
-            + contact
+            + 11 * math.sin(2 * angle + phase5)
+            - dent
+            + downstream * toe
         )
-        y = cy + ry * irregularity * sine + 9 * math.sin(angle + phase3)
+        y = (
+            cy
+            + ry * irregularity * vertical
+            + 7 * math.sin(angle + phase3)
+            + settling * toe
+        )
         coords.append((x, y))
 
     return _closed_spline(coords)
@@ -148,8 +172,8 @@ def _polygons(seed: str) -> list[str]:
         cy = rng.uniform(80, 900)
         count = rng.randint(3, 6)
         points = []
-        for i in range(count):
-            angle = math.tau * i / count + rng.uniform(-0.25, 0.25)
+        for index in range(count):
+            angle = math.tau * index / count + rng.uniform(-0.25, 0.25)
             radius = rng.uniform(12, 70)
             points.append(
                 f"{cx + radius * math.cos(angle):.2f},"
@@ -164,30 +188,51 @@ def _polygons(seed: str) -> list[str]:
     return out
 
 
+def _density_shear_wakes(seed: str) -> list[str]:
+    rng = random.Random(seed_int(seed, "density-shear-wakes"))
+    out = ['<g id="d2-density-shear-wakes" fill="none" stroke-linecap="round">']
+    for index in range(5):
+        offset = index * 31 + rng.uniform(-4, 4)
+        out.append(
+            f'<path d="M 70 {565+offset:.2f} C 176 {526+offset:.2f} '
+            f'324 {548+offset:.2f} 503 {617+offset*.42:.2f}" '
+            f'stroke="#315E8E" stroke-width="{27-index*3.6:.2f}" '
+            f'stroke-opacity="{.030-index*.0035:.4f}" filter="url(#wake-soft)"/>'
+        )
+        out.append(
+            f'<path d="M 1010 {498+offset:.2f} C 896 {468+offset:.2f} '
+            f'760 {496+offset:.2f} 548 {592+offset*.38:.2f}" '
+            f'stroke="#A35B2B" stroke-width="{24-index*3.2:.2f}" '
+            f'stroke-opacity="{.026-index*.0030:.4f}" filter="url(#wake-soft)"/>'
+        )
+    out.append("</g>")
+    return out
+
+
 def _internal_strata(seed: str) -> list[str]:
     rng = random.Random(seed_int(seed, "internal-strata"))
     out = ['<g id="d2-internal-strata" fill="none" stroke-linecap="round">']
 
-    for index in range(7):
-        y = 438 + index * 55 + rng.uniform(-8, 8)
-        bend = rng.uniform(-18, 18)
+    for index in range(8):
+        y = 420 + index * 50 + rng.uniform(-8, 8)
+        bend = rng.uniform(-20, 20)
         out.append(
-            f'<path d="M 95 {y:.2f} C 225 {y-25+bend:.2f} '
-            f'420 {y+24-bend:.2f} 574 {y-7:.2f}" '
+            f'<path d="M 72 {y+18:.2f} C 214 {y-31+bend:.2f} '
+            f'385 {y+27-bend:.2f} 573 {y-12:.2f}" '
             f'clip-path="url(#clip-left-body)" stroke="#7693B1" '
-            f'stroke-width="{rng.uniform(.55, 1.35):.2f}" '
-            f'stroke-opacity="{rng.uniform(.045, .12):.4f}"/>'
+            f'stroke-width="{rng.uniform(.65, 1.55):.2f}" '
+            f'stroke-opacity="{rng.uniform(.055, .14):.4f}"/>'
         )
 
-    for index in range(6):
-        y = 384 + index * 61 + rng.uniform(-8, 8)
-        bend = rng.uniform(-16, 20)
+    for index in range(7):
+        y = 365 + index * 57 + rng.uniform(-8, 8)
+        bend = rng.uniform(-18, 22)
         out.append(
-            f'<path d="M 488 {y+15:.2f} C 635 {y-24-bend:.2f} '
-            f'790 {y+28+bend:.2f} 945 {y-10:.2f}" '
+            f'<path d="M 486 {y+18:.2f} C 630 {y-28-bend:.2f} '
+            f'810 {y+31+bend:.2f} 970 {y-15:.2f}" '
             f'clip-path="url(#clip-right-body)" stroke="#B37A5D" '
-            f'stroke-width="{rng.uniform(.55, 1.25):.2f}" '
-            f'stroke-opacity="{rng.uniform(.04, .105):.4f}"/>'
+            f'stroke-width="{rng.uniform(.62, 1.48):.2f}" '
+            f'stroke-opacity="{rng.uniform(.05, .125):.4f}"/>'
         )
 
     out.append("</g>")
@@ -225,12 +270,13 @@ def base_metadata(seed: str) -> dict[str, Any]:
         },
         "visual_contract": {
             "metaphor": "two advected density bodies in pressured counterflow",
-            "body_geometry": "asymmetric, tapered, sheared, bottom-heavy",
+            "body_geometry": "advected, indented, sheared, bottom-rooted",
             "retained_layers": [
                 "glow",
                 "settling_mist",
                 "random_polygons",
                 "turbulence",
+                "density_shear_wakes",
                 "internal_strata",
                 "counterflow_ribbons",
                 "tactile_void",
@@ -244,10 +290,36 @@ def base_metadata(seed: str) -> dict[str, Any]:
 def render_svg(seed: str = "d2-blues-v1") -> bytes:
     cfg = BurialConfig()
     left = _advected_body(
-        seed, 350, 600, 245, 305, 24, "left-body", -42, 0.25, 0.13, 1, 24
+        seed,
+        350,
+        585,
+        252,
+        326,
+        30,
+        "left-body-v12",
+        -55,
+        0.31,
+        0.20,
+        1,
+        52,
+        -48,
+        30,
     )
     right = _advected_body(
-        seed, 686, 535, 214, 250, 23, "right-body", 48, 0.31, 0.09, -1, 21
+        seed,
+        688,
+        520,
+        224,
+        272,
+        29,
+        "right-body-v12",
+        63,
+        0.37,
+        0.14,
+        -1,
+        47,
+        39,
+        22,
     )
     seam = "M 517 338 C 492 430 542 520 508 615 C 480 693 528 760 504 832"
     metadata = json.dumps(
@@ -262,25 +334,28 @@ def render_svg(seed: str = "d2-blues-v1") -> bytes:
         '<desc id="desc">Two unequal density bodies press into a heavy settling current. Their contact remains unresolved.</desc>',
         "<defs>",
         '<linearGradient id="body-left" x1="0" y1="0" x2="1" y2=".72">'
-        '<stop offset="0" stop-color="#14243A" stop-opacity=".34"/>'
-        '<stop offset=".56" stop-color="#315E8E" stop-opacity=".72"/>'
+        '<stop offset="0" stop-color="#14243A" stop-opacity=".32"/>'
+        '<stop offset=".56" stop-color="#315E8E" stop-opacity=".70"/>'
         '<stop offset="1" stop-color="#101A2A" stop-opacity=".16"/>'
         "</linearGradient>",
         '<linearGradient id="body-right" x1="1" y1="0" x2="0" y2=".82">'
-        '<stop offset="0" stop-color="#2A2431" stop-opacity=".24"/>'
-        '<stop offset=".56" stop-color="#8C5133" stop-opacity=".60"/>'
-        '<stop offset="1" stop-color="#31283B" stop-opacity=".22"/>'
+        '<stop offset="0" stop-color="#2A2431" stop-opacity=".22"/>'
+        '<stop offset=".56" stop-color="#8C5133" stop-opacity=".57"/>'
+        '<stop offset="1" stop-color="#31283B" stop-opacity=".20"/>'
         "</linearGradient>",
         f'<clipPath id="clip-left-body"><path d="{left}"/></clipPath>',
         f'<clipPath id="clip-right-body"><path d="{right}"/></clipPath>',
         '<filter id="body-turbulence" x="-30%" y="-30%" width="160%" height="160%">'
-        '<feTurbulence type="fractalNoise" baseFrequency=".007 .021" numOctaves="3" '
+        '<feTurbulence type="fractalNoise" baseFrequency=".008 .024" numOctaves="3" '
         'seed="19" result="noise"/>'
-        '<feDisplacementMap in="SourceGraphic" in2="noise" scale="29"/>'
-        '<feGaussianBlur stdDeviation=".75"/>'
+        '<feDisplacementMap in="SourceGraphic" in2="noise" scale="24"/>'
+        '<feGaussianBlur stdDeviation=".32"/>'
         "</filter>",
         '<filter id="glow" x="-50%" y="-50%" width="200%" height="200%">'
-        '<feGaussianBlur stdDeviation="18 9"/>'
+        '<feGaussianBlur stdDeviation="12 5"/>'
+        "</filter>",
+        '<filter id="wake-soft" x="-30%" y="-100%" width="160%" height="300%">'
+        '<feGaussianBlur stdDeviation="16 6"/>'
         "</filter>",
         '<filter id="mist" x="-40%" y="-100%" width="180%" height="300%">'
         '<feGaussianBlur stdDeviation="11"/>'
@@ -292,19 +367,20 @@ def render_svg(seed: str = "d2-blues-v1") -> bytes:
         *_polygons(seed),
         *_mist(seed),
         *burial_backdrop_svg(seed, cfg),
+        *_density_shear_wakes(seed),
         '<g id="d2-density-bodies">',
-        f'<path d="{left}" fill="#315E8E" fill-opacity=".16" filter="url(#glow)"/>',
+        f'<path d="{left}" fill="#315E8E" fill-opacity=".085" filter="url(#glow)"/>',
         f'<path id="d2-left-body" d="{left}" fill="url(#body-left)" '
         'filter="url(#body-turbulence)"/>',
-        f'<path d="{right}" fill="#A35B2B" fill-opacity=".13" filter="url(#glow)"/>',
+        f'<path d="{right}" fill="#A35B2B" fill-opacity=".072" filter="url(#glow)"/>',
         f'<path id="d2-right-body" d="{right}" fill="url(#body-right)" '
         'filter="url(#body-turbulence)"/>',
         "</g>",
         *_internal_strata(seed),
         *_counterflow_ribbons(seed),
         '<g id="d2-contact-seam">',
-        f'<path d="{seam}" fill="none" stroke="#315E8E" stroke-width="8" '
-        'stroke-opacity=".10" filter="url(#glow)"/>',
+        f'<path d="{seam}" fill="none" stroke="#315E8E" stroke-width="6" '
+        'stroke-opacity=".075" filter="url(#glow)"/>',
         f'<path d="{seam}" fill="none" stroke="#010207" stroke-width="3.2" '
         'stroke-linecap="round"/>',
         "</g>",

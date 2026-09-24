@@ -23,6 +23,7 @@ def test_blues_poster_is_deterministic_and_layered(tmp_path: Path):
         "d2-random-polygons",
         "d2-settling-mist",
         "d2-burial-backdrop",
+        "d2-density-shear-wakes",
         "d2-density-bodies",
         "d2-internal-strata",
         "d2-counterflow-ribbons",
@@ -33,7 +34,8 @@ def test_blues_poster_is_deterministic_and_layered(tmp_path: Path):
     ):
         assert f'id="{group_id}"' in text
     assert 'viewBox="0 0 1080 1260"' in text
-    assert text.index('id="d2-burial-backdrop"') < text.index('id="d2-density-bodies"')
+    assert text.index('id="d2-burial-backdrop"') < text.index('id="d2-density-shear-wakes"')
+    assert text.index('id="d2-density-shear-wakes"') < text.index('id="d2-density-bodies"')
     assert text.index('id="d2-density-bodies"') < text.index('id="d2-internal-strata"')
     assert text.index('id="d2-internal-strata"') < text.index('id="d2-contact-seam"')
     assert text.index('id="d2-density-bodies"') < text.index('id="d2-burial-foreground"')
@@ -44,14 +46,17 @@ def test_blues_poster_is_deterministic_and_layered(tmp_path: Path):
     assert not re.search(r'(?:href|xlink:href)=["\'](?:https?:|//)', text)
 
     metadata = json.loads(build_metadata("fixture", first))
-    assert metadata["renderer"]["version"] == RENDERER_VERSION == "1.1"
+    assert metadata["renderer"]["version"] == RENDERER_VERSION == "1.2"
     assert metadata["canonical_outputs"]["svg_sha256"] == sha256_prefixed(first)
-    assert metadata["visual_contract"]["body_geometry"] == "asymmetric, tapered, sheared, bottom-heavy"
+    assert metadata["visual_contract"]["body_geometry"] == (
+        "advected, indented, sheared, bottom-rooted"
+    )
     assert metadata["visual_contract"]["retained_layers"] == [
         "glow",
         "settling_mist",
         "random_polygons",
         "turbulence",
+        "density_shear_wakes",
         "internal_strata",
         "counterflow_ribbons",
         "tactile_void",
