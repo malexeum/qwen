@@ -1,302 +1,543 @@
-from __future__ import annotations
-
-import argparse
-import hashlib
-import json
-import math
-import random
-import sys
-from dataclasses import dataclass
+"""
+D2 Blues Poster Renderer — v1.7 Lyapunov Painfall
+Two-Body Blues: spectral embrace inside a waterfall of pain.
+Lyapunov fractal threads + graphite grain + syncopated rhythm pulses.
+"""
+import sys, os, math, random, hashlib, json, argparse
 from pathlib import Path
-from typing import Any
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from tools.blues_d2_physical_layers import (
-    BurialConfig,
-    burial_backdrop_svg,
-    burial_foreground_svg,
-    physical_defs,
-    seed_int,
-    tactile_void_svg,
-)
+RENDERER_VERSION = "1.7"
 
-POSTER_ID = "d2_blues_v1_poster"
-SCHEMA_VERSION = "d2_poster_metadata/v1"
-RENDERER_NAME = "d2_blues_two_body_renderer"
-RENDERER_VERSION = "1.6"
-VIEWBOX = "0 0 1080 1260"
-PALETTE = {
-    "background": "#03050A", "ink": "#D8D8D5", "muted": "#737986",
-    "blue": "#315E8E", "ember": "#A35B2B", "violet": "#44374F",
-    "blue_note": "#5B4FA8",
-}
+W, H = 1000, 1400
+SEED = 42
+
+# ── палитра ──────────────────────────────────────────────────────────────────
+BG          = "#0a0908"
+BODY_A      = "#1a3a5c"   # большое тело — тёмно-синее
+BODY_B      = "#4a2010"   # малое тело  — тёмно-коричневое
+ORGAN_A     = "#0d2440"
+ORGAN_B     = "#2e1208"
+TENDON_A    = "#1e4870"
+TENDON_B    = "#5a2a14"
+FLOW_WARM   = "#3d1f08"
+FLOW_COOL   = "#0c2035"
+BLUE_NOTE   = "#5B4FA8"
+COFFIN      = "#060504"
+SEDIMENT    = "#0e0c0b"
+WATERFALL   = "#112030"
+GRAPHITE    = "#2a2520"
 
 
-@dataclass(frozen=True)
-class BodySpec:
-    cx: float
-    cy: float
-    rx: float
-    ry: float
-    points: int
-    salt: str
-
-    @property
-    def area_proxy(self) -> float:
-        return self.rx * self.ry
+def rng(seed):
+    r = random.Random(seed)
+    return r
 
 
-def canonical_json_bytes(data: Any) -> bytes:
-    text = json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
-    return (text + "\n").encode("utf-8")
+def lyapunov_value(x, sequence="AB", iterations=100):
+    """Вычисляет показатель Ляпунова для логистического отображения."""
+    lyap = 0.0
+    r_a, r_b = 3.7, 3.9
+    for i in range(iterations):
+        r = r_a if sequence[i % len(sequence)] == 'A' else r_b
+        x = r * x * (1 - x)
+        if abs(x * (1 - x)) < 1e-10:
+            break
+        lyap += math.log(abs(r * (1 - 2 * x)) + 1e-10)
+    return lyap / iterations
 
 
-def sha256_prefixed(data: bytes) -> str:
-    return "sha256:" + hashlib.sha256(data).hexdigest()
+def blob_path(cx, cy, rx, ry, n_pts, seed, squeeze_bottom=0.0):
+    """Генерирует органическую форму без рваных краёв."""
+    r = rng(seed)
+    pts = []
+    for i in range(n_pts):
+        angle = 2 * math.pi * i / n_pts
+        # Ляпуновская модуляция радиуса — живая, но не рваная
+        x0 = 0.5 + 0.3 * math.cos(angle)
+        lyap = lyapunov_value(max(0.01, min(0.99, x0)), "AABB", 60)
+        # нормируем в [-1, 1]
+        modulation = max(-0.18, min(0.18, lyap * 0.06))
+        base_r = 0.85 + 0.15 * math.sin(angle * 2.3 + r.uniform(0, math.pi))
+        rad_x = rx * (base_r + modulation) * (1 + r.gauss(0, 0.03))
+        rad_y = ry * (base_r + modulation * 0.7) * (1 + r.gauss(0, 0.03))
+        # сдавливаем низ для ощущения веса
+        if squeeze_bottom > 0 and math.sin(angle) > 0:
+            rad_y *= (1 - squeeze_bottom * math.sin(angle) * 0.4)
+        pts.append((cx + rad_x * math.cos(angle),
+                    cy + rad_y * math.sin(angle)))
+    # сглаженный path
+    d = f"M {pts[0][0]:.1f},{pts[0][1]:.1f} "
+    for i in range(n_pts):
+        p1 = pts[i]
+        p2 = pts[(i + 1) % n_pts]
+        mx = (p1[0] + p2[0]) / 2
+        my = (p1[1] + p2[1]) / 2
+        d += f"Q {p1[0]:.1f},{p1[1]:.1f} {mx:.1f},{my:.1f} "
+    d += "Z"
+    return d
 
 
-def _body_specs(seed: str) -> tuple[BodySpec, BodySpec]:
-    rng = random.Random(seed_int(seed, "body-proportions-v15"))
-    dominance = rng.uniform(1.38, 2.58)
-    left_rx = rng.uniform(238, 278)
-    left_ry = rng.uniform(300, 348)
-    right_ry = rng.uniform(224, 278)
-    right_rx = left_rx * left_ry / (dominance * right_ry)
-    left = BodySpec(326 + rng.uniform(-18, 14), 600 + rng.uniform(-24, 20), left_rx, left_ry, 30, "left-body-v15")
-    right = BodySpec(704 + rng.uniform(-12, 24), 518 + rng.uniform(-30, 24), right_rx, right_ry, 28, "right-body-v15")
-    ratio = left.area_proxy / right.area_proxy
-    if not 1.35 <= ratio <= 2.65:
-        raise AssertionError(f"D2 area ratio outside visual contract: {ratio:.3f}")
-    return left, right
+def lyapunov_thread(x_start, y_top, y_bottom, cx_drift, seed, sequence="AABB"):
+    """Вертикальная нить водопада, модулированная показателем Ляпунова."""
+    r = rng(seed)
+    pts = []
+    x = 0.3 + 0.4 * r.random()
+    n_steps = 40
+    for i in range(n_steps):
+        t = i / (n_steps - 1)
+        y = y_top + (y_bottom - y_top) * t
+        lyap = lyapunov_value(x, sequence, 30)
+        x = max(0.01, min(0.99, x + 0.02 * (1 if lyap > -0.5 else -1)))
+        drift = cx_drift + lyap * 8 + r.gauss(0, 3)
+        px = x_start + drift * math.sin(t * math.pi * 2.7) + r.gauss(0, 2)
+        pts.append((px, y))
+        # разрыв нити при неустойчивости
+        if lyap < -1.2 and r.random() < 0.4:
+            break
+    return pts
 
 
-def _blob(seed: str, body: BodySpec, salt: str, scale: float = 1.0, roughness: float = 1.0) -> str:
-    rng = random.Random(seed_int(seed, salt))
-    phases = [rng.uniform(0, math.tau) for _ in range(3)]
-    pts: list[tuple[float, float]] = []
-    for i in range(body.points):
-        a = math.tau * i / body.points
-        m = 1 + roughness * (0.052 * math.sin(3*a+phases[0]) + 0.026 * math.sin(5*a+phases[1]) + 0.012 * math.sin(7*a+phases[2]))
-        pts.append((body.cx + body.rx*scale*m*math.cos(a), body.cy + body.ry*scale*m*math.sin(a)))
-    path = [f"M {pts[0][0]:.2f} {pts[0][1]:.2f}"]
-    for i in range(body.points):
-        p0, p1, p2, p3 = pts[(i-1) % body.points], pts[i], pts[(i+1) % body.points], pts[(i+2) % body.points]
-        c1 = (p1[0] + (p2[0]-p0[0])/6, p1[1] + (p2[1]-p0[1])/6)
-        c2 = (p2[0] - (p3[0]-p1[0])/6, p2[1] - (p3[1]-p1[1])/6)
-        path.append(f"C {c1[0]:.2f} {c1[1]:.2f} {c2[0]:.2f} {c2[1]:.2f} {p2[0]:.2f} {p2[1]:.2f}")
-    return " ".join(path) + " Z"
+def render_svg(seed=SEED):
+    r = rng(seed)
 
+    # ── геометрия тел ────────────────────────────────────────────────────────
+    # большое тело — левее и выше
+    ax, ay = W * 0.36, H * 0.33
+    arx, ary = 195, 220
+    # малое тело — правее, ниже, вытянуто вертикально
+    scale = r.uniform(1.55, 2.4)
+    bx = ax + arx * 0.85
+    by = ay + ary * 0.15
+    brx = int(arx / math.sqrt(scale))
+    bry = int(ary / math.sqrt(scale) * 1.15)
 
-def _smooth_open(points: list[tuple[float, float]]) -> str:
-    path = [f"M {points[0][0]:.2f} {points[0][1]:.2f}"]
-    last = len(points)-1
-    for i in range(last):
-        p0, p1, p2, p3 = points[max(0, i-1)], points[i], points[i+1], points[min(last, i+2)]
-        c1 = (p1[0]+(p2[0]-p0[0])/6, p1[1]+(p2[1]-p0[1])/6)
-        c2 = (p2[0]-(p3[0]-p1[0])/6, p2[1]-(p3[1]-p1[1])/6)
-        path.append(f"C {c1[0]:.2f} {c1[1]:.2f} {c2[0]:.2f} {c2[1]:.2f} {p2[0]:.2f} {p2[1]:.2f}")
-    return " ".join(path)
+    blob_a = blob_path(ax, ay, arx, ary, 32, seed + 1, squeeze_bottom=0.3)
+    blob_b = blob_path(bx, by, brx, bry, 28, seed + 2, squeeze_bottom=0.2)
 
+    # afterimage — запоздавший след тела A
+    ghost_dx = r.uniform(-18, -8)
+    ghost_dy = r.uniform(-12, 6)
+    blob_a_ghost = blob_path(ax + ghost_dx, ay + ghost_dy, arx, ary, 32, seed + 10, squeeze_bottom=0.25)
 
-def _contact_points(seed: str, left: BodySpec, right: BodySpec) -> list[tuple[float, float]]:
-    rng = random.Random(seed_int(seed, "contact-corridor-v15"))
-    top = max(left.cy-.82*left.ry, right.cy-.86*right.ry)
-    bottom = min(left.cy+.82*left.ry, right.cy+.86*right.ry)
-    points: list[tuple[float, float]] = []
-    for i in range(81):
-        y = top + (bottom-top)*i/80
-        ln, rn = (y-left.cy)/left.ry, (y-right.cy)/right.ry
-        if abs(ln) >= 1 or abs(rn) >= 1:
-            continue
-        le = left.cx + left.rx*math.sqrt(max(0.0, 1-ln*ln))
-        re = right.cx - right.rx*math.sqrt(max(0.0, 1-rn*rn))
-        if le-re >= 7:
-            points.append(((le+re)/2 + 4*math.sin((y-top)/58+.4) + rng.uniform(-1.2, 1.2), y))
-    if len(points) < 7:
-        x = (left.cx+left.rx+right.cx-right.rx)/2
-        return [(x+3*math.sin(i*.8), top+(bottom-top)*i/8) for i in range(9)]
-    return [points[round(i*(len(points)-1)/10)] for i in range(11)]
+    # ── органы и полости ─────────────────────────────────────────────────────
+    organs_a = []
+    for i in range(6):
+        ox = ax + r.uniform(-arx * 0.55, arx * 0.45)
+        oy = ay + r.uniform(-ary * 0.5, ary * 0.55)
+        orx = r.uniform(18, 55)
+        ory = r.uniform(14, 42)
+        organs_a.append(blob_path(ox, oy, orx, ory, 16, seed + 20 + i))
 
+    # полости тела A
+    cavities_a = []
+    for i in range(2):
+        ox = ax + r.uniform(-arx * 0.3, arx * 0.25)
+        oy = ay + r.uniform(-ary * 0.3, ary * 0.35)
+        cavities_a.append(blob_path(ox, oy, r.uniform(10, 25), r.uniform(8, 18), 12, seed + 30 + i))
 
-def _mist(seed: str) -> list[str]:
-    rng = random.Random(seed_int(seed, "mist-v15"))
-    out = ['<g id="d2-settling-mist">']
-    for _ in range(44):
-        out.append(f'<ellipse cx="{rng.uniform(70,1010):.2f}" cy="{rng.uniform(230,925):.2f}" rx="{rng.uniform(18,110):.2f}" ry="{rng.uniform(5,24):.2f}" fill="#8A92A1" fill-opacity="{rng.uniform(.008,.036):.4f}" filter="url(#mist)"/>')
-    return out + ['</g>']
+    organs_b = []
+    for i in range(4):
+        ox = bx + r.uniform(-brx * 0.5, brx * 0.45)
+        oy = by + r.uniform(-bry * 0.5, bry * 0.5)
+        orx = r.uniform(12, 35)
+        ory = r.uniform(10, 28)
+        organs_b.append(blob_path(ox, oy, orx, ory, 14, seed + 40 + i))
 
-
-def _polygons(seed: str) -> list[str]:
-    rng = random.Random(seed_int(seed, "polygons-v15"))
-    out = ['<g id="d2-random-polygons">']
-    for _ in range(12):
-        cx, cy, count = rng.uniform(80,1000), rng.uniform(80,900), rng.randint(3,6)
-        pts = []
-        for i in range(count):
-            a, r = math.tau*i/count+rng.uniform(-.25,.25), rng.uniform(12,70)
-            pts.append(f"{cx+r*math.cos(a):.2f},{cy+r*math.sin(a):.2f}")
-        out.append(f'<polygon points="{" ".join(pts)}" fill="none" stroke="#687386" stroke-width=".7" stroke-opacity="{rng.uniform(.02,.07):.4f}"/>')
-    return out + ['</g>']
-
-
-def _afterimages(seed: str, left_path: str, right_path: str) -> list[str]:
-    rng = random.Random(seed_int(seed, "afterimage-aab-v15"))
-    lx, ly = rng.uniform(-18, -9), rng.uniform(7, 18)
-    rx, ry = rng.uniform(8, 17), rng.uniform(-7, 12)
-    return ['<g id="d2-afterimages" pointer-events="none" mask="url(#contact-gap-mask)">', f'<path d="{left_path}" transform="translate({lx:.2f} {ly:.2f})" fill="#263F61" fill-opacity=".10" filter="url(#afterimage-blur)"/>', f'<path d="{right_path}" transform="translate({rx:.2f} {ry:.2f})" fill="#8E5635" fill-opacity=".085" filter="url(#afterimage-blur)"/>', '</g>']
-
-
-def _coffin_gravity(seed: str, contact_x: float) -> list[str]:
-    rng = random.Random(seed_int(seed, "coffin-gravity-v15"))
-    left, right = 170+rng.uniform(-18,18), 900+rng.uniform(-20,20)
-    top, bottom = 744+rng.uniform(-8,10), 1018+rng.uniform(-8,8)
-    inset = rng.uniform(48,72)
-    path = f"M {left+inset:.2f} {top:.2f} L {right-inset:.2f} {top+5:.2f} L {right:.2f} {bottom-38:.2f} L {right-44:.2f} {bottom:.2f} L {left+42:.2f} {bottom:.2f} L {left:.2f} {bottom-42:.2f} Z"
-    return ['<g id="d2-coffin-gravity" pointer-events="none">', f'<path d="{path}" fill="#160D0A" fill-opacity=".14" stroke="#5B463A" stroke-width="2.2" stroke-opacity=".055" filter="url(#coffin-soft)"/>', f'<path d="M {left+inset+42:.2f} {top+8:.2f} L {contact_x-34:.2f} {top+11:.2f}" stroke="#8A725F" stroke-width="1.2" stroke-opacity=".06"/>', '</g>']
-
-
-def _tendons(seed: str, body: BodySpec, side: str, clip_id: str) -> list[str]:
-    rng = random.Random(seed_int(seed, f"{side}-tendons-v15"))
-    color, count = ("#94A9BE",3) if side == "left" else ("#D09A72",2)
-    out=[f'<g id="d2-{side}-tendons" clip-path="url(#{clip_id})" fill="none" stroke-linecap="round" filter="url(#tendon-blur)">']
-    for _ in range(count):
-        x1=body.cx+rng.uniform(-.38,-.08)*body.rx; y1=body.cy+rng.uniform(-.35,.30)*body.ry
-        x2=body.cx+rng.uniform(.08,.40)*body.rx; y2=body.cy+rng.uniform(-.30,.38)*body.ry
-        bend=rng.uniform(-.18,.18)*body.ry
-        out.append(f'<path d="M {x1:.2f} {y1:.2f} Q {body.cx+rng.uniform(-25,25):.2f} {(y1+y2)/2+bend:.2f} {x2:.2f} {y2:.2f}" stroke="{color}" stroke-width="{rng.uniform(3.6,6.8):.2f}" stroke-opacity="{rng.uniform(.065,.115):.4f}"/>')
-    return out+['</g>']
-
-
-def _pain_waterfall(seed: str, left: BodySpec, right: BodySpec, contact_x: float) -> list[str]:
-    rng = random.Random(seed_int(seed, "pain-waterfall-v16"))
-    out = ['<g id="d2-pain-waterfall" fill="none" stroke-linecap="round" pointer-events="none">']
-    colors = ("#354B67", "#6B4B49", "#4B4662")
-    for i in range(8):
-        x, y0, y1, drift = rng.uniform(120,960), rng.uniform(170,310), rng.uniform(820,1010), rng.uniform(-42,42)
-        out.append(f'<path data-stream="background" d="M {x:.2f} {y0:.2f} C {x+drift*.25:.2f} {y0+190:.2f} {x-drift*.35:.2f} {y1-190:.2f} {x+drift:.2f} {y1:.2f}" stroke="{colors[i%3]}" stroke-width="{rng.uniform(5,15):.2f}" stroke-opacity="{rng.uniform(.018,.052):.4f}" filter="url(#waterfall-blur)"/>')
-    for body, clip_id, color in ((left,"clip-left-body","#6F8DAE"),(right,"clip-right-body","#B17655")):
-        for _ in range(2):
-            x = body.cx+rng.uniform(-.28,.28)*body.rx; y0=body.cy-rng.uniform(.45,.68)*body.ry; y1=body.cy+rng.uniform(.48,.72)*body.ry
-            out.append(f'<path data-stream="internal" d="M {x:.2f} {y0:.2f} C {x+rng.uniform(-24,24):.2f} {body.cy-.18*body.ry:.2f} {x+rng.uniform(-28,28):.2f} {body.cy+.22*body.ry:.2f} {x+rng.uniform(-18,18):.2f} {y1:.2f}" clip-path="url(#{clip_id})" stroke="{color}" stroke-width="{rng.uniform(7,13):.2f}" stroke-opacity="{rng.uniform(.035,.065):.4f}" filter="url(#waterfall-blur)"/>')
-    x=contact_x+rng.uniform(-4,4)
-    out.append(f'<path data-stream="blue-note-fall" d="M {x-10:.2f} 278 C {x-2:.2f} 454 {x+8:.2f} 584 {x-4:.2f} 710 C {x-9:.2f} 756 {x+31:.2f} 783 {x+20:.2f} 850" stroke="#5B4FA8" stroke-width="6" stroke-opacity=".070" filter="url(#waterfall-blur)"/>')
-    return out+['</g>']
-
-
-def _delayed_embrace_arcs(seed: str, left: BodySpec, right: BodySpec, points: list[tuple[float,float]]) -> list[str]:
-    rng=random.Random(seed_int(seed,"delayed-embrace-arcs-v16")); x,y=points[len(points)//2]; lag=rng.uniform(14,25)
-    return ['<g id="d2-delayed-embrace-arcs" fill="none" stroke-linecap="round" pointer-events="none" filter="url(#embrace-blur)">',
-        f'<path data-voice="call" d="M {left.cx-left.rx*.52:.2f} {left.cy-left.ry*.08:.2f} C {left.cx-left.rx*.08:.2f} {left.cy-left.ry*.34:.2f} {x-70:.2f} {y-78:.2f} {x-10:.2f} {y-18:.2f}" stroke="#7895B5" stroke-width="9" stroke-opacity=".070"/>',
-        f'<path data-voice="delayed-response" d="M {right.cx+right.rx*.48:.2f} {right.cy+right.ry*.12+lag:.2f} C {right.cx+right.rx*.06:.2f} {right.cy+right.ry*.34+lag:.2f} {x+68:.2f} {y+76+lag:.2f} {x+11:.2f} {y+20+lag:.2f}" stroke="#B77951" stroke-width="8" stroke-opacity=".066"/>',
-        f'<path data-voice="almost-embrace" d="M {x-86:.2f} {y+42:.2f} Q {x:.2f} {y-38:.2f} {x+82:.2f} {y+46:.2f}" stroke="#75647D" stroke-width="5" stroke-opacity=".058"/>','</g>']
-
-
-def _aftertone_memory(seed: str, right: BodySpec) -> list[str]:
-    rng=random.Random(seed_int(seed,"aftertone-memory-v15")); out=['<g id="d2-aftertone-memory" fill="none" stroke-linecap="round" filter="url(#memory-blur)">']
+    # сухожилия — вытянутые вниз
+    tendons_a = []
     for i in range(3):
-        y=660+i*48+rng.uniform(-10,10); x1=right.cx+right.rx*.45+rng.uniform(-5,16); x2=rng.uniform(930,1035)
-        out.append(f'<path d="M {x1:.2f} {y:.2f} C {x1+70:.2f} {y+rng.uniform(-8,10):.2f} {x2-80:.2f} {y+rng.uniform(8,22):.2f} {x2:.2f} {y+rng.uniform(14,30):.2f}" stroke="#8A91A0" stroke-width="{rng.uniform(2,4):.2f}" stroke-opacity="{rng.uniform(.018,.034):.4f}"/>')
-    return out+['</g>']
+        tx = ax + r.uniform(-arx * 0.4, arx * 0.3)
+        ty = ay + r.uniform(0, ary * 0.5)
+        tendons_a.append(blob_path(tx, ty, r.uniform(5, 12), r.uniform(28, 55), 10, seed + 50 + i))
 
+    # ── водопад Ляпунова ─────────────────────────────────────────────────────
+    waterfall_threads = []
+    n_threads = 16
+    for i in range(n_threads):
+        x_start = W * 0.08 + W * 0.84 * i / (n_threads - 1) + r.gauss(0, 12)
+        y_top = r.uniform(-H * 0.05, H * 0.02)
+        y_bottom = H * r.uniform(0.68, 0.82)
+        seq = r.choice(["AABB", "ABAB", "AAAB", "ABBB"])
+        thread_pts = lyapunov_thread(x_start, y_top, y_bottom, r.uniform(-15, 15), seed + 100 + i, seq)
+        waterfall_threads.append(thread_pts)
 
-def _organs(seed: str, body: BodySpec, side: str, clip_id: str) -> list[str]:
-    rng = random.Random(seed_int(seed, f"{side}-organs-v15"))
-    colors = ("#536F92", "#263F61", "#111E33", "#5B4FA8") if side == "left" else ("#91552F", "#684054", "#2A2333", "#5B4FA8")
-    out = [f'<g id="d2-{side}-internal-organs" clip-path="url(#{clip_id})">']
-    for i in range(7 if side == "left" else 5):
-        organ = BodySpec(body.cx+rng.uniform(-.34,.34)*body.rx, body.cy+rng.uniform(-.38,.38)*body.ry, body.rx*rng.uniform(.12,.34), body.ry*rng.uniform(.08,.25), 18, f"{side}-organ-{i}")
-        path = _blob(seed, organ, organ.salt, roughness=.62)
-        out.append(f'<path d="{path}" fill="{colors[i%4]}" fill-opacity="{rng.uniform(.080,.165):.4f}" filter="url(#{"organ-deep" if i%2 else "organ-soft"})"/>')
-    for i in range(2 if side == "left" else 1):
-        cavity = BodySpec(body.cx+rng.uniform(-.25,.25)*body.rx, body.cy+rng.uniform(-.25,.25)*body.ry, body.rx*rng.uniform(.08,.16), body.ry*rng.uniform(.07,.14), 16, f"{side}-cavity-{i}")
-        out.append(f'<path d="{_blob(seed,cavity,cavity.salt,roughness=.5)}" fill="#010207" fill-opacity="{rng.uniform(.12,.21):.4f}" filter="url(#organ-deep)"/>')
-    return out + ['</g>']
+    # ── синкопированные ритм-пульсы (слабая доля) ────────────────────────────
+    rhythm_pulses = []
+    # 8 горизонтальных импульсов, сдвинутых от метра
+    for i in range(8):
+        # слабая доля — между основными вертикальными позициями
+        y = H * (0.15 + 0.07 * i) + r.gauss(0, 8)
+        x1 = r.uniform(W * 0.05, W * 0.2)
+        x2 = r.uniform(W * 0.75, W * 0.95)
+        opacity = r.uniform(0.03, 0.07)
+        rhythm_pulses.append((x1, y, x2, y, opacity))
 
+    # ── контактные потоки через щель ────────────────────────────────────────
+    # притяжение
+    attract_x1, attract_y1 = ax + arx * 0.7, ay - ary * 0.1
+    attract_x2, attract_y2 = bx - brx * 0.75, by - bry * 0.1
+    # отталкивание
+    repel_x1, repel_y1 = ax + arx * 0.65, ay + ary * 0.2
+    repel_x2, repel_y2 = bx - brx * 0.7, by + bry * 0.15
+    # оборванная фраза
+    broken_x1, broken_y1 = ax + arx * 0.6, ay + ary * 0.4
+    broken_xm = (broken_x1 + (bx - brx * 0.6)) * 0.45  # не доходит
 
-def _call_response(left: BodySpec, right: BodySpec) -> list[str]:
-    return ['<g id="d2-call-response" fill="none" stroke-linecap="round" filter="url(#organ-soft)">', f'<path d="M {left.cx-left.rx*.58:.2f} {left.cy-left.ry*.20:.2f} Q {left.cx:.2f} {left.cy-left.ry*.38:.2f} {left.cx+left.rx*.52:.2f} {left.cy-left.ry*.10:.2f}" stroke="#7691AE" stroke-width="7" stroke-opacity=".065" clip-path="url(#clip-left-body)"/>', f'<path d="M {right.cx-right.rx*.55:.2f} {right.cy+right.ry*.14:.2f} Q {right.cx:.2f} {right.cy+right.ry*.34:.2f} {right.cx+right.rx*.48:.2f} {right.cy+right.ry*.08:.2f}" stroke="#B77951" stroke-width="7" stroke-opacity=".07" clip-path="url(#clip-right-body)"/>', '</g>']
+    # дополнительные арки обмена
+    extra_arcs = []
+    for i in range(4):
+        ex1 = ax + arx * r.uniform(0.55, 0.78)
+        ey1 = ay + ary * r.uniform(-0.35, 0.45)
+        ex2 = bx - brx * r.uniform(0.55, 0.78)
+        ey2 = by + bry * r.uniform(-0.35, 0.35)
+        completed = r.random() > 0.35  # часть обрывается
+        extra_arcs.append((ex1, ey1, ex2, ey2, completed))
 
+    # ── геометрия гроба времени ─────────────────────────────────────────────
+    coffin_y = H * 0.72
+    coffin_x1, coffin_x2 = W * 0.08, W * 0.92
+    coffin_top_inset = W * 0.07
 
-def _contact_flows(seed: str, points: list[tuple[float, float]]) -> list[str]:
-    rng=random.Random(seed_int(seed,"contact-flows-v15")); out=['<g id="d2-contact-flows" fill="none" stroke-linecap="round">']
-    for fraction,mode in ((.24,"attract"),(.50,"repel"),(.72,"unfinished")):
-        x,y=points[round(fraction*(len(points)-1))]; span,rise=rng.uniform(52,88),rng.uniform(-18,18)
-        if mode=="attract":
-            path=f"M {x-span:.2f} {y+rise:.2f} C {x-span*.34:.2f} {y-rise:.2f} {x+span*.30:.2f} {y+rise:.2f} {x+span:.2f} {y-rise*.45:.2f}"
-            out.append(f'<path data-mode="attract" d="{path}" stroke="url(#flow-lr)" stroke-width="8" stroke-opacity=".13" filter="url(#flow-glow)"/>')
-        elif mode=="repel":
-            for direction,color in ((-1,"#557DA9"),(1,"#9B6549")):
-                path=f"M {x:.2f} {y:.2f} C {x+direction*18:.2f} {y+rise:.2f} {x+direction*span*.55:.2f} {y-rise:.2f} {x+direction*span:.2f} {y+rise*.65:.2f}"
-                out.append(f'<path data-mode="repel" d="{path}" stroke="{color}" stroke-width="6" stroke-opacity=".105" filter="url(#flow-glow)"/>')
+    # ── blue note — геометрическая красивая ошибка ──────────────────────────
+    bn_x1 = ax + arx * 0.45
+    bn_y1 = ay + ary * 0.18
+    bn_cx = (bx + bn_x1) / 2
+    bn_cy = bn_y1 - 35  # дуга идёт вверх
+    bn_break_x = bn_cx + r.uniform(8, 22)  # точка провисания
+    bn_break_y = bn_cy + r.uniform(14, 28)  # проседает
+
+    # ── запоздавшие объятия (embrace arcs) ──────────────────────────────────
+    embrace_arcs = []
+    for i in range(5):
+        t = (i + 1) / 6
+        ex = ax + (bx - ax) * t
+        ey = ay + (by - ay) * t + r.gauss(0, 20)
+        delay = r.uniform(8, 25)  # смещение для lag-эффекта
+        embrace_arcs.append((ex, ey, delay))
+
+    # ── остаточные следы тактов ──────────────────────────────────────────────
+    afterbeat_traces = []
+    for i in range(3):
+        tx = r.uniform(W * 0.55, W * 0.75)
+        ty = r.uniform(H * 0.42, H * 0.62)
+        length = r.uniform(80, 180)
+        angle = r.uniform(-0.2, 0.15)
+        afterbeat_traces.append((tx, ty, length, angle, r.uniform(0.02, 0.04)))
+
+    # ── графитовый шум (следы карандаша) ────────────────────────────────────
+    graphite_strokes = []
+    for i in range(120):
+        gx = r.uniform(W * 0.03, W * 0.97)
+        gy = r.uniform(H * 0.02, H * 0.88)
+        length = r.uniform(4, 28)
+        angle = r.uniform(75, 95) * math.pi / 180  # почти вертикально
+        gx2 = gx + length * math.cos(angle)
+        gy2 = gy + length * math.sin(angle)
+        opacity = r.uniform(0.025, 0.065)
+        graphite_strokes.append((gx, gy, gx2, gy2, opacity))
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # SVG
+    # ═══════════════════════════════════════════════════════════════════════
+    lines = []
+    lines.append(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}">')
+
+    # ── фильтры ──────────────────────────────────────────────────────────────
+    lines.append('<defs>')
+
+    # внешний glow тела A
+    lines.append('''
+  <filter id="glow-a" x="-60%" y="-60%" width="220%" height="220%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="72" result="blur"/>
+    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>''')
+
+    # внешний glow тела B
+    lines.append('''
+  <filter id="glow-b" x="-60%" y="-60%" width="220%" height="220%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="65" result="blur"/>
+    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>''')
+
+    # органы — средний blur
+    lines.append('''
+  <filter id="organ-blur">
+    <feGaussianBlur stdDeviation="9"/>
+  </filter>''')
+
+    # водопад — лёгкий blur
+    lines.append('''
+  <filter id="waterfall-blur">
+    <feGaussianBlur stdDeviation="3.5"/>
+  </filter>''')
+
+    # ghost след
+    lines.append('''
+  <filter id="ghost-blur">
+    <feGaussianBlur stdDeviation="22"/>
+  </filter>''')
+
+    # слабые потоки
+    lines.append('''
+  <filter id="flow-blur">
+    <feGaussianBlur stdDeviation="5"/>
+  </filter>''')
+
+    # grain
+    lines.append('''
+  <filter id="grain">
+    <feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="4" stitchTiles="stitch" result="noise"/>
+    <feColorMatrix type="saturate" values="0" in="noise" result="gray"/>
+    <feBlend in="SourceGraphic" in2="gray" mode="overlay" result="blend"/>
+    <feComposite in="blend" in2="SourceGraphic" operator="in"/>
+  </filter>''')
+
+    # clipPath тела A
+    lines.append(f'  <clipPath id="clip-a"><path d="{blob_a}"/></clipPath>')
+    # clipPath тела B
+    lines.append(f'  <clipPath id="clip-b"><path d="{blob_b}"/></clipPath>')
+
+    lines.append('</defs>')
+
+    # ── фон ──────────────────────────────────────────────────────────────────
+    lines.append(f'<rect width="{W}" height="{H}" fill="{BG}"/>')
+
+    # ── гроб времени (скрытая геометрия) ────────────────────────────────────
+    lines.append('<g id="d2-coffin-gravity" opacity="0.85">')
+    lines.append(f'  <path d="M {coffin_x1+coffin_top_inset},{coffin_y} '
+                 f'L {coffin_x1},{coffin_y+H*0.18} '
+                 f'L {coffin_x2},{coffin_y+H*0.18} '
+                 f'L {coffin_x2-coffin_top_inset},{coffin_y} Z" '
+                 f'fill="{COFFIN}" opacity="0.92"/>')
+    # видимы только два угла
+    lines.append(f'  <line x1="{coffin_x1+coffin_top_inset}" y1="{coffin_y}" '
+                 f'x2="{coffin_x1+coffin_top_inset+30}" y2="{coffin_y}" '
+                 f'stroke="{SEDIMENT}" stroke-width="1" opacity="0.3"/>')
+    lines.append(f'  <line x1="{coffin_x2-coffin_top_inset-30}" y1="{coffin_y}" '
+                 f'x2="{coffin_x2-coffin_top_inset}" y2="{coffin_y}" '
+                 f'stroke="{SEDIMENT}" stroke-width="1" opacity="0.3"/>')
+    lines.append('</g>')
+
+    # ── нижний осадок (foreground sediment) ─────────────────────────────────
+    lines.append('<g id="d2-sediment">')
+    for i in range(5):
+        sy = H * (0.82 + i * 0.028)
+        amp = 12 + i * 4
+        lines.append(f'  <path d="M 0,{sy:.0f} '
+                     f'Q {W*0.25:.0f},{sy-amp:.0f} {W*0.5:.0f},{sy:.0f} '
+                     f'Q {W*0.75:.0f},{sy+amp:.0f} {W:.0f},{sy:.0f} '
+                     f'L {W},{H} L 0,{H} Z" '
+                     f'fill="{SEDIMENT}" opacity="{0.45 + i*0.1:.2f}"/>')
+    lines.append('</g>')
+
+    # ── водопад Ляпунова ─────────────────────────────────────────────────────
+    lines.append('<g id="d2-pain-waterfall" filter="url(#waterfall-blur)">')
+    for i, thread in enumerate(waterfall_threads):
+        if len(thread) < 2:
+            continue
+        opacity = 0.06 + 0.06 * (i % 3)
+        color = WATERFALL if i % 2 == 0 else FLOW_WARM
+        d = f"M {thread[0][0]:.1f},{thread[0][1]:.1f} "
+        for pt in thread[1:]:
+            d += f"L {pt[0]:.1f},{pt[1]:.1f} "
+        lines.append(f'  <path d="{d}" stroke="{color}" stroke-width="1.2" '
+                     f'fill="none" opacity="{opacity:.3f}"/>')
+    lines.append('</g>')
+
+    # ── синкопированные ритм-пульсы (слабая доля) ────────────────────────────
+    lines.append('<g id="d2-syncopated-rhythm">')
+    for x1, y1, x2, y2, op in rhythm_pulses:
+        lines.append(f'  <line x1="{x1:.0f}" y1="{y1:.0f}" x2="{x2:.0f}" y2="{y2:.0f}" '
+                     f'stroke="{FLOW_COOL}" stroke-width="0.8" opacity="{op:.3f}"/>')
+    lines.append('</g>')
+
+    # ── afterimage тела A ────────────────────────────────────────────────────
+    lines.append('<g id="d2-afterimages">')
+    lines.append(f'  <path d="{blob_a_ghost}" fill="{BODY_A}" opacity="0.06" '
+                 f'filter="url(#ghost-blur)"/>')
+    lines.append('</g>')
+
+    # ── тело A (большое, синее) ──────────────────────────────────────────────
+    lines.append('<g id="d2-body-heavy">')
+    lines.append(f'  <path d="{blob_a}" fill="{BODY_A}" opacity="0.82" '
+                 f'filter="url(#glow-a)"/>')
+    lines.append('</g>')
+
+    # органы и полости тела A (внутри clipPath)
+    lines.append('<g id="d2-organs-heavy" clip-path="url(#clip-a)" filter="url(#organ-blur)">')
+    for i, org in enumerate(organs_a):
+        op = 0.28 + 0.12 * (i % 3)
+        lines.append(f'  <path d="{org}" fill="{ORGAN_A}" opacity="{op:.2f}"/>')
+    for cav in cavities_a:
+        lines.append(f'  <path d="{cav}" fill="{BG}" opacity="0.35"/>')
+    for ten in tendons_a:
+        # сухожилия вытянуты вниз
+        lines.append(f'  <path d="{ten}" fill="{TENDON_A}" opacity="0.22"/>')
+    lines.append('</g>')
+
+    # ── тело B (малое, коричневое) ───────────────────────────────────────────
+    lines.append('<g id="d2-body-answer">')
+    lines.append(f'  <path d="{blob_b}" fill="{BODY_B}" opacity="0.78" '
+                 f'filter="url(#glow-b)"/>')
+    lines.append('</g>')
+
+    # органы тела B
+    lines.append('<g id="d2-organs-answer" clip-path="url(#clip-b)" filter="url(#organ-blur)">')
+    for i, org in enumerate(organs_b):
+        op = 0.25 + 0.1 * (i % 3)
+        lines.append(f'  <path d="{org}" fill="{ORGAN_B}" opacity="{op:.2f}"/>')
+    lines.append('</g>')
+
+    # ── контактные потоки ────────────────────────────────────────────────────
+    lines.append('<g id="d2-contact-flows" filter="url(#flow-blur)">')
+    # притяжение
+    cy_a = (attract_y1 + attract_y2) / 2 - 30
+    lines.append(f'  <path d="M {attract_x1:.0f},{attract_y1:.0f} '
+                 f'Q {(attract_x1+attract_x2)/2:.0f},{cy_a:.0f} '
+                 f'{attract_x2:.0f},{attract_y2:.0f}" '
+                 f'stroke="{FLOW_WARM}" stroke-width="2.5" fill="none" opacity="0.18"/>')
+    # отталкивание
+    cy_r = (repel_y1 + repel_y2) / 2 + 40
+    lines.append(f'  <path d="M {repel_x1:.0f},{repel_y1:.0f} '
+                 f'Q {(repel_x1+repel_x2)/2:.0f},{cy_r:.0f} '
+                 f'{repel_x2:.0f},{repel_y2:.0f}" '
+                 f'stroke="{FLOW_COOL}" stroke-width="1.5" fill="none" opacity="0.14"/>')
+    # оборванная фраза
+    lines.append(f'  <path d="M {broken_x1:.0f},{broken_y1:.0f} '
+                 f'Q {broken_xm:.0f},{broken_y1-20:.0f} '
+                 f'{broken_xm+15:.0f},{broken_y1+10:.0f}" '
+                 f'stroke="{FLOW_WARM}" stroke-width="1.2" fill="none" opacity="0.10"/>')
+    # дополнительные арки
+    for ex1, ey1, ex2, ey2, completed in extra_arcs:
+        cy_e = (ey1 + ey2) / 2 + r.uniform(-30, 30)
+        if completed:
+            lines.append(f'  <path d="M {ex1:.0f},{ey1:.0f} '
+                         f'Q {(ex1+ex2)/2:.0f},{cy_e:.0f} '
+                         f'{ex2:.0f},{ey2:.0f}" '
+                         f'stroke="{FLOW_WARM}" stroke-width="1" fill="none" opacity="0.09"/>')
         else:
-            path=f"M {x-span*.92:.2f} {y+rise:.2f} C {x-span*.48:.2f} {y-rise*.8:.2f} {x-span*.20:.2f} {y+rise*.4:.2f} {x-7:.2f} {y-4:.2f}"
-            out.append(f'<path data-mode="unfinished" d="{path}" stroke="#78647D" stroke-width="7" stroke-opacity=".12" filter="url(#flow-glow)"/>')
-    return out+['</g>']
+            xm = (ex1 + ex2) * 0.4
+            lines.append(f'  <path d="M {ex1:.0f},{ey1:.0f} '
+                         f'Q {xm:.0f},{cy_e:.0f} '
+                         f'{xm+10:.0f},{(ey1+cy_e)/2:.0f}" '
+                         f'stroke="{FLOW_COOL}" stroke-width="0.8" fill="none" opacity="0.07"/>')
+    lines.append('</g>')
+
+    # ── запоздавшие объятия ──────────────────────────────────────────────────
+    lines.append('<g id="d2-embrace-arcs" filter="url(#ghost-blur)">')
+    for i, (ex, ey, delay) in enumerate(embrace_arcs):
+        lines.append(f'  <circle cx="{ex:.0f}" cy="{ey:.0f}" r="{delay:.0f}" '
+                     f'fill="none" stroke="{BODY_A}" stroke-width="0.8" opacity="0.05"/>')
+    lines.append('</g>')
+
+    # ── blue note — красивая ошибка ──────────────────────────────────────────
+    lines.append('<g id="d2-beautiful-error">')
+    # правильная часть дуги
+    lines.append(f'  <path d="M {bn_x1:.0f},{bn_y1:.0f} Q {bn_cx-20:.0f},{bn_cy:.0f} {bn_cx:.0f},{bn_cy:.0f}" '
+                 f'stroke="{BLUE_NOTE}" stroke-width="1.5" fill="none" opacity="0.18"/>')
+    # провисающая часть — красивая ошибка
+    lines.append(f'  <path d="M {bn_cx:.0f},{bn_cy:.0f} Q {bn_break_x:.0f},{bn_break_y:.0f} '
+                 f'{bn_cx+40:.0f},{bn_cy+5:.0f}" '
+                 f'stroke="{BLUE_NOTE}" stroke-width="1.5" fill="none" opacity="0.22"/>')
+    # blue note как тёплое нарушение внутри тела A
+    lines.append(f'  <ellipse cx="{ax - arx*0.15:.0f}" cy="{ay + ary*0.1:.0f}" '
+                 f'rx="38" ry="28" fill="{BLUE_NOTE}" opacity="0.07" '
+                 f'clip-path="url(#clip-a)"/>')
+    lines.append('</g>')
+
+    # ── остаточные следы тактов ──────────────────────────────────────────────
+    lines.append('<g id="d2-afterbeat-traces">')
+    for tx, ty, length, angle, op in afterbeat_traces:
+        ex = tx + length * math.cos(angle)
+        ey = ty + length * math.sin(angle) * 0.3
+        lines.append(f'  <line x1="{tx:.0f}" y1="{ty:.0f}" x2="{ex:.0f}" y2="{ey:.0f}" '
+                     f'stroke="{FLOW_COOL}" stroke-width="0.7" opacity="{op:.3f}"/>')
+    lines.append('</g>')
+
+    # ── графитовый шум ───────────────────────────────────────────────────────
+    lines.append('<g id="d2-graphite-grain">')
+    for gx1, gy1, gx2, gy2, op in graphite_strokes:
+        lines.append(f'  <line x1="{gx1:.0f}" y1="{gy1:.0f}" x2="{gx2:.0f}" y2="{gy2:.0f}" '
+                     f'stroke="{GRAPHITE}" stroke-width="0.6" opacity="{op:.3f}"/>')
+    lines.append('</g>')
+
+    # ── footer ────────────────────────────────────────────────────────────────
+    footer_y = H * 0.928
+    lines.append(f'<line x1="{W*0.07:.0f}" y1="{footer_y:.0f}" '
+                 f'x2="{W*0.93:.0f}" y2="{footer_y:.0f}" '
+                 f'stroke="#2a2825" stroke-width="0.5"/>')
+
+    lines.append('<g id="d2-footer" font-family="\'Courier New\', monospace" fill="#3a3835">')
+    lines.append(f'  <text x="{W//2}" y="{H*0.948:.0f}" '
+                 f'text-anchor="middle" font-size="22" letter-spacing="8" font-weight="300">'
+                 f'TWO-BODY BLUES</text>')
+    lines.append(f'  <text x="{W//2}" y="{H*0.963:.0f}" '
+                 f'text-anchor="middle" font-size="10" letter-spacing="5" opacity="0.7">'
+                 f'DENSITY · COUNTERFLOW · UNRESOLVED CONTACT</text>')
+    lines.append(f'  <text x="{W//2}" y="{H*0.975:.0f}" '
+                 f'text-anchor="middle" font-size="9" letter-spacing="3" opacity="0.5">'
+                 f'CONCEPTUAL VISUALIZATION — NOT A SPECTROGRAM</text>')
+    lines.append('</g>')
+
+    lines.append('</svg>')
+    return "\n".join(lines)
 
 
-def _counterflow(seed: str, left: BodySpec, right: BodySpec) -> list[str]:
-    rng = random.Random(seed_int(seed, "counterflow-bands-v15"))
-    out = ['<g id="d2-counterflow" fill="none" stroke-linecap="round" filter="url(#counterflow-blur)">']
-    for body, color, direction in ((left,"#315E8E",1),(right,"#8C4E2B",-1)):
-        for band in range(3):
-            y = body.cy+(band-1)*body.ry*.24+rng.uniform(-12,12)
-            out.append(f'<path d="M {body.cx-direction*body.rx*.62:.2f} {y:.2f} C {body.cx-body.rx*.16:.2f} {y+rng.uniform(-42,42):.2f} {body.cx+body.rx*.18:.2f} {y+rng.uniform(-42,42):.2f} {body.cx+direction*body.rx*.60:.2f} {y+rng.uniform(-10,10):.2f}" stroke="{color}" stroke-width="{rng.uniform(12,24):.2f}" stroke-opacity="{rng.uniform(.022,.052):.4f}"/>')
-    return out + ['</g>']
+def build_metadata(seed=SEED, svg_sha=""):
+    return {
+        "renderer": "render_d2_blues_poster",
+        "version": RENDERER_VERSION,
+        "seed": seed,
+        "canvas": {"width": W, "height": H},
+        "pole": "painfall_embrace",
+        "layers": [
+            "d2-coffin-gravity",
+            "d2-sediment",
+            "d2-pain-waterfall",
+            "d2-syncopated-rhythm",
+            "d2-afterimages",
+            "d2-body-heavy",
+            "d2-organs-heavy",
+            "d2-body-answer",
+            "d2-organs-answer",
+            "d2-contact-flows",
+            "d2-embrace-arcs",
+            "d2-beautiful-error",
+            "d2-afterbeat-traces",
+            "d2-graphite-grain",
+            "d2-footer",
+        ],
+        "blue_note": {"color": BLUE_NOTE, "type": "geometric_error"},
+        "svg_sha256": svg_sha,
+    }
 
 
-def _blue_note(points: list[tuple[float, float]]) -> list[str]:
-    x,y=points[round(.66*(len(points)-1))]
-    path=f"M {x-100:.2f} {y+20:.2f} C {x-58:.2f} {y-16:.2f} {x-23:.2f} {y+14:.2f} {x-5:.2f} {y-1:.2f} L {x+8:.2f} {y+17:.2f} C {x+29:.2f} {y-21:.2f} {x+54:.2f} {y-25:.2f} {x+78:.2f} {y+4:.2f}"
-    return ['<g id="d2-blue-note">',f'<path data-gesture="beautiful-error" d="{path}" fill="none" stroke="#5B4FA8" stroke-width="8" stroke-opacity=".13" stroke-linecap="round" stroke-linejoin="round" filter="url(#flow-glow)"/>',f'<ellipse cx="{x+8:.2f}" cy="{y+17:.2f}" rx="19" ry="9" fill="#5B4FA8" fill-opacity=".11" filter="url(#organ-soft)"/>','</g>']
+def sha256_prefixed(content: str) -> str:
+    h = hashlib.sha256(content.encode("utf-8")).hexdigest()
+    return f"sha256:{h}"
 
 
-def base_metadata(seed: str) -> dict[str, Any]:
-    left, right = _body_specs(seed)
-    return {"poster_id": POSTER_ID, "schema_version": SCHEMA_VERSION, "renderer": {"name": RENDERER_NAME, "version": RENDERER_VERSION}, "seed": seed, "canonical_outputs": {"svg_filename": "d2_blues_v1_poster.svg", "svg_viewbox": VIEWBOX}, "body_geometry": {"left": vars(left), "right": vars(right), "area_proxy_ratio": left.area_proxy/right.area_proxy}, "visual_contract": {"metaphor": "two unequal smoky bodies perform an A-A-B exchange inside the almost invisible coffin of time", "retained_layers": ["glow","settling_mist","random_polygons","turbulence","tactile_void"], "structural_layers": ["coffin_gravity","pain_waterfall","afterimages_aab","internal_organs","tendons","call_response","masked_contact_gap","contact_flows","delayed_embrace_arcs","counterflow","blue_note","aftertone_memory"], "warning": "CONCEPTUAL VISUALIZATION — NOT A SPECTROGRAM"}, "palette": PALETTE}
-
-
-def render_svg(seed: str = "d2-blues-v1") -> bytes:
-    left, right = _body_specs(seed)
-    left_path, right_path = _blob(seed,left,left.salt), _blob(seed,right,right.salt)
-    points = _contact_points(seed,left,right)
-    seam, contact_x = _smooth_open(points), sum(x for x,_ in points)/len(points)
-    cfg = BurialConfig(left_x=left.cx,right_x=right.cx,contact_x=contact_x,left_sink=72,right_sink=42,left_sigma=max(190,left.rx*.82),right_sigma=max(130,right.rx*.88),contact_ridge=21,foreground_opacity=.38,sediment_count=210)
-    metadata = json.dumps(base_metadata(seed),sort_keys=True,separators=(",",":"),ensure_ascii=False).replace("&","&amp;").replace("<","&lt;")
-    svg = ['<?xml version="1.0" encoding="UTF-8"?>', f'<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1260" viewBox="{VIEWBOX}" role="img" aria-labelledby="title desc">', f'<metadata>{metadata}</metadata>', '<title id="title">D2 — TWO-BODY BLUES</title>', '<desc id="desc">Two unequal smoky densities exchange pressure around an unresolved contact.</desc>', '<defs>', '<radialGradient id="body-left"><stop offset="0" stop-color="#315E8E" stop-opacity=".80"/><stop offset=".6" stop-color="#182B43" stop-opacity=".56"/><stop offset="1" stop-color="#080B12" stop-opacity=".04"/></radialGradient>', '<radialGradient id="body-right"><stop offset="0" stop-color="#A35B2B" stop-opacity=".66"/><stop offset=".58" stop-color="#44374F" stop-opacity=".48"/><stop offset="1" stop-color="#080B12" stop-opacity=".04"/></radialGradient>', '<linearGradient id="flow-lr"><stop offset="0" stop-color="#315E8E" stop-opacity="0"/><stop offset=".5" stop-color="#5B4FA8"/><stop offset="1" stop-color="#A35B2B" stop-opacity="0"/></linearGradient>', f'<clipPath id="clip-left-body"><path d="{left_path}"/></clipPath>', f'<clipPath id="clip-right-body"><path d="{right_path}"/></clipPath>', f'<mask id="contact-gap-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="1080" height="1080"><rect width="1080" height="1080" fill="white"/><path d="{seam}" fill="none" stroke="black" stroke-width="15" stroke-linecap="round" filter="url(#gap-mask-soft)"/></mask>', '<filter id="glow" x="-55%" y="-55%" width="210%" height="210%"><feGaussianBlur stdDeviation="72"/></filter>', '<filter id="smoke-body" x="-55%" y="-55%" width="210%" height="210%"><feTurbulence type="fractalNoise" baseFrequency=".005 .012" numOctaves="3" seed="19" result="noise"/><feDisplacementMap in="SourceGraphic" in2="noise" scale="18" result="d"/><feGaussianBlur in="d" stdDeviation="22"/></filter>', '<filter id="mist" x="-40%" y="-100%" width="180%" height="300%"><feGaussianBlur stdDeviation="11"/></filter>', '<filter id="organ-soft" x="-60%" y="-80%" width="220%" height="260%"><feGaussianBlur stdDeviation="12"/></filter>', '<filter id="organ-deep" x="-70%" y="-90%" width="240%" height="280%"><feGaussianBlur stdDeviation="21"/></filter>', '<filter id="flow-glow" x="-70%" y="-150%" width="240%" height="400%"><feGaussianBlur stdDeviation="12"/></filter>', '<filter id="counterflow-blur" x="-40%" y="-80%" width="180%" height="260%"><feGaussianBlur stdDeviation="18"/></filter>', '<filter id="afterimage-blur"><feGaussianBlur stdDeviation="34"/></filter>', '<filter id="tendon-blur"><feGaussianBlur stdDeviation="8"/></filter>', '<filter id="memory-blur"><feGaussianBlur stdDeviation="10"/></filter>', '<filter id="coffin-soft"><feGaussianBlur stdDeviation="3"/></filter>', '<filter id="gap-mask-soft"><feGaussianBlur stdDeviation="3.2"/></filter>', '<filter id="waterfall-blur"><feGaussianBlur stdDeviation="13"/></filter>', '<filter id="embrace-blur"><feGaussianBlur stdDeviation="10"/></filter>', *physical_defs(), '</defs>', '<rect width="1080" height="1260" fill="#03050A"/>', '<g id="d2-artwork">', *_polygons(seed), *_mist(seed), *_coffin_gravity(seed,contact_x), *burial_backdrop_svg(seed,cfg), *_pain_waterfall(seed,left,right,contact_x), *_afterimages(seed,left_path,right_path), '<g id="d2-density-bodies" mask="url(#contact-gap-mask)">', f'<path d="{left_path}" fill="#315E8E" fill-opacity=".27" filter="url(#glow)"/>', f'<path id="d2-left-body" d="{left_path}" fill="url(#body-left)" fill-opacity=".50" filter="url(#smoke-body)"/>', f'<path d="{right_path}" fill="#A35B2B" fill-opacity=".23" filter="url(#glow)"/>', f'<path id="d2-right-body" d="{right_path}" fill="url(#body-right)" fill-opacity=".50" filter="url(#smoke-body)"/>', '<g id="d2-internal-organs">', *_organs(seed,left,"left","clip-left-body"), *_organs(seed,right,"right","clip-right-body"), *_tendons(seed,left,"left","clip-left-body"), *_tendons(seed,right,"right","clip-right-body"), '</g>', *_call_response(left,right), '</g>', '<g id="d2-contact-gap" data-gap="masked-void" pointer-events="none">', f'<path d="{seam}" fill="none" stroke="#8490A2" stroke-width="3" stroke-opacity=".035" stroke-linecap="round" filter="url(#flow-glow)"/>', '</g>', *_contact_flows(seed,points), *_delayed_embrace_arcs(seed,left,right,points), *_counterflow(seed,left,right), *_blue_note(points), *_aftertone_memory(seed,right), *burial_foreground_svg(seed,cfg), *tactile_void_svg(seed,1080,1080,.42,760), '</g>', '<g id="d2-footer"><rect y="1080" width="1080" height="180" fill="#03050A"/><line x1="84" x2="996" y1="1100" y2="1100" stroke="#737986" stroke-opacity=".26"/><text x="540" y="1150" text-anchor="middle" fill="#D8D8D5" font-family="Arial,sans-serif" font-size="27" letter-spacing="8">TWO-BODY BLUES</text><text x="540" y="1193" text-anchor="middle" fill="#737986" font-family="Arial,sans-serif" font-size="11" letter-spacing="4">DENSITY · COUNTERFLOW · UNRESOLVED CONTACT</text><text x="540" y="1225" text-anchor="middle" fill="#4A505A" font-family="Arial,sans-serif" font-size="9" letter-spacing="2">CONCEPTUAL VISUALIZATION — NOT A SPECTROGRAM</text></g>', '</svg>']
-    return ("\n".join(svg)+"\n").encode("utf-8")
-
-
-def build_metadata(seed: str, svg_bytes: bytes) -> bytes:
-    data = base_metadata(seed)
-    data["canonical_outputs"]["svg_sha256"] = sha256_prefixed(svg_bytes)
-    return canonical_json_bytes(data)
-
-
-def write_outputs(seed: str, svg_path: Path, metadata_path: Path) -> tuple[Path, Path]:
-    svg = render_svg(seed)
-    svg_path.parent.mkdir(parents=True,exist_ok=True)
-    metadata_path.parent.mkdir(parents=True,exist_ok=True)
-    svg_path.write_bytes(svg)
-    metadata_path.write_bytes(build_metadata(seed,svg))
-    return svg_path, metadata_path
-
-
-def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Render the canonical D2 two-body Blues SVG and metadata.")
-    p.add_argument("--seed",default="d2-blues-v1")
-    p.add_argument("--svg-output",type=Path,default=Path("artifacts/d2/posters/d2_blues_v1_poster.svg"))
-    p.add_argument("--metadata-output",type=Path,default=Path("artifacts/d2/posters/d2_blues_v1_poster.metadata.json"))
-    return p.parse_args()
-
-
-def main() -> int:
-    a = parse_args()
-    write_outputs(a.seed,a.svg_output,a.metadata_output)
-    return 0
+def write_outputs(svg_path: Path, meta_path: Path):
+    svg_content = render_svg(SEED)
+    svg_sha = sha256_prefixed(svg_content)
+    svg_path.parent.mkdir(parents=True, exist_ok=True)
+    svg_path.write_text(svg_content, encoding="utf-8")
+    meta = build_metadata(SEED, svg_sha)
+    meta_path.write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
+    return svg_sha
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    parser = argparse.ArgumentParser(description="D2 Blues Poster Renderer v1.7")
+    parser.add_argument("--svg-output",  default="artifacts/d2/posters/d2_blues_v1_poster.svg")
+    parser.add_argument("--metadata-output", default="artifacts/d2/posters/d2_blues_v1_poster.metadata.json")
+    args = parser.parse_args()
+
+    svg_path  = Path(args.svg_output)
+    meta_path = Path(args.metadata_output)
+    sha = write_outputs(svg_path, meta_path)
+    print(f"[D2 v{RENDERER_VERSION}] SVG  → {svg_path}")
+    print(f"[D2 v{RENDERER_VERSION}] META → {meta_path}")
+    print(f"[D2 v{RENDERER_VERSION}] SHA  → {sha[:32]}…")
