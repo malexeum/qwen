@@ -1,0 +1,48 @@
+version: "blues-d2-v4.1"
+track_name: "ROAD TRIP"
+seed: "d2-last-train-v1"
+
+canvas:
+  width: 1080
+  height: 1260
+  art_height: 1080
+  footer_height: 180
+
+gravity_well:
+  rings_count: 9
+  compression_gamma: 1.38
+  base_radius_scale: 1.08
+  step_radius_scale: 0.52
+  blur_std: 5.0
+
+standing_waves:
+  wave_count: 8
+  lambda_min: 160
+  lambda_max: 320
+  amplitude_min: 14.0
+  amplitude_max: 34.0
+  attenuation_beta: 0.0012
+  gap_ratio: 0.75
+
+lyapunov_roots:
+  count_range: [5, 7]
+  depth_range: [160, 280]
+  sequence: "AABB"
+  steps: 32
+  chaos_factor: 0.14
+  branch_probability: 0.35
+
+body_smoke:
+  turbulence_frequency: "0.005 0.011"
+  displacement_scale: 20
+  blur_std: 24
+  glow_blur_std: 48
+
+temporal_sediment:
+  strata_count: 7
+  surface_y: 780.0
+  grain_count: 160
+
+outputs:
+  svg_default: "artifacts/d2/posters/d2_last_train_v41.svg"
+  metadata_default: "artifacts/d2/posters/d2_last_train_v41.metadata.json"
