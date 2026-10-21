@@ -1,0 +1,28 @@
+{
+  "renderer": "render_d2_blues_poster",
+  "version": "1.4",
+  "seed": 24092026,
+  "svg_sha256": "9e8d79c41967eb6d32612e2bf4b94c415100c05b57a70a38715e3eeb4445a7fd",
+  "bodies": {
+    "a": {
+      "cx": 335.69790003442074,
+      "cy": 434.6860362993568,
+      "rx": 196.86384684470363,
+      "ry": 257.5191942509096,
+      "organs": 7,
+      "blue_note": false
+    },
+    "b": {
+      "cx": 622.9689039012376,
+      "cy": 466.5803052085256,
+      "rx": 111.03995253105607,
+      "ry": 136.42051310958317,
+      "organs": 7,
+      "blue_note": true
+    }
+  },
+  "seam_points": 17,
+  "exchange_events": 5,
+  "blue_note_exchange": true,
+  "output_svg": "artifacts\\d2\\posters\\d2_blues_v1_poster.svg"
+}
